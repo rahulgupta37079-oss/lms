@@ -183,6 +183,11 @@ app.get('/api/lessons/:lessonId/:studentId', async (c) => {
       return c.json({ error: 'Lesson not found' }, 404)
     }
     
+    // Get MCQs for this lesson
+    const mcqs = await c.env.DB.prepare(`
+      SELECT * FROM mcqs WHERE lesson_id = ? ORDER BY order_index
+    `).bind(lessonId).all()
+    
     let progress = await c.env.DB.prepare(
       'SELECT * FROM student_progress WHERE student_id = ? AND lesson_id = ?'
     ).bind(studentId, lessonId).first()
@@ -202,6 +207,7 @@ app.get('/api/lessons/:lessonId/:studentId', async (c) => {
     
     return c.json({
       lesson,
+      mcqs: mcqs.results,
       progress
     })
   } catch (error) {
@@ -232,6 +238,140 @@ app.post('/api/progress/update', async (c) => {
   }
 })
 
+// MCQ Answer Submission
+app.post('/api/mcq/submit', async (c) => {
+  try {
+    const { studentId, lessonId, answers } = await c.req.json()
+    
+    // Get all correct answers from database
+    const mcqs = await c.env.DB.prepare(`
+      SELECT id, correct_option FROM mcqs WHERE lesson_id = ?
+    `).bind(lessonId).all()
+    
+    // Calculate score
+    let correctCount = 0
+    const results = mcqs.results.map((mcq: any) => {
+      const studentAnswer = answers[mcq.id]
+      const isCorrect = studentAnswer === mcq.correct_option
+      if (isCorrect) correctCount++
+      return {
+        mcqId: mcq.id,
+        correct: isCorrect,
+        correctAnswer: mcq.correct_option,
+        studentAnswer
+      }
+    })
+    
+    const score = mcqs.results.length > 0 ? Math.round((correctCount / mcqs.results.length) * 100) : 0
+    
+    // Save MCQ result
+    await c.env.DB.prepare(`
+      INSERT INTO mcq_results (student_id, lesson_id, score, total_questions, correct_answers, submitted_at)
+      VALUES (?, ?, ?, ?, ?, datetime("now"))
+    `).bind(studentId, lessonId, score, mcqs.results.length, correctCount).run()
+    
+    return c.json({
+      success: true,
+      score,
+      correctCount,
+      totalQuestions: mcqs.results.length,
+      results
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to submit MCQ' }, 500)
+  }
+})
+
+// ============================================
+// LIVE TEST ROUTES
+// ============================================
+
+app.get('/api/tests/:studentId', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    const tests = await c.env.DB.prepare(`
+      SELECT 
+        t.*,
+        m.title as module_title,
+        tr.score,
+        tr.submitted_at
+      FROM live_tests t
+      JOIN modules m ON t.module_id = m.id
+      LEFT JOIN test_results tr ON t.id = tr.test_id AND tr.student_id = ?
+      ORDER BY t.scheduled_at ASC
+    `).bind(studentId).all()
+    
+    return c.json(tests.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch tests' }, 500)
+  }
+})
+
+app.get('/api/tests/:testId/questions', async (c) => {
+  try {
+    const testId = c.req.param('testId')
+    
+    const test = await c.env.DB.prepare(
+      'SELECT * FROM live_tests WHERE id = ?'
+    ).bind(testId).first()
+    
+    const questions = await c.env.DB.prepare(`
+      SELECT * FROM test_questions WHERE test_id = ? ORDER BY order_index
+    `).bind(testId).all()
+    
+    return c.json({
+      test,
+      questions: questions.results
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch test questions' }, 500)
+  }
+})
+
+app.post('/api/tests/submit', async (c) => {
+  try {
+    const { testId, studentId, answers, timeSpent } = await c.req.json()
+    
+    // Get correct answers
+    const questions = await c.env.DB.prepare(`
+      SELECT id, correct_option FROM test_questions WHERE test_id = ?
+    `).bind(testId).all()
+    
+    // Calculate score
+    let correctCount = 0
+    const results = questions.results.map((q: any) => {
+      const studentAnswer = answers[q.id]
+      const isCorrect = studentAnswer === q.correct_option
+      if (isCorrect) correctCount++
+      return {
+        questionId: q.id,
+        correct: isCorrect,
+        correctAnswer: q.correct_option,
+        studentAnswer
+      }
+    })
+    
+    const score = questions.results.length > 0 ? Math.round((correctCount / questions.results.length) * 100) : 0
+    
+    // Save test result
+    await c.env.DB.prepare(`
+      INSERT INTO test_results (test_id, student_id, score, total_questions, correct_answers, time_spent, submitted_at)
+      VALUES (?, ?, ?, ?, ?, ?, datetime("now"))
+    `).bind(testId, studentId, score, questions.results.length, correctCount, timeSpent).run()
+    
+    return c.json({
+      success: true,
+      score,
+      correctCount,
+      totalQuestions: questions.results.length,
+      results
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to submit test' }, 500)
+  }
+})
+
 // ============================================
 // ASSIGNMENTS ROUTES
 // ============================================
@@ -247,7 +387,8 @@ app.get('/api/assignments/:studentId', async (c) => {
         s.id as submission_id,
         s.status as submission_status,
         s.score,
-        s.submitted_at
+        s.submitted_at,
+        s.feedback
       FROM assignments a
       JOIN modules m ON a.module_id = m.id
       LEFT JOIN submissions s ON a.id = s.assignment_id AND s.student_id = ?
@@ -276,7 +417,7 @@ app.post('/api/assignments/submit', async (c) => {
 })
 
 // ============================================
-// OTHER API ROUTES (Sessions, Certificates, etc.)
+// LIVE SESSIONS ROUTES
 // ============================================
 
 app.get('/api/sessions', async (c) => {
@@ -294,6 +435,45 @@ app.get('/api/sessions', async (c) => {
   }
 })
 
+// ============================================
+// MESSAGING ROUTES
+// ============================================
+
+app.get('/api/messages/:studentId', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    const messages = await c.env.DB.prepare(`
+      SELECT * FROM messages 
+      WHERE sender_id = ? OR receiver_id = ?
+      ORDER BY sent_at DESC
+    `).bind(studentId, studentId).all()
+    
+    return c.json(messages.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch messages' }, 500)
+  }
+})
+
+app.post('/api/messages/send', async (c) => {
+  try {
+    const { senderId, receiverId, message } = await c.req.json()
+    
+    await c.env.DB.prepare(`
+      INSERT INTO messages (sender_id, receiver_id, message, sent_at, is_read)
+      VALUES (?, ?, ?, datetime("now"), 0)
+    `).bind(senderId, receiverId, message).run()
+    
+    return c.json({ success: true, message: 'Message sent' })
+  } catch (error) {
+    return c.json({ error: 'Failed to send message' }, 500)
+  }
+})
+
+// ============================================
+// CERTIFICATES ROUTES
+// ============================================
+
 app.get('/api/certificates/:studentId', async (c) => {
   try {
     const studentId = c.req.param('studentId')
@@ -304,6 +484,29 @@ app.get('/api/certificates/:studentId', async (c) => {
     return c.json(certificates.results)
   } catch (error) {
     return c.json({ error: 'Failed to fetch certificates' }, 500)
+  }
+})
+
+app.post('/api/certificates/generate', async (c) => {
+  try {
+    const { studentId, certificateType } = await c.req.json()
+    
+    // Generate unique certificate ID
+    const timestamp = Date.now()
+    const certificateId = `PB-IOT-${new Date().getFullYear()}-${timestamp.toString().slice(-5)}`
+    
+    await c.env.DB.prepare(`
+      INSERT INTO certificates (student_id, certificate_id, certificate_type, issued_date, is_verified)
+      VALUES (?, ?, ?, datetime("now"), 1)
+    `).bind(studentId, certificateId, certificateType).run()
+    
+    return c.json({ 
+      success: true, 
+      certificateId,
+      verifyUrl: `https://verify.passionbots.in/${certificateId}`
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to generate certificate' }, 500)
   }
 })
 
@@ -327,31 +530,6 @@ app.get('/api/verify/:certificateId', async (c) => {
   }
 })
 
-app.get('/api/announcements', async (c) => {
-  try {
-    const announcements = await c.env.DB.prepare(
-      'SELECT * FROM announcements WHERE is_published = 1 ORDER BY published_at DESC LIMIT 10'
-    ).all()
-    
-    return c.json(announcements.results)
-  } catch (error) {
-    return c.json({ error: 'Failed to fetch announcements' }, 500)
-  }
-})
-
-app.get('/api/hardware/:studentId', async (c) => {
-  try {
-    const studentId = c.req.param('studentId')
-    const kit = await c.env.DB.prepare(
-      'SELECT * FROM hardware_kits WHERE student_id = ?'
-    ).bind(studentId).first()
-    
-    return c.json(kit || { delivery_status: 'not_applicable' })
-  } catch (error) {
-    return c.json({ error: 'Failed to fetch hardware kit status' }, 500)
-  }
-})
-
 // ============================================
 // FRONTEND
 // ============================================
@@ -363,726 +541,14 @@ app.get('/', (c) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PassionBots LMS</title>
+    <title>PassionBots LMS - Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #1a1d29;
-            color: #ffffff;
-            overflow-x: hidden;
-        }
-        
-        /* Color Variables */
-        :root {
-            --primary-bg: #1a1d29;
-            --secondary-bg: #252834;
-            --card-bg: #2a2d3a;
-            --accent-yellow: #FDB022;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a3b5;
-            --border-color: #3a3d4a;
-        }
-        
-        /* Welcome Screen */
-        .welcome-screen {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #1a1d29;
-            padding: 2rem;
-        }
-        
-        .welcome-container {
-            max-width: 800px;
-            text-align: center;
-        }
-        
-        .logo-section {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 3rem;
-        }
-        
-        .logo-icon {
-            width: 60px;
-            height: 60px;
-            background: var(--accent-yellow);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-        }
-        
-        .logo-text h1 {
-            font-size: 36px;
-            font-weight: 700;
-            color: var(--accent-yellow);
-            margin-bottom: 4px;
-        }
-        
-        .logo-text p {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .welcome-title {
-            font-size: 48px;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            line-height: 1.2;
-        }
-        
-        .welcome-subtitle {
-            font-size: 20px;
-            color: var(--text-secondary);
-            margin-bottom: 3rem;
-        }
-        
-        .welcome-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-bottom: 3rem;
-        }
-        
-        .btn-primary {
-            background: var(--accent-yellow);
-            color: #1a1d29;
-            padding: 16px 40px;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(253, 176, 34, 0.3);
-        }
-        
-        .btn-secondary {
-            background: var(--secondary-bg);
-            color: var(--text-primary);
-            padding: 16px 40px;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            border: 2px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-secondary:hover {
-            border-color: var(--accent-yellow);
-            background: rgba(253, 176, 34, 0.1);
-        }
-        
-        .progress-circle {
-            margin: 0 auto;
-            width: 200px;
-            height: 200px;
-            position: relative;
-        }
-        
-        .progress-circle svg {
-            transform: rotate(-90deg);
-        }
-        
-        .progress-circle-bg {
-            fill: none;
-            stroke: var(--secondary-bg);
-            stroke-width: 12;
-        }
-        
-        .progress-circle-fill {
-            fill: none;
-            stroke: var(--accent-yellow);
-            stroke-width: 12;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.5s;
-        }
-        
-        .progress-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-        }
-        
-        .progress-value {
-            font-size: 48px;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-        
-        .progress-label {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-        
-        .quick-links {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
-            margin-top: 3rem;
-        }
-        
-        .quick-link-card {
-            background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 16px;
-            text-align: center;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        .quick-link-card:hover {
-            transform: translateY(-4px);
-            background: var(--secondary-bg);
-        }
-        
-        .quick-link-icon {
-            width: 60px;
-            height: 60px;
-            background: rgba(253, 176, 34, 0.1);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
-            font-size: 28px;
-            color: var(--accent-yellow);
-        }
-        
-        .quick-link-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        
-        /* Main App Layout */
-        .app-container {
-            display: none;
-        }
-        
-        .app-container.active {
-            display: flex;
-        }
-        
-        /* Sidebar */
-        .sidebar {
-            width: 80px;
-            background: var(--secondary-bg);
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 2rem 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            border-right: 1px solid var(--border-color);
-            z-index: 100;
-        }
-        
-        .sidebar-logo {
-            width: 50px;
-            height: 50px;
-            background: var(--accent-yellow);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 3rem;
-            font-size: 24px;
-            color: #1a1d29;
-        }
-        
-        .sidebar-menu {
-            flex: 1;
-            width: 100%;
-        }
-        
-        .sidebar-item {
-            width: 100%;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--text-secondary);
-            font-size: 24px;
-            position: relative;
-            transition: all 0.3s;
-        }
-        
-        .sidebar-item:hover {
-            color: var(--accent-yellow);
-        }
-        
-        .sidebar-item.active {
-            background: var(--accent-yellow);
-            color: #1a1d29;
-        }
-        
-        .sidebar-item.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 30px;
-            background: var(--accent-yellow);
-        }
-        
-        /* Header */
-        .header {
-            margin-left: 80px;
-            height: 80px;
-            background: var(--secondary-bg);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
-            position: sticky;
-            top: 0;
-            z-index: 90;
-        }
-        
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .header-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        
-        .header-logo-icon {
-            font-size: 24px;
-            color: var(--accent-yellow);
-        }
-        
-        .header-logo-text {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-        
-        .page-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-left: 2rem;
-        }
-        
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        
-        .search-icon {
-            font-size: 20px;
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
-        
-        .user-profile {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--accent-yellow);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            position: relative;
-        }
-        
-        .notification-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            width: 18px;
-            height: 18px;
-            background: #ff4444;
-            border-radius: 50%;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid var(--secondary-bg);
-        }
-        
-        /* Main Content */
-        .main-content {
-            margin-left: 80px;
-            min-height: calc(100vh - 80px);
-            padding: 2rem;
-        }
-        
-        .content-section {
-            display: none;
-        }
-        
-        .content-section.active {
-            display: block;
-        }
-        
-        /* Dashboard Styles */
-        .continue-learning {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        .section-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-        }
-        
-        .learning-card {
-            background: var(--secondary-bg);
-            border-radius: 16px;
-            padding: 1.5rem;
-        }
-        
-        .learning-level {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-        
-        .learning-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: var(--primary-bg);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 0.5rem;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: var(--accent-yellow);
-            border-radius: 4px;
-            transition: width 0.5s;
-        }
-        
-        .progress-percent {
-            font-size: 14px;
-            color: var(--text-secondary);
-            text-align: right;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 1.5rem;
-        }
-        
-        .stat-value {
-            font-size: 36px;
-            font-weight: 800;
-            color: var(--accent-yellow);
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-        
-        /* Course Cards */
-        .courses-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .course-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .course-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-        }
-        
-        .course-image {
-            width: 100%;
-            height: 160px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            color: white;
-        }
-        
-        .course-content {
-            padding: 1.5rem;
-        }
-        
-        .course-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-        
-        .course-progress {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .course-progress-text {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-        
-        .course-progress-percent {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--accent-yellow);
-        }
-        
-        /* Utility Classes */
-        .hidden {
-            display: none !important;
-        }
-        
-        .text-yellow {
-            color: var(--accent-yellow);
-        }
-        
-        .bg-yellow {
-            background: var(--accent-yellow);
-        }
-    </style>
+    <link href="/static/styles.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Welcome Screen -->
-    <div id="welcomeScreen" class="welcome-screen">
-        <div class="welcome-container">
-            <div class="logo-section">
-                <div class="logo-icon">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="logo-text">
-                    <h1>PassionBots</h1>
-                    <p>Digital Learning Platform</p>
-                </div>
-            </div>
-            
-            <h1 class="welcome-title">Welcome Back Student!</h1>
-            <p class="welcome-subtitle">Continue Your Robotics Journey</p>
-            
-            <div class="welcome-actions">
-                <button class="btn-primary" onclick="showApp()">
-                    Start Learning <i class="fas fa-arrow-right"></i>
-                </button>
-                <button class="btn-secondary" onclick="showMyCourses()">
-                    My Courses
-                </button>
-            </div>
-            
-            <div class="progress-circle">
-                <svg width="200" height="200">
-                    <circle class="progress-circle-bg" cx="100" cy="100" r="90"></circle>
-                    <circle class="progress-circle-fill" cx="100" cy="100" r="90" 
-                            stroke-dasharray="565.48" stroke-dashoffset="200"></circle>
-                </svg>
-                <div class="progress-text">
-                    <div class="progress-value">65%</div>
-                    <div class="progress-label">Learning Completion</div>
-                </div>
-            </div>
-            
-            <div class="quick-links">
-                <div class="quick-link-card" onclick="showApp('courses')">
-                    <div class="quick-link-icon">
-                        <i class="fas fa-book"></i>
-                    </div>
-                    <div class="quick-link-title">My Courses</div>
-                </div>
-                <div class="quick-link-card" onclick="showApp('progress')">
-                    <div class="quick-link-icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <div class="quick-link-title">Progress</div>
-                </div>
-                <div class="quick-link-card" onclick="showApp('achievements')">
-                    <div class="quick-link-icon">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <div class="quick-link-title">Achievements</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main App -->
-    <div id="appContainer" class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-logo">
-                <i class="fas fa-robot"></i>
-            </div>
-            
-            <nav class="sidebar-menu">
-                <div class="sidebar-item active" data-section="dashboard">
-                    <i class="fas fa-home"></i>
-                </div>
-                <div class="sidebar-item" data-section="courses">
-                    <i class="fas fa-book"></i>
-                </div>
-                <div class="sidebar-item" data-section="schedule">
-                    <i class="fas fa-calendar"></i>
-                </div>
-                <div class="sidebar-item" data-section="progress">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="sidebar-item" data-section="settings">
-                    <i class="fas fa-cog"></i>
-                </div>
-            </nav>
-            
-            <div class="sidebar-item" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i>
-            </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <div style="flex: 1;">
-            <!-- Header -->
-            <header class="header">
-                <div class="header-left">
-                    <div class="header-logo">
-                        <span class="header-logo-icon">
-                            <i class="fas fa-heart"></i>
-                        </span>
-                        <span class="header-logo-text">PassionBots</span>
-                    </div>
-                    <h1 class="page-title" id="pageTitle">My Learning Dashboard</h1>
-                </div>
-                <div class="header-right">
-                    <i class="fas fa-search search-icon"></i>
-                    <div class="user-profile">
-                        <i class="fas fa-user"></i>
-                        <span class="notification-badge">3</span>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Main Content -->
-            <main class="main-content">
-                <!-- Dashboard Section -->
-                <div id="dashboardSection" class="content-section active">
-                    <div class="continue-learning">
-                        <h2 class="section-title">Continue Learning</h2>
-                        <div class="learning-card">
-                            <div class="learning-level">Foundation Level</div>
-                            <h3 class="learning-title">Module 2. Visual Programming</h3>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 65%"></div>
-                            </div>
-                            <div class="progress-percent">65%</div>
-                        </div>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div>
-                                    <div class="stat-value">12</div>
-                                    <div class="stat-label">Hours<br>completed</div>
-                                </div>
-                                <div style="font-size: 36px; color: var(--accent-yellow);">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div>
-                                    <div class="stat-value">3</div>
-                                    <div class="stat-label">Modules<br>Finished</div>
-                                </div>
-                                <div style="font-size: 36px; color: var(--accent-yellow);">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h2 class="section-title">Your Courses</h2>
-                    <div class="courses-grid" id="coursesGrid"></div>
-                </div>
-
-                <!-- Other Sections (placeholder) -->
-                <div id="coursesSection" class="content-section">
-                    <h2 class="section-title">All Courses</h2>
-                    <div class="courses-grid" id="allCoursesGrid"></div>
-                </div>
-
-                <div id="progressSection" class="content-section">
-                    <h2 class="section-title">My Progress & Achievements</h2>
-                    <div id="progressContent"></div>
-                </div>
-            </main>
-        </div>
-    </div>
-
+    <div id="app"></div>
+    
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app.js"></script>
 </body>
