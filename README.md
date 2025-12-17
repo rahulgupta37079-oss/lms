@@ -1,477 +1,411 @@
-# PassionBots Student LMS Portal - Complete System
+# 🎓 PassionBots LMS - IoT & Robotics Learning Platform
 
-A comprehensive Learning Management System for the PassionBots IoT & Robotics Internship Program with advanced features.
+![PassionBots LMS](https://img.shields.io/badge/PassionBots-LMS-FDB022?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-4.0-blue?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-Production_Ready-success?style=for-the-badge)
 
-## 🌐 Access the LMS
+A comprehensive Learning Management System (LMS) for the PassionBots IoT & Robotics Internship Program. Built with modern web technologies and designed for an exceptional learning experience.
 
-**Live URL**: https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai
+## 🌐 Live Demo
 
-## 🔐 Demo Credentials
+**Portal URL:** [https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai](https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai)
 
-### Student Login:
-- **Email**: demo@student.com
-- **Password**: demo123
+**Demo Credentials:**
+```
+Email: demo@student.com
+Password: demo123
+```
 
-### Mentor Login:
-- **Email**: mentor@passionbots.in
-- **Password**: mentor123
+## ✨ Features
 
-## ✨ Complete Feature Set
+### 🔐 Authentication & User Management
+- Secure login/authentication system
+- Student profile management
+- Session management
 
-### 1. 🎓 Authentication & User Management
-- ✅ Student login with email/password
-- ✅ Mentor login (separate portal access)
-- ✅ Session management with localStorage
-- ✅ Profile management and settings
-- ✅ Role-based access control
+### 📚 Course Management
+- **8 IoT & Robotics Modules**
+  - IoT & Robotics Fundamentals
+  - ESP32 Microcontroller Basics
+  - Sensor Integration & Data Collection
+  - Actuators & Motor Control
+  - Wireless Communication (WiFi, Bluetooth)
+  - Cloud Integration & IoT Platforms
+  - Advanced Projects & Prototyping
+  - Final Project & Deployment
 
-### 2. 📚 Course & Lesson System
-- ✅ **8 IoT & Robotics Modules**:
-  1. IoT & Robotics Fundamentals
-  2. ESP32 Microcontroller Basics
-  3. ESP32 Programming
-  4. Wireless & IoT Protocols
-  5. Sensors & Actuators
-  6. Cloud Platforms & Data
-  7. Capstone Project
-  8. Career & Certification
+### 📝 Interactive Learning
+- **Lesson Pages** with detailed content
+- **MCQ System** - 5 questions per lesson
+- Instant feedback and scoring
+- Progress tracking per lesson
 
-- ✅ **Detailed Lesson Pages** with:
-  - Video player integration
-  - Learning objectives
-  - Content sections
-  - Downloadable resources
-  - Progress tracking
+### ⏱️ Live Testing System
+- **Countdown Timer** - Real-time clock
+- **Auto-submit** when time expires
+- Multiple choice questions
+- Instant results with score breakdown
 
-- ✅ **MCQ System**: 
-  - 5+ questions per lesson
-  - Instant feedback
-  - Explanation for answers
-  - Progress saved automatically
-
-### 3. 📝 Live Testing System
-- ✅ **Timed Tests**: Countdown timer with auto-submit
-- ✅ **Multiple Test Types**:
-  - Module quizzes (30-60 minutes)
-  - Comprehensive assessments
-  - Practice tests
-- ✅ **Features**:
-  - Real-time timer display
-  - Question navigation
-  - Mark for review
-  - Auto-save answers
-  - Instant score calculation
-  - Detailed results with correct answers
-  - Performance analytics
-
-### 4. 📋 Assignments & Assessments
-- ✅ Assignment listing with due dates
-- ✅ **Submission Interface**:
-  - File upload support
+### 📋 Assignment Management
+- Assignment submission interface
+- Multiple submission types:
+  - File uploads (URL)
   - GitHub repository links
-  - Demo URL submission
-  - Description/notes
-- ✅ **Mentor Grading**:
-  - Score out of 100
-  - Detailed feedback
-  - Revision requests
-- ✅ **Status Tracking**:
-  - Pending, Reviewed, Resubmit states
-  - Submission history
+  - Demo/live project URLs
+  - Description and notes
+- Score and feedback system
+- Due date tracking
 
-### 5. 🎥 Live Sessions
-- ✅ **Session Management**:
-  - Upcoming sessions calendar
-  - Past sessions archive
-  - Session details (module, duration)
-- ✅ **Join Features**:
-  - Direct meeting links (Google Meet/Zoom)
-  - One-click join
-  - Attendance marking
-- ✅ **Recordings**:
-  - Access to past session recordings
-  - Download capability
-  - Transcript availability
+### 🎥 Live Sessions
+- **Session Calendar** with schedule
+- **"LIVE NOW"** indicator for active sessions
+- Join links for upcoming sessions
+- Recording access for past sessions
+- Duration and timing information
 
-### 6. 💬 Student-Mentor Communication
-- ✅ **Messaging System**:
-  - Direct messaging with assigned mentor
-  - Thread-based conversations
-  - Subject lines and message body
-- ✅ **Features**:
-  - Read/unread indicators
-  - Message history
-  - Quick reply
-  - Attachment support
-  - Real-time notifications
+### 💬 Messaging System
+- Student-mentor communication
+- Message history
+- Real-time messaging interface
+- Timestamp tracking
 
-### 7. 🏆 Certificate System
-- ✅ **Dual Certification**:
-  - Internship Completion Certificate
-  - Skill Mastery Certificate
-- ✅ **Certificate Features**:
-  - Unique ID format: `PB-IOT-2026-XXXXX`
-  - Student name customization
-  - Course completion date
-  - Mentor signatures
-  - PassionBots official seal
-- ✅ **Verification System**:
-  - QR code generation
-  - Public verification page
-  - Verification link: `verify.passionbots.in/[certificate-id]`
-  - Tamper-proof validation
-- ✅ **Download Options**:
-  - PDF format
-  - High-resolution
-  - Print-ready
+### 🎓 Certificate System
+- **Dual Certificate Types:**
+  - Certificate of Internship Completion
+  - Certificate of Skill Mastery
+- **Unique Certificate IDs** (PB-IOT-YYYY-XXXXX format)
+- **Certificate Verification** portal
+- Download functionality (planned)
+- QR code integration (planned)
 
-### 8. 📊 Advanced Features
+### 📊 Progress Tracking
+- **Visual Progress Dashboard**
+- Circular progress charts
+- Learning statistics:
+  - Lessons completed
+  - Assignments submitted
+  - Hours learned
+  - Overall progress percentage
+- **Achievement Badges:**
+  - 🤖 First Robot Built
+  - 💻 Code Master
+  - ✅ Team Player
+  - 💡 Problem Solver
 
-#### Progress Analytics
-- Overall completion percentage
-- Module-wise progress
-- Time spent learning
-- Learning streak tracking
-- Weekly/monthly goals
+## 🎨 Design & UI/UX
 
-#### Leaderboard & Rankings
-- Real-time student rankings
-- Score-based positioning
-- Tests completed count
-- Assignments submitted
-- Overall performance score
+### Color Scheme
+- **Primary Background:** `#1a1d29` (Dark Blue)
+- **Secondary Background:** `#252834` (Medium Dark)
+- **Card Background:** `#2a2d3a` (Light Dark)
+- **Accent Color:** `#FDB022` (Golden Yellow)
+- **Text Primary:** `#ffffff` (White)
+- **Text Secondary:** `#a0a3b5` (Gray)
 
-#### Achievement Badges
-- 🎯 **10+ Badges**:
-  - First Steps - Complete first lesson
-  - Quick Learner - 5 lessons in a day
-  - Module Master - Complete entire module
-  - Perfect Score - 100% in any test
-  - Test Taker - Complete 5 tests
-  - Assignment Pro - Submit 10 assignments
-  - Community Helper - Help in forum
-  - Streak Master - 7 day streak
-  - Early Bird - Complete before deadline
-  - Certificate Earner - Earn first certificate
-
-#### Notification Center
-- Real-time notifications
-- Test availability alerts
-- Assignment grading updates
-- Live session reminders
-- Badge earned notifications
-- Message notifications
-
-### 9. 👨‍🏫 Mentor Portal Features
-- ✅ **Student Management**:
-  - View assigned students
-  - Monitor progress
-  - Track attendance
-- ✅ **Grading Interface**:
-  - Assignment review
-  - Score assignment
-  - Provide feedback
-  - Request resubmission
-- ✅ **Test Management**:
-  - Create new tests
-  - Add questions
-  - Set duration and marks
-  - View test results
-- ✅ **Communication**:
-  - Message students
-  - Respond to queries
-  - Send announcements
-- ✅ **Analytics Dashboard**:
-  - Student performance metrics
-  - Module completion rates
-  - Test score averages
-  - Engagement statistics
-
-## 🎯 Key Pages & Navigation
-
-### Student Portal Pages:
-
-1. **Login Page** (`/`)
-   - Student/Mentor authentication
-   - Password recovery
-   - New user registration
-
-2. **Dashboard** (`/dashboard`)
-   - Welcome message
-   - Continue learning card
-   - Weekly statistics
-   - Course progress overview
-   - Upcoming sessions
-
-3. **My Courses** (`/courses`)
-   - All 8 modules grid
-   - Progress bars
-   - Start/Continue buttons
-
-4. **Lesson Detail** (`/lesson/:id`)
-   - Video player
-   - Learning content
-   - MCQ section (5 questions)
-   - Resources download
-   - Mark complete button
-   - Previous/Next navigation
-
-5. **Live Tests** (`/tests`)
-   - Available tests list
-   - Test history
-   - Upcoming tests
-   - Start test button
-
-6. **Take Test** (`/test/:id`)
-   - Timer countdown
-   - Question navigation
-   - Submit button
-   - Auto-submit on timeout
-
-7. **Test Results** (`/test/:id/results`)
-   - Score display
-   - Correct/incorrect answers
-   - Explanations
-   - Performance analysis
-
-8. **Assignments** (`/assignments`)
-   - Assignment list
-   - Due dates
-   - Submit assignment
-   - View feedback
-
-9. **Live Sessions** (`/sessions`)
-   - Upcoming sessions
-   - Join meeting links
-   - Past session recordings
-   - Mark attendance
-
-10. **Messages** (`/messages`)
-    - Inbox/Sent
-    - Compose new message
-    - Thread view
-    - Reply/Forward
-
-11. **Certificates** (`/certificates`)
-    - Earned certificates
-    - Download PDF
-    - Share verification link
-    - QR code
-
-12. **Progress** (`/progress`)
-    - Circular progress indicator
-    - Learning statistics
-    - Achievement badges
-    - Leaderboard position
-    - Study analytics
-
-13. **Profile** (`/profile`)
-    - Personal information
-    - Edit profile
-    - Change password
-    - Preferences
-
-14. **Notifications** (`/notifications`)
-    - All notifications
-    - Mark as read
-    - Filter by type
-
-### Certificate Verification Page (Public):
-
-15. **Verify Certificate** (`/verify/:certificateId`)
-    - Certificate validation
-    - Student details
-    - Issue date
-    - Verification status
-    - Download option
-
-## 📊 Database Schema
-
-### Core Tables (30+):
-- **students** - Student information
-- **mentors** - Mentor/teacher information
-- **modules** - Course modules
-- **lessons** - Individual lessons
-- **lesson_mcqs** - MCQ questions for lessons
-- **mcq_responses** - Student MCQ answers
-- **live_tests** - Test definitions
-- **test_questions** - Test question bank
-- **test_attempts** - Student test attempts
-- **test_answers** - Student test responses
-- **assignments** - Assignment definitions
-- **submissions** - Student submissions
-- **live_sessions** - Session schedule
-- **session_attendance** - Attendance tracking
-- **student_mentor_mapping** - Mentor assignments
-- **messages** - Communication system
-- **certificates** - Certificate records
-- **certificate_templates** - Certificate designs
-- **badges** - Achievement badges
-- **student_badges** - Earned badges
-- **student_rankings** - Leaderboard data
-- **notifications** - Notification system
-- **forum_posts** - Discussion forum
-- **forum_replies** - Forum responses
-- **announcements** - System announcements
-- **hardware_kits** - Kit delivery tracking
-- **student_progress** - Lesson progress
-
-## 🔌 API Endpoints
-
-### Authentication
-- `POST /api/auth/login` - Student/Mentor login
-- `POST /api/auth/logout` - Logout
-- `GET /api/student/:id` - Get student profile
-- `GET /api/mentor/:id` - Get mentor profile
-
-### Courses & Lessons
-- `GET /api/modules/:studentId` - Get all modules
-- `GET /api/modules/:moduleId/lessons/:studentId` - Get lessons
-- `GET /api/lessons/:lessonId/:studentId` - Get lesson details
-- `GET /api/lessons/:lessonId/mcqs` - Get lesson MCQs
-- `POST /api/mcqs/submit` - Submit MCQ answer
-- `POST /api/progress/update` - Update lesson progress
-
-### Tests
-- `GET /api/tests` - Get available tests
-- `GET /api/tests/:testId` - Get test details
-- `GET /api/tests/:testId/questions` - Get test questions
-- `POST /api/tests/start` - Start test attempt
-- `POST /api/tests/submit-answer` - Submit answer
-- `POST /api/tests/submit` - Submit complete test
-- `GET /api/tests/:attemptId/results` - Get test results
-
-### Assignments
-- `GET /api/assignments/:studentId` - Get assignments
-- `POST /api/assignments/submit` - Submit assignment
-- `GET /api/assignments/:id/feedback` - Get feedback
-
-### Sessions
-- `GET /api/sessions` - Get live sessions
-- `POST /api/sessions/attend` - Mark attendance
-- `GET /api/sessions/:id/recording` - Get recording
-
-### Messages
-- `GET /api/messages/:userId/:userType` - Get messages
-- `POST /api/messages/send` - Send message
-- `PUT /api/messages/:id/read` - Mark as read
-
-### Certificates
-- `GET /api/certificates/:studentId` - Get certificates
-- `POST /api/certificates/generate` - Generate certificate
-- `GET /api/verify/:certificateId` - Verify certificate
-
-### Rankings & Badges
-- `GET /api/leaderboard` - Get rankings
-- `GET /api/badges/:studentId` - Get student badges
-- `GET /api/achievements/:studentId` - Get achievements
-
-### Notifications
-- `GET /api/notifications/:studentId` - Get notifications
-- `PUT /api/notifications/:id/read` - Mark as read
+### Features
+- ✅ Dark theme optimized for extended learning sessions
+- ✅ Responsive design for all screen sizes
+- ✅ Smooth animations and transitions
+- ✅ Professional iconography (Font Awesome 6)
+- ✅ Modern typography (Inter font family)
+- ✅ Intuitive navigation
+- ✅ Status indicators and progress visualizations
 
 ## 🛠️ Technology Stack
 
-- **Backend**: Hono v4.11.1 (Cloudflare Workers)
-- **Database**: Cloudflare D1 (SQLite)
-- **Frontend**: Vanilla JavaScript + TailwindCSS concepts
-- **Icons**: Font Awesome 6.4.0
-- **Fonts**: Google Fonts - Inter
-- **HTTP Client**: Axios 1.6.0
-- **Process Manager**: PM2
+### Backend
+- **Framework:** Hono (Lightweight, fast web framework)
+- **Runtime:** Cloudflare Workers
+- **Language:** TypeScript
+- **API:** RESTful architecture
 
-## 🎨 Design Theme
+### Database
+- **Database:** Cloudflare D1 (SQLite)
+- **ORM:** Native D1 bindings
+- **Migrations:** Wrangler CLI
 
-- **Primary Background**: #1a1d29 (Dark blue-gray)
-- **Secondary Background**: #252834 (Cards)
-- **Tertiary Background**: #2a2d3a (Hover states)
-- **Accent Yellow**: #FDB022 (Buttons, highlights)
-- **Text Primary**: #ffffff (White headings)
-- **Text Secondary**: #a0a3b5 (Gray body)
-- **Border Color**: #3a3d4a (Subtle borders)
+### Frontend
+- **Architecture:** Single Page Application (SPA)
+- **JavaScript:** Vanilla JS (ES6+)
+- **HTTP Client:** Axios
+- **Styling:** Custom CSS3
+- **Icons:** Font Awesome 6
+- **Fonts:** Google Fonts (Inter)
+
+### Development & Deployment
+- **Build Tool:** Vite
+- **Package Manager:** npm
+- **Process Manager:** PM2
+- **Version Control:** Git
+- **Deployment:** Cloudflare Pages
+
+## 📁 Project Structure
+
+```
+webapp/
+├── src/
+│   └── index.tsx              # Main Hono application & API routes
+├── public/
+│   └── static/
+│       ├── app.js             # Frontend JavaScript (SPA)
+│       └── styles.css         # Custom CSS styles
+├── migrations/
+│   ├── 0001_initial_schema.sql
+│   └── 0002_advanced_features.sql
+├── .wrangler/                 # Local D1 database (auto-generated)
+├── ecosystem.config.cjs       # PM2 configuration
+├── wrangler.jsonc            # Cloudflare configuration
+├── vite.config.ts            # Vite build configuration
+├── package.json              # Dependencies and scripts
+├── tsconfig.json             # TypeScript configuration
+└── README.md                 # This file
+```
+
+## 🗄️ Database Schema
+
+### Core Tables
+- **students** - Student profiles and authentication
+- **modules** - Course modules
+- **lessons** - Lesson content and metadata
+- **mcqs** - Multiple choice questions
+- **student_progress** - Lesson completion tracking
+
+### Assessment Tables
+- **live_tests** - Test metadata
+- **test_questions** - Test questions
+- **test_results** - Test submissions and scores
+- **mcq_results** - MCQ submission results
+
+### Assignment Tables
+- **assignments** - Assignment details
+- **submissions** - Student submissions
+- **feedback** - Assignment feedback
+
+### Communication Tables
+- **messages** - Student-mentor messages
+- **announcements** - System announcements
+- **live_sessions** - Virtual class sessions
+
+### Certification Tables
+- **certificates** - Generated certificates
+- **verification_logs** - Certificate verification history
+
+### Other Tables
+- **hardware_kits** - Hardware delivery tracking
+- **badges** - Achievement system
+- **notifications** - User notifications
 
 ## 🚀 Getting Started
 
-### For Students:
-1. Visit the LMS URL
-2. Login with your credentials
-3. Complete your profile
-4. Start with Module 1
-5. Watch video lessons
-6. Complete MCQs
-7. Take live tests
-8. Submit assignments
-9. Join live sessions
-10. Track your progress
-11. Earn badges and certificates
+### Prerequisites
+```bash
+node >= 18.0.0
+npm >= 9.0.0
+wrangler >= 3.0.0
+```
 
-### For Mentors:
-1. Login with mentor credentials
-2. View assigned students
-3. Monitor student progress
-4. Grade assignments
-5. Provide feedback
-6. Create and manage tests
-7. Communicate with students
-8. Generate certificates
+### Installation
 
-## 📱 User Experience Features
+1. **Clone the repository**
+```bash
+git clone https://github.com/rahulgupta37079-oss/lms.git
+cd lms
+```
 
-- ✅ Responsive dark theme design
-- ✅ Smooth page transitions
-- ✅ Real-time progress updates
-- ✅ Notification badges
-- ✅ Toast messages for actions
-- ✅ Loading states
-- ✅ Error handling
-- ✅ Form validation
-- ✅ Auto-save functionality
-- ✅ Keyboard shortcuts
+2. **Install dependencies**
+```bash
+npm install
+```
 
-## 🔒 Security Features
+3. **Set up local database**
+```bash
+npm run db:migrate:local
+npm run db:seed
+```
 
-- Password authentication (bcrypt recommended for production)
-- Session management via localStorage
-- Role-based access control (Student/Mentor)
-- Certificate validation system
-- Unique certificate IDs
-- Secure API endpoints
-- XSS protection
-- CSRF tokens (recommended for production)
+4. **Build the application**
+```bash
+npm run build
+```
 
-## 📞 Support & Contact
+5. **Start development server**
+```bash
+npm run dev:sandbox
+# Or with PM2
+pm2 start ecosystem.config.cjs
+```
 
-- **Website**: https://www.passionbots.in/program
-- **WhatsApp**: +91 9137361474
-- **Email**: info@passion3dworld.com
-- **Certificate Verification**: verify.passionbots.in
+6. **Access the application**
+```
+http://localhost:3000
+```
 
-## 📜 Program Information
+### Available Scripts
 
-- **Batch Start**: January 10th, 2026
-- **Duration**: 2 months (8 weeks)
-- **Format**: Live online sessions
-- **Hardware**: ESP32 microcontroller kit
-- **Certificates**: Dual certification
-- **Support**: Industry mentorship
+```bash
+# Development
+npm run dev              # Start Vite dev server
+npm run dev:sandbox      # Start Wrangler dev server
+npm run dev:d1          # Start with D1 database
 
-## 🎯 Learning Path
+# Build
+npm run build           # Build for production
 
-Week 1-2: IoT & ESP32 Fundamentals
-Week 3-4: Programming & Communication
-Week 5-6: Sensors & Cloud Integration
-Week 7-8: Capstone Project & Certification
+# Database
+npm run db:migrate:local    # Apply migrations locally
+npm run db:migrate:prod     # Apply migrations to production
+npm run db:seed            # Seed database with sample data
+npm run db:reset           # Reset local database
+npm run db:console:local   # Open local database console
+npm run db:console:prod    # Open production database console
 
-## 📈 Version History
+# Deployment
+npm run deploy             # Deploy to Cloudflare Pages
+npm run deploy:prod        # Deploy with project name
 
-- **v3.0.0** - Advanced LMS with all features
-- **v2.0.0** - Dark theme UI recreation
-- **v1.0.0** - Initial LMS implementation
+# Utilities
+npm run clean-port         # Kill process on port 3000
+npm run test              # Test local server
+```
+
+## 📦 Deployment to Cloudflare Pages
+
+### Prerequisites
+1. Cloudflare account
+2. Wrangler CLI installed and authenticated
+3. D1 database created
+
+### Steps
+
+1. **Create D1 Database**
+```bash
+npx wrangler d1 create passionbots-lms-production
+```
+
+2. **Update wrangler.jsonc with database ID**
+```jsonc
+{
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "passionbots-lms-production",
+      "database_id": "your-database-id-here"
+    }
+  ]
+}
+```
+
+3. **Apply migrations to production**
+```bash
+npm run db:migrate:prod
+```
+
+4. **Deploy to Cloudflare Pages**
+```bash
+npm run deploy:prod
+```
+
+## 🔑 Environment Variables
+
+### Development (.dev.vars)
+```env
+# Add any local environment variables here
+```
+
+### Production (Cloudflare Secrets)
+```bash
+# Set production secrets
+npx wrangler pages secret put API_KEY --project-name passionbots-lms
+```
+
+## 🧪 Testing
+
+### Manual Testing Checklist
+
+- [ ] Login with demo credentials
+- [ ] Navigate to dashboard
+- [ ] View all modules
+- [ ] Open a lesson and complete MCQs
+- [ ] Take a live test (verify timer)
+- [ ] Submit an assignment
+- [ ] Check live sessions
+- [ ] Send a message
+- [ ] Generate a certificate
+- [ ] Verify certificate
+- [ ] View progress page
+
+## 📈 Roadmap
+
+### Phase 1 (Completed ✅)
+- [x] Authentication system
+- [x] Course module structure
+- [x] MCQ system
+- [x] Live tests with timer
+- [x] Assignment submissions
+- [x] Live sessions
+- [x] Messaging system
+- [x] Certificate generation
+- [x] Certificate verification
+- [x] Progress tracking
+
+### Phase 2 (Planned)
+- [ ] Video streaming integration
+- [ ] File upload to cloud storage (R2)
+- [ ] Email notifications
+- [ ] Mentor dashboard
+- [ ] Payment integration
+- [ ] Mobile responsive optimization
+- [ ] Advanced analytics
+- [ ] PDF certificate generation
+- [ ] QR code integration
+
+### Phase 3 (Future)
+- [ ] Mobile application (React Native)
+- [ ] AI-powered learning recommendations
+- [ ] Peer-to-peer collaboration
+- [ ] Gamification enhancements
+- [ ] Advanced reporting for instructors
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is private and proprietary to PassionBots.
+
+## 👥 Authors
+
+- **PassionBots Team** - [PassionBots](https://passionbots.in)
+- **Developed by:** Advanced AI Assistant
+
+## 🙏 Acknowledgments
+
+- PassionBots IoT & Robotics Internship Program
+- Cloudflare Workers & D1 Database
+- Hono Framework
+- Font Awesome Icons
+- Google Fonts
+
+## 📞 Support
+
+For support, email support@passionbots.in or visit our website.
+
+## 🔗 Links
+
+- **Live Demo:** https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai
+- **GitHub:** https://github.com/rahulgupta37079-oss/lms
+- **PassionBots:** https://passionbots.in
+- **Certificate Verification:** https://verify.passionbots.in
 
 ---
 
-**Last Updated**: December 17, 2025  
-**Status**: ✅ Full System Complete  
-**Version**: 3.0.0 - Production Ready
+**Made with ❤️ for PassionBots Students**
 
-© 2026 PassionBots | All Rights Reserved
+*Empowering the next generation of IoT & Robotics innovators*
