@@ -8,7 +8,9 @@ A comprehensive Learning Management System (LMS) for the PassionBots IoT & Robot
 
 ## 🌐 Live Demo
 
-**Portal URL:** [https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai](https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai)
+**Production URL (Permanent):** [https://passionbots-lms.pages.dev](https://passionbots-lms.pages.dev)
+
+**Sandbox URL (Temporary):** [https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai](https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai)
 
 **Demo Credentials:**
 ```
@@ -399,7 +401,8 @@ For support, email support@passionbots.in or visit our website.
 
 ## 🔗 Links
 
-- **Live Demo:** https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai
+- **Production URL:** https://passionbots-lms.pages.dev
+- **Sandbox URL:** https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai
 - **GitHub:** https://github.com/rahulgupta37079-oss/lms
 - **PassionBots:** https://passionbots.in
 - **Certificate Verification:** https://verify.passionbots.in
