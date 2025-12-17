@@ -13,9 +13,19 @@ A comprehensive Learning Management System (LMS) for the PassionBots IoT & Robot
 **Sandbox URL (Temporary):** [https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai](https://3000-i7mh5nrk9jhmc1jr42bzs-cbeee0f9.sandbox.novita.ai)
 
 **Demo Credentials:**
+
+**Student Login:**
 ```
 Email: demo@student.com
 Password: demo123
+Role: Student
+```
+
+**Mentor Login:**
+```
+Email: mentor@passionbots.in
+Password: mentor123
+Role: Mentor
 ```
 
 ## ✨ Features
@@ -94,6 +104,32 @@ Password: demo123
   - ✅ Team Player
   - 💡 Problem Solver
 
+### 👨‍🏫 Mentor Portal (NEW!)
+- **Mentor Dashboard**
+  - View assigned students count
+  - Track pending submissions
+  - Monitor unread messages
+  - View upcoming live sessions
+- **Student Management**
+  - View all assigned students
+  - Access detailed student profiles
+  - Track individual student progress
+  - View test results and submissions
+- **Grading System**
+  - Review pending submissions
+  - Grade assignments with scores and feedback
+  - View all submissions (pending/graded)
+  - Track assignment history
+- **Messaging Interface**
+  - Communicate with students
+  - View message history
+  - Real-time messaging
+- **Analytics Dashboard**
+  - Student performance overview
+  - Progress trends
+  - Assignment completion rates
+  - Test score analytics
+
 ## 🎨 Design & UI/UX
 
 ### Color Scheme
@@ -149,8 +185,9 @@ webapp/
 │   └── index.tsx              # Main Hono application & API routes
 ├── public/
 │   └── static/
-│       ├── app.js             # Frontend JavaScript (SPA)
-│       └── styles.css         # Custom CSS styles
+│       ├── app.js             # Student Portal Frontend (SPA)
+│       ├── mentor.js          # Mentor Portal Frontend (NEW!)
+│       └── styles.css         # Shared CSS styles
 ├── migrations/
 │   ├── 0001_initial_schema.sql
 │   └── 0002_advanced_features.sql
@@ -350,14 +387,20 @@ npx wrangler pages secret put API_KEY --project-name passionbots-lms
 - [x] Certificate verification
 - [x] Progress tracking
 
-### Phase 2 (Planned)
+### Phase 2 (Completed ✅)
+- [x] Mentor portal and dashboard
+- [x] Student-mentor mapping
+- [x] Assignment grading system
+- [x] Mentor messaging interface
+- [x] Student management for mentors
+
+### Phase 3 (Planned)
 - [ ] Video streaming integration
 - [ ] File upload to cloud storage (R2)
 - [ ] Email notifications
-- [ ] Mentor dashboard
 - [ ] Payment integration
 - [ ] Mobile responsive optimization
-- [ ] Advanced analytics
+- [ ] Advanced analytics dashboard
 - [ ] PDF certificate generation
 - [ ] QR code integration
 
