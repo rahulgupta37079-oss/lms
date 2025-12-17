@@ -18,7 +18,6 @@ app.use('/static/*', serveStatic({ root: './public' }))
 // AUTHENTICATION ROUTES
 // ============================================
 
-// Login
 app.post('/api/auth/login', async (c) => {
   try {
     const { email, password } = await c.req.json()
@@ -31,7 +30,6 @@ app.post('/api/auth/login', async (c) => {
       return c.json({ error: 'Invalid credentials' }, 401)
     }
     
-    // Remove password from response
     const { password: _, ...studentData } = student
     
     return c.json({ 
@@ -44,7 +42,6 @@ app.post('/api/auth/login', async (c) => {
   }
 })
 
-// Get student profile
 app.get('/api/student/:id', async (c) => {
   try {
     const studentId = c.req.param('id')
@@ -67,27 +64,22 @@ app.get('/api/student/:id', async (c) => {
 // DASHBOARD ROUTES
 // ============================================
 
-// Get dashboard statistics
 app.get('/api/dashboard/:studentId', async (c) => {
   try {
     const studentId = c.req.param('studentId')
     
-    // Get total lessons
     const totalLessons = await c.env.DB.prepare(
       'SELECT COUNT(*) as count FROM lessons WHERE is_published = 1'
     ).first()
     
-    // Get completed lessons
     const completedLessons = await c.env.DB.prepare(
       'SELECT COUNT(*) as count FROM student_progress WHERE student_id = ? AND status = "completed"'
     ).bind(studentId).first()
     
-    // Get in-progress lessons
     const inProgressLessons = await c.env.DB.prepare(
       'SELECT COUNT(*) as count FROM student_progress WHERE student_id = ? AND status = "in_progress"'
     ).bind(studentId).first()
     
-    // Get assignments
     const totalAssignments = await c.env.DB.prepare(
       'SELECT COUNT(*) as count FROM assignments'
     ).first()
@@ -96,12 +88,10 @@ app.get('/api/dashboard/:studentId', async (c) => {
       'SELECT COUNT(*) as count FROM submissions WHERE student_id = ?'
     ).bind(studentId).first()
     
-    // Get upcoming sessions
     const upcomingSessions = await c.env.DB.prepare(
       'SELECT * FROM live_sessions WHERE session_date > datetime("now") ORDER BY session_date ASC LIMIT 3'
     ).all()
     
-    // Calculate overall progress
     const overallProgress = totalLessons?.count > 0 
       ? Math.round((completedLessons?.count || 0) / totalLessons.count * 100) 
       : 0
@@ -126,7 +116,6 @@ app.get('/api/dashboard/:studentId', async (c) => {
 // COURSE MODULES ROUTES
 // ============================================
 
-// Get all modules with progress
 app.get('/api/modules/:studentId', async (c) => {
   try {
     const studentId = c.req.param('studentId')
@@ -150,18 +139,15 @@ app.get('/api/modules/:studentId', async (c) => {
   }
 })
 
-// Get module details with lessons
 app.get('/api/modules/:moduleId/lessons/:studentId', async (c) => {
   try {
     const moduleId = c.req.param('moduleId')
     const studentId = c.req.param('studentId')
     
-    // Get module details
     const module = await c.env.DB.prepare(
       'SELECT * FROM modules WHERE id = ?'
     ).bind(moduleId).first()
     
-    // Get lessons with progress
     const lessons = await c.env.DB.prepare(`
       SELECT 
         l.*,
@@ -184,7 +170,6 @@ app.get('/api/modules/:moduleId/lessons/:studentId', async (c) => {
   }
 })
 
-// Get lesson details
 app.get('/api/lessons/:lessonId/:studentId', async (c) => {
   try {
     const lessonId = c.req.param('lessonId')
@@ -198,7 +183,6 @@ app.get('/api/lessons/:lessonId/:studentId', async (c) => {
       return c.json({ error: 'Lesson not found' }, 404)
     }
     
-    // Get or create progress record
     let progress = await c.env.DB.prepare(
       'SELECT * FROM student_progress WHERE student_id = ? AND lesson_id = ?'
     ).bind(studentId, lessonId).first()
@@ -225,7 +209,6 @@ app.get('/api/lessons/:lessonId/:studentId', async (c) => {
   }
 })
 
-// Update lesson progress
 app.post('/api/progress/update', async (c) => {
   try {
     const { studentId, lessonId, status, progressPercentage } = await c.req.json()
@@ -253,7 +236,6 @@ app.post('/api/progress/update', async (c) => {
 // ASSIGNMENTS ROUTES
 // ============================================
 
-// Get all assignments
 app.get('/api/assignments/:studentId', async (c) => {
   try {
     const studentId = c.req.param('studentId')
@@ -278,7 +260,6 @@ app.get('/api/assignments/:studentId', async (c) => {
   }
 })
 
-// Submit assignment
 app.post('/api/assignments/submit', async (c) => {
   try {
     const { assignmentId, studentId, submissionUrl, githubUrl, demoUrl, description } = await c.req.json()
@@ -295,16 +276,13 @@ app.post('/api/assignments/submit', async (c) => {
 })
 
 // ============================================
-// LIVE SESSIONS ROUTES
+// OTHER API ROUTES (Sessions, Certificates, etc.)
 // ============================================
 
-// Get live sessions
 app.get('/api/sessions', async (c) => {
   try {
     const sessions = await c.env.DB.prepare(`
-      SELECT 
-        ls.*,
-        m.title as module_title
+      SELECT ls.*, m.title as module_title
       FROM live_sessions ls
       JOIN modules m ON ls.module_id = m.id
       ORDER BY ls.session_date ASC
@@ -316,33 +294,9 @@ app.get('/api/sessions', async (c) => {
   }
 })
 
-// Mark session attendance
-app.post('/api/sessions/attend', async (c) => {
-  try {
-    const { sessionId, studentId } = await c.req.json()
-    
-    await c.env.DB.prepare(`
-      INSERT INTO session_attendance (session_id, student_id, attended, attendance_time)
-      VALUES (?, ?, 1, datetime("now"))
-      ON CONFLICT(session_id, student_id) 
-      DO UPDATE SET attended = 1, attendance_time = datetime("now")
-    `).bind(sessionId, studentId).run()
-    
-    return c.json({ success: true, message: 'Attendance marked' })
-  } catch (error) {
-    return c.json({ error: 'Failed to mark attendance' }, 500)
-  }
-})
-
-// ============================================
-// CERTIFICATES ROUTES
-// ============================================
-
-// Get student certificates
 app.get('/api/certificates/:studentId', async (c) => {
   try {
     const studentId = c.req.param('studentId')
-    
     const certificates = await c.env.DB.prepare(
       'SELECT * FROM certificates WHERE student_id = ? ORDER BY issued_date DESC'
     ).bind(studentId).all()
@@ -353,17 +307,11 @@ app.get('/api/certificates/:studentId', async (c) => {
   }
 })
 
-// Verify certificate
 app.get('/api/verify/:certificateId', async (c) => {
   try {
     const certificateId = c.req.param('certificateId')
-    
     const certificate = await c.env.DB.prepare(`
-      SELECT 
-        c.*,
-        s.full_name,
-        s.email,
-        s.university
+      SELECT c.*, s.full_name, s.email, s.university
       FROM certificates c
       JOIN students s ON c.student_id = s.id
       WHERE c.certificate_id = ? AND c.is_verified = 1
@@ -373,20 +321,12 @@ app.get('/api/verify/:certificateId', async (c) => {
       return c.json({ error: 'Certificate not found or invalid' }, 404)
     }
     
-    return c.json({
-      verified: true,
-      certificate
-    })
+    return c.json({ verified: true, certificate })
   } catch (error) {
     return c.json({ error: 'Verification failed' }, 500)
   }
 })
 
-// ============================================
-// ANNOUNCEMENTS ROUTES
-// ============================================
-
-// Get announcements
 app.get('/api/announcements', async (c) => {
   try {
     const announcements = await c.env.DB.prepare(
@@ -399,15 +339,9 @@ app.get('/api/announcements', async (c) => {
   }
 })
 
-// ============================================
-// HARDWARE KIT ROUTES
-// ============================================
-
-// Get hardware kit status
 app.get('/api/hardware/:studentId', async (c) => {
   try {
     const studentId = c.req.param('studentId')
-    
     const kit = await c.env.DB.prepare(
       'SELECT * FROM hardware_kits WHERE student_id = ?'
     ).bind(studentId).first()
@@ -419,111 +353,7 @@ app.get('/api/hardware/:studentId', async (c) => {
 })
 
 // ============================================
-// FORUM ROUTES
-// ============================================
-
-// Get forum posts
-app.get('/api/forum', async (c) => {
-  try {
-    const posts = await c.env.DB.prepare(`
-      SELECT 
-        fp.*,
-        s.full_name as author_name,
-        m.title as module_title,
-        COUNT(DISTINCT fr.id) as reply_count
-      FROM forum_posts fp
-      JOIN students s ON fp.student_id = s.id
-      LEFT JOIN modules m ON fp.module_id = m.id
-      LEFT JOIN forum_replies fr ON fp.id = fr.post_id
-      GROUP BY fp.id
-      ORDER BY fp.is_pinned DESC, fp.created_at DESC
-      LIMIT 20
-    `).all()
-    
-    return c.json(posts.results)
-  } catch (error) {
-    return c.json({ error: 'Failed to fetch forum posts' }, 500)
-  }
-})
-
-// Get post with replies
-app.get('/api/forum/:postId', async (c) => {
-  try {
-    const postId = c.req.param('postId')
-    
-    const post = await c.env.DB.prepare(`
-      SELECT 
-        fp.*,
-        s.full_name as author_name,
-        m.title as module_title
-      FROM forum_posts fp
-      JOIN students s ON fp.student_id = s.id
-      LEFT JOIN modules m ON fp.module_id = m.id
-      WHERE fp.id = ?
-    `).bind(postId).first()
-    
-    const replies = await c.env.DB.prepare(`
-      SELECT 
-        fr.*,
-        s.full_name as author_name
-      FROM forum_replies fr
-      JOIN students s ON fr.student_id = s.id
-      WHERE fr.post_id = ?
-      ORDER BY fr.created_at ASC
-    `).bind(postId).all()
-    
-    // Increment view count
-    await c.env.DB.prepare(
-      'UPDATE forum_posts SET views_count = views_count + 1 WHERE id = ?'
-    ).bind(postId).run()
-    
-    return c.json({
-      post,
-      replies: replies.results
-    })
-  } catch (error) {
-    return c.json({ error: 'Failed to fetch post' }, 500)
-  }
-})
-
-// Create forum post
-app.post('/api/forum/post', async (c) => {
-  try {
-    const { studentId, moduleId, lessonId, title, content } = await c.req.json()
-    
-    const result = await c.env.DB.prepare(`
-      INSERT INTO forum_posts (student_id, module_id, lesson_id, title, content)
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(studentId, moduleId, lessonId, title, content).run()
-    
-    return c.json({ 
-      success: true, 
-      postId: result.meta.last_row_id,
-      message: 'Post created successfully' 
-    })
-  } catch (error) {
-    return c.json({ error: 'Failed to create post' }, 500)
-  }
-})
-
-// Reply to post
-app.post('/api/forum/reply', async (c) => {
-  try {
-    const { postId, studentId, content } = await c.req.json()
-    
-    await c.env.DB.prepare(`
-      INSERT INTO forum_replies (post_id, student_id, content)
-      VALUES (?, ?, ?)
-    `).bind(postId, studentId, content).run()
-    
-    return c.json({ success: true, message: 'Reply posted successfully' })
-  } catch (error) {
-    return c.json({ error: 'Failed to post reply' }, 500)
-  }
-})
-
-// ============================================
-// FRONTEND ROUTES
+// FRONTEND
 // ============================================
 
 app.get('/', (c) => {
@@ -533,254 +363,721 @@ app.get('/', (c) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PassionBots Student LMS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'passionbots-primary': '#6366f1',
-                        'passionbots-secondary': '#8b5cf6',
-                        'passionbots-accent': '#ec4899',
-                    }
-                }
-            }
-        }
-    </script>
+    <title>PassionBots LMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1d29;
+            color: #ffffff;
+            overflow-x: hidden;
         }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        
+        /* Color Variables */
+        :root {
+            --primary-bg: #1a1d29;
+            --secondary-bg: #252834;
+            --card-bg: #2a2d3a;
+            --accent-yellow: #FDB022;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a3b5;
+            --border-color: #3a3d4a;
         }
-        .card-hover {
-            transition: all 0.3s ease;
+        
+        /* Welcome Screen */
+        .welcome-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1d29;
+            padding: 2rem;
         }
-        .card-hover:hover {
+        
+        .welcome-container {
+            max-width: 800px;
+            text-align: center;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+        
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--accent-yellow);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+        
+        .logo-text h1 {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent-yellow);
+            margin-bottom: 4px;
+        }
+        
+        .logo-text p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .welcome-title {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+        
+        .welcome-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+        }
+        
+        .welcome-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+        
+        .btn-primary {
+            background: var(--accent-yellow);
+            color: #1a1d29;
+            padding: 16px 40px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(253, 176, 34, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary-bg);
+            color: var(--text-primary);
+            padding: 16px 40px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--accent-yellow);
+            background: rgba(253, 176, 34, 0.1);
+        }
+        
+        .progress-circle {
+            margin: 0 auto;
+            width: 200px;
+            height: 200px;
+            position: relative;
+        }
+        
+        .progress-circle svg {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-circle-bg {
+            fill: none;
+            stroke: var(--secondary-bg);
+            stroke-width: 12;
+        }
+        
+        .progress-circle-fill {
+            fill: none;
+            stroke: var(--accent-yellow);
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s;
+        }
+        
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .progress-value {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        
+        .progress-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+        
+        .quick-link-card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .quick-link-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            background: var(--secondary-bg);
+        }
+        
+        .quick-link-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(253, 176, 34, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 28px;
+            color: var(--accent-yellow);
+        }
+        
+        .quick-link-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Main App Layout */
+        .app-container {
+            display: none;
+        }
+        
+        .app-container.active {
+            display: flex;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 80px;
+            background: var(--secondary-bg);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-right: 1px solid var(--border-color);
+            z-index: 100;
+        }
+        
+        .sidebar-logo {
+            width: 50px;
+            height: 50px;
+            background: var(--accent-yellow);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 3rem;
+            font-size: 24px;
+            color: #1a1d29;
+        }
+        
+        .sidebar-menu {
+            flex: 1;
+            width: 100%;
+        }
+        
+        .sidebar-item {
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 24px;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .sidebar-item:hover {
+            color: var(--accent-yellow);
+        }
+        
+        .sidebar-item.active {
+            background: var(--accent-yellow);
+            color: #1a1d29;
+        }
+        
+        .sidebar-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 30px;
+            background: var(--accent-yellow);
+        }
+        
+        /* Header */
+        .header {
+            margin-left: 80px;
+            height: 80px;
+            background: var(--secondary-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .header-logo-icon {
+            font-size: 24px;
+            color: var(--accent-yellow);
+        }
+        
+        .header-logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-left: 2rem;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .search-icon {
+            font-size: 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        
+        .user-profile {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: #ff4444;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--secondary-bg);
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 80px;
+            min-height: calc(100vh - 80px);
+            padding: 2rem;
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        /* Dashboard Styles */
+        .continue-learning {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        
+        .learning-card {
+            background: var(--secondary-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        
+        .learning-level {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .learning-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--primary-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-yellow);
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+        
+        .progress-percent {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--accent-yellow);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        /* Course Cards */
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .course-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .course-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+        
+        .course-image {
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+        }
+        
+        .course-content {
+            padding: 1.5rem;
+        }
+        
+        .course-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .course-progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .course-progress-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .course-progress-percent {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-yellow);
+        }
+        
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+        
+        .text-yellow {
+            color: var(--accent-yellow);
+        }
+        
+        .bg-yellow {
+            background: var(--accent-yellow);
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- Login Screen -->
-    <div id="loginScreen" class="min-h-screen flex items-center justify-center gradient-bg p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-            <div class="text-center mb-8">
-                <div class="inline-block p-3 bg-indigo-100 rounded-full mb-4">
-                    <i class="fas fa-robot text-4xl text-indigo-600"></i>
+<body>
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="welcome-screen">
+        <div class="welcome-container">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fas fa-robot"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">PassionBots LMS</h1>
-                <p class="text-gray-600">IoT & Robotics Internship Portal</p>
+                <div class="logo-text">
+                    <h1>PassionBots</h1>
+                    <p>Digital Learning Platform</p>
+                </div>
             </div>
             
-            <form id="loginForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input type="email" id="loginEmail" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="your@email.com" value="demo@student.com">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                    <input type="password" id="loginPassword" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="••••••••" value="demo123">
-                </div>
-                <button type="submit" 
-                    class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-200">
-                    <i class="fas fa-sign-in-alt mr-2"></i>Login
-                </button>
-            </form>
+            <h1 class="welcome-title">Welcome Back Student!</h1>
+            <p class="welcome-subtitle">Continue Your Robotics Journey</p>
             
-            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-sm text-blue-800">
-                    <i class="fas fa-info-circle mr-2"></i><strong>Demo Login:</strong><br>
-                    Email: demo@student.com<br>
-                    Password: demo123
-                </p>
+            <div class="welcome-actions">
+                <button class="btn-primary" onclick="showApp()">
+                    Start Learning <i class="fas fa-arrow-right"></i>
+                </button>
+                <button class="btn-secondary" onclick="showMyCourses()">
+                    My Courses
+                </button>
+            </div>
+            
+            <div class="progress-circle">
+                <svg width="200" height="200">
+                    <circle class="progress-circle-bg" cx="100" cy="100" r="90"></circle>
+                    <circle class="progress-circle-fill" cx="100" cy="100" r="90" 
+                            stroke-dasharray="565.48" stroke-dashoffset="200"></circle>
+                </svg>
+                <div class="progress-text">
+                    <div class="progress-value">65%</div>
+                    <div class="progress-label">Learning Completion</div>
+                </div>
+            </div>
+            
+            <div class="quick-links">
+                <div class="quick-link-card" onclick="showApp('courses')">
+                    <div class="quick-link-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="quick-link-title">My Courses</div>
+                </div>
+                <div class="quick-link-card" onclick="showApp('progress')">
+                    <div class="quick-link-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="quick-link-title">Progress</div>
+                </div>
+                <div class="quick-link-card" onclick="showApp('achievements')">
+                    <div class="quick-link-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="quick-link-title">Achievements</div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Main App -->
-    <div id="mainApp" class="hidden">
-        <!-- Top Navigation -->
-        <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2 bg-indigo-100 rounded-lg">
-                            <i class="fas fa-robot text-2xl text-indigo-600"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-xl font-bold text-gray-800">PassionBots LMS</h1>
-                            <p class="text-xs text-gray-500">IoT & Robotics Internship</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <span class="text-sm text-gray-600">
-                            <i class="fas fa-user-circle mr-2"></i>
-                            <span id="studentName">Student</span>
-                        </span>
-                        <button onclick="logout()" class="text-red-600 hover:text-red-700">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
-                    </div>
-                </div>
+    <div id="appContainer" class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fas fa-robot"></i>
             </div>
-        </nav>
+            
+            <nav class="sidebar-menu">
+                <div class="sidebar-item active" data-section="dashboard">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="sidebar-item" data-section="courses">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="sidebar-item" data-section="schedule">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                <div class="sidebar-item" data-section="progress">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="sidebar-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                </div>
+            </nav>
+            
+            <div class="sidebar-item" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+        </aside>
 
-        <!-- Main Content -->
-        <div class="flex">
-            <!-- Sidebar -->
-            <aside class="w-64 bg-white h-screen sticky top-16 shadow-sm border-r border-gray-200">
-                <nav class="p-4 space-y-2">
-                    <a href="#" onclick="showTab('dashboard')" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg bg-indigo-50 text-indigo-600">
-                        <i class="fas fa-home w-5"></i>
-                        <span class="font-medium">Dashboard</span>
-                    </a>
-                    <a href="#" onclick="showTab('courses')" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-book w-5"></i>
-                        <span class="font-medium">My Courses</span>
-                    </a>
-                    <a href="#" onclick="showTab('assignments')" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-tasks w-5"></i>
-                        <span class="font-medium">Assignments</span>
-                    </a>
-                    <a href="#" onclick="showTab('sessions')" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-video w-5"></i>
-                        <span class="font-medium">Live Sessions</span>
-                    </a>
-                    <a href="#" onclick="showTab('certificates')" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-certificate w-5"></i>
-                        <span class="font-medium">Certificates</span>
-                    </a>
-                    <a href="#" onclick="showTab('forum')" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-comments w-5"></i>
-                        <span class="font-medium">Forum</span>
-                    </a>
-                    <a href="#" onclick="showTab('hardware')" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-microchip w-5"></i>
-                        <span class="font-medium">Hardware Kit</span>
-                    </a>
-                </nav>
-            </aside>
+        <!-- Main Content Area -->
+        <div style="flex: 1;">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <div class="header-logo">
+                        <span class="header-logo-icon">
+                            <i class="fas fa-heart"></i>
+                        </span>
+                        <span class="header-logo-text">PassionBots</span>
+                    </div>
+                    <h1 class="page-title" id="pageTitle">My Learning Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <i class="fas fa-search search-icon"></i>
+                    <div class="user-profile">
+                        <i class="fas fa-user"></i>
+                        <span class="notification-badge">3</span>
+                    </div>
+                </div>
+            </header>
 
-            <!-- Content Area -->
-            <main class="flex-1 p-8 bg-gray-50">
-                <!-- Dashboard Tab -->
-                <div id="dashboardTab" class="tab-content">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Welcome Back! 👋</h2>
-                    
-                    <!-- Stats Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover border border-gray-100">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600 text-sm">Overall Progress</span>
-                                <i class="fas fa-chart-line text-indigo-600"></i>
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <div id="dashboardSection" class="content-section active">
+                    <div class="continue-learning">
+                        <h2 class="section-title">Continue Learning</h2>
+                        <div class="learning-card">
+                            <div class="learning-level">Foundation Level</div>
+                            <h3 class="learning-title">Module 2. Visual Programming</h3>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 65%"></div>
                             </div>
-                            <div class="text-3xl font-bold text-gray-800" id="overallProgress">0%</div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover border border-gray-100">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600 text-sm">Completed</span>
-                                <i class="fas fa-check-circle text-green-600"></i>
-                            </div>
-                            <div class="text-3xl font-bold text-gray-800" id="completedLessons">0</div>
-                            <div class="text-sm text-gray-500" id="totalLessons">of 0 lessons</div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover border border-gray-100">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600 text-sm">In Progress</span>
-                                <i class="fas fa-spinner text-blue-600"></i>
-                            </div>
-                            <div class="text-3xl font-bold text-gray-800" id="inProgressLessons">0</div>
-                            <div class="text-sm text-gray-500">lessons</div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover border border-gray-100">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600 text-sm">Assignments</span>
-                                <i class="fas fa-tasks text-purple-600"></i>
-                            </div>
-                            <div class="text-3xl font-bold text-gray-800" id="submittedAssignments">0</div>
-                            <div class="text-sm text-gray-500" id="totalAssignments">of 0 submitted</div>
+                            <div class="progress-percent">65%</div>
                         </div>
                     </div>
 
-                    <!-- Announcements -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                            <i class="fas fa-bullhorn text-indigo-600 mr-2"></i>Latest Announcements
-                        </h3>
-                        <div id="announcementsList"></div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <div class="stat-value">12</div>
+                                    <div class="stat-label">Hours<br>completed</div>
+                                </div>
+                                <div style="font-size: 36px; color: var(--accent-yellow);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <div class="stat-value">3</div>
+                                    <div class="stat-label">Modules<br>Finished</div>
+                                </div>
+                                <div style="font-size: 36px; color: var(--accent-yellow);">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Upcoming Sessions -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                            <i class="fas fa-calendar text-indigo-600 mr-2"></i>Upcoming Live Sessions
-                        </h3>
-                        <div id="upcomingSessionsList"></div>
-                    </div>
+                    <h2 class="section-title">Your Courses</h2>
+                    <div class="courses-grid" id="coursesGrid"></div>
                 </div>
 
-                <!-- Courses Tab -->
-                <div id="coursesTab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">My Courses</h2>
-                    <div id="modulesList" class="space-y-4"></div>
+                <!-- Other Sections (placeholder) -->
+                <div id="coursesSection" class="content-section">
+                    <h2 class="section-title">All Courses</h2>
+                    <div class="courses-grid" id="allCoursesGrid"></div>
                 </div>
 
-                <!-- Module Details View -->
-                <div id="moduleDetailsView" class="tab-content hidden">
-                    <button onclick="showTab('courses')" class="mb-4 text-indigo-600 hover:text-indigo-700">
-                        <i class="fas fa-arrow-left mr-2"></i>Back to Courses
-                    </button>
-                    <div id="moduleDetails"></div>
-                </div>
-
-                <!-- Lesson View -->
-                <div id="lessonView" class="tab-content hidden">
-                    <button onclick="backToModule()" class="mb-4 text-indigo-600 hover:text-indigo-700">
-                        <i class="fas fa-arrow-left mr-2"></i>Back to Module
-                    </button>
-                    <div id="lessonContent"></div>
-                </div>
-
-                <!-- Assignments Tab -->
-                <div id="assignmentsTab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Assignments</h2>
-                    <div id="assignmentsList"></div>
-                </div>
-
-                <!-- Live Sessions Tab -->
-                <div id="sessionsTab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Live Sessions</h2>
-                    <div id="sessionsList"></div>
-                </div>
-
-                <!-- Certificates Tab -->
-                <div id="certificatesTab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">My Certificates</h2>
-                    <div id="certificatesList"></div>
-                </div>
-
-                <!-- Forum Tab -->
-                <div id="forumTab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Discussion Forum</h2>
-                    <button onclick="showCreatePost()" class="mb-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
-                        <i class="fas fa-plus mr-2"></i>New Post
-                    </button>
-                    <div id="forumList"></div>
-                </div>
-
-                <!-- Hardware Kit Tab -->
-                <div id="hardwareTab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Hardware Kit Tracking</h2>
-                    <div id="hardwareStatus"></div>
+                <div id="progressSection" class="content-section">
+                    <h2 class="section-title">My Progress & Achievements</h2>
+                    <div id="progressContent"></div>
                 </div>
             </main>
         </div>
