@@ -1,5 +1,10 @@
 -- Seed data for PassionBots LMS
 
+-- Insert demo mentors
+INSERT OR IGNORE INTO mentors (id, email, password, full_name, phone, specialization) VALUES 
+  (1, 'mentor@passionbots.in', 'mentor123', 'Dr. Rajesh Kumar', '+91 9123456780', 'IoT & Robotics'),
+  (2, 'priya.mentor@passionbots.in', 'mentor123', 'Priya Desai', '+91 9123456781', 'Embedded Systems');
+
 -- Insert demo student
 INSERT OR IGNORE INTO students (id, email, password, full_name, phone, university, enrollment_date, program_type, batch_start_date) VALUES 
   (1, 'demo@student.com', 'demo123', 'Demo Student', '+91 9876543210', 'IIT Delhi', '2025-12-01', 'premium', '2026-01-10'),
@@ -83,3 +88,9 @@ INSERT OR IGNORE INTO forum_posts (id, student_id, module_id, lesson_id, title, 
 INSERT OR IGNORE INTO forum_replies (post_id, student_id, content, is_solution, created_at) VALUES 
   (1, 3, 'IoT is broader - it includes M2M but also adds cloud computing, data analytics, and human interaction. M2M is just device-to-device communication.', 1, '2025-12-16 15:30:00'),
   (2, 3, 'Try installing the CH340 driver for your ESP32 board. Also make sure you select the correct COM port in Arduino IDE.', 0, '2025-12-17 11:20:00');
+
+-- Insert student-mentor mappings
+INSERT OR IGNORE INTO student_mentor_mapping (student_id, mentor_id, assigned_date) VALUES 
+  (1, 1, '2025-12-01'),
+  (2, 1, '2025-12-05'),
+  (3, 2, '2025-12-10');

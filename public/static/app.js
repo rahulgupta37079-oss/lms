@@ -98,11 +98,19 @@ function renderLogin() {
                 placeholder="student@example.com" />
             </div>
             
-            <div style="margin-bottom: 2rem;">
+            <div style="margin-bottom: 1.5rem;">
               <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 0.5rem;">Password</label>
               <input type="password" id="password" required 
                 style="width: 100%; padding: 14px; background: var(--secondary-bg); border: 2px solid var(--border-color); border-radius: 12px; color: white; font-size: 16px;"
                 placeholder="Enter your password" />
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+              <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 0.5rem;">Login As</label>
+              <select id="role" required style="width: 100%; padding: 14px; background: var(--secondary-bg); border: 2px solid var(--border-color); border-radius: 12px; color: white; font-size: 16px;">
+                <option value="student">Student</option>
+                <option value="mentor">Mentor</option>
+              </select>
             </div>
             
             <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; font-size: 16px; padding: 16px;">
@@ -112,9 +120,17 @@ function renderLogin() {
           
           <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
             <p style="font-size: 14px; color: var(--text-secondary); text-align: center; margin-bottom: 1rem;">Demo Credentials:</p>
-            <div style="background: var(--secondary-bg); border-radius: 12px; padding: 1rem; font-size: 13px; color: var(--text-secondary);">
-              <div style="margin-bottom: 0.5rem;"><strong style="color: var(--text-primary);">Email:</strong> demo@student.com</div>
-              <div><strong style="color: var(--text-primary);">Password:</strong> demo123</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div style="background: var(--secondary-bg); border-radius: 12px; padding: 1rem; font-size: 13px; color: var(--text-secondary);">
+                <div style="font-weight: 700; color: var(--accent-yellow); margin-bottom: 0.5rem;">Student</div>
+                <div style="margin-bottom: 0.25rem;"><strong style="color: var(--text-primary);">Email:</strong> demo@student.com</div>
+                <div><strong style="color: var(--text-primary);">Password:</strong> demo123</div>
+              </div>
+              <div style="background: var(--secondary-bg); border-radius: 12px; padding: 1rem; font-size: 13px; color: var(--text-secondary);">
+                <div style="font-weight: 700; color: var(--accent-yellow); margin-bottom: 0.5rem;">Mentor</div>
+                <div style="margin-bottom: 0.25rem;"><strong style="color: var(--text-primary);">Email:</strong> mentor@passionbots.in</div>
+                <div><strong style="color: var(--text-primary);">Password:</strong> mentor123</div>
+              </div>
             </div>
           </div>
         </div>
@@ -127,14 +143,33 @@ async function handleLogin(e) {
   e.preventDefault();
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
+  const role = document.getElementById('role').value;
   
   try {
-    const response = await axios.post('/api/auth/login', { email, password });
+    const response = await axios.post('/api/auth/login', { email, password, role });
     if (response.data.success) {
-      AppState.currentUser = response.data.student;
-      AppState.isLoggedIn = true;
-      AppState.currentView = 'dashboard';
-      renderView();
+      if (response.data.role === 'mentor') {
+        // Store mentor data and role
+        localStorage.setItem('userRole', 'mentor');
+        localStorage.setItem('mentorData', JSON.stringify(response.data.mentor));
+        
+        // Load mentor portal script and initialize
+        const mentorScript = document.createElement('script');
+        mentorScript.src = '/static/mentor.js';
+        mentorScript.onload = () => {
+          window.MentorState.currentMentor = response.data.mentor;
+          window.MentorState.isLoggedIn = true;
+          window.MentorState.currentView = 'dashboard';
+          window.renderMentorView();
+        };
+        document.body.appendChild(mentorScript);
+      } else {
+        // Student login
+        AppState.currentUser = response.data.student;
+        AppState.isLoggedIn = true;
+        AppState.currentView = 'dashboard';
+        renderView();
+      }
     }
   } catch (error) {
     alert('Login failed! Please check your credentials.');

@@ -20,8 +20,29 @@ app.use('/static/*', serveStatic({ root: './public' }))
 
 app.post('/api/auth/login', async (c) => {
   try {
-    const { email, password } = await c.req.json()
+    const { email, password, role } = await c.req.json()
     
+    // Check if mentor login
+    if (role === 'mentor') {
+      const mentor = await c.env.DB.prepare(
+        'SELECT * FROM mentors WHERE email = ? AND password = ?'
+      ).bind(email, password).first()
+      
+      if (!mentor) {
+        return c.json({ error: 'Invalid credentials' }, 401)
+      }
+      
+      const { password: _, ...mentorData } = mentor
+      
+      return c.json({ 
+        success: true, 
+        mentor: mentorData,
+        role: 'mentor',
+        message: 'Mentor login successful' 
+      })
+    }
+    
+    // Student login
     const student = await c.env.DB.prepare(
       'SELECT * FROM students WHERE email = ? AND password = ?'
     ).bind(email, password).first()
@@ -35,6 +56,7 @@ app.post('/api/auth/login', async (c) => {
     return c.json({ 
       success: true, 
       student: studentData,
+      role: 'student',
       message: 'Login successful' 
     })
   } catch (error) {
@@ -527,6 +549,301 @@ app.get('/api/verify/:certificateId', async (c) => {
     return c.json({ verified: true, certificate })
   } catch (error) {
     return c.json({ error: 'Verification failed' }, 500)
+  }
+})
+
+// ============================================
+// MENTOR ROUTES
+// ============================================
+
+// Mentor Dashboard
+app.get('/api/mentor/dashboard/:mentorId', async (c) => {
+  try {
+    const mentorId = c.req.param('mentorId')
+    
+    // Get mentor's assigned students count
+    const studentsCount = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM student_mentor_mapping WHERE mentor_id = ?'
+    ).bind(mentorId).first()
+    
+    // Get pending submissions count
+    const pendingSubmissions = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM submissions s
+      JOIN student_mentor_mapping smm ON s.student_id = smm.student_id
+      WHERE smm.mentor_id = ? AND s.status = 'pending'
+    `).bind(mentorId).first()
+    
+    // Get total assignments
+    const totalAssignments = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM assignments'
+    ).first()
+    
+    // Get upcoming sessions
+    const upcomingSessions = await c.env.DB.prepare(
+      'SELECT * FROM live_sessions WHERE session_date > datetime("now") ORDER BY session_date ASC LIMIT 5'
+    ).all()
+    
+    // Get unread messages count
+    const unreadMessages = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM messages WHERE receiver_id = ? AND is_read = 0'
+    ).bind(mentorId).first()
+    
+    return c.json({
+      stats: {
+        totalStudents: studentsCount?.count || 0,
+        pendingSubmissions: pendingSubmissions?.count || 0,
+        totalAssignments: totalAssignments?.count || 0,
+        unreadMessages: unreadMessages?.count || 0
+      },
+      upcomingSessions: upcomingSessions.results
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch mentor dashboard' }, 500)
+  }
+})
+
+// Get mentor's students
+app.get('/api/mentor/:mentorId/students', async (c) => {
+  try {
+    const mentorId = c.req.param('mentorId')
+    
+    const students = await c.env.DB.prepare(`
+      SELECT 
+        s.*,
+        COUNT(DISTINCT sp.lesson_id) as completed_lessons,
+        COUNT(DISTINCT CASE WHEN sub.status = 'submitted' OR sub.status = 'graded' THEN sub.id END) as submitted_assignments
+      FROM students s
+      JOIN student_mentor_mapping smm ON s.id = smm.student_id
+      LEFT JOIN student_progress sp ON s.id = sp.student_id AND sp.status = 'completed'
+      LEFT JOIN submissions sub ON s.id = sub.student_id
+      WHERE smm.mentor_id = ?
+      GROUP BY s.id
+      ORDER BY s.full_name ASC
+    `).bind(mentorId).all()
+    
+    return c.json(students.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch students' }, 500)
+  }
+})
+
+// Get student detail for mentor
+app.get('/api/mentor/student/:studentId/detail', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    // Get student info
+    const student = await c.env.DB.prepare(
+      'SELECT * FROM students WHERE id = ?'
+    ).bind(studentId).first()
+    
+    // Get progress stats
+    const progress = await c.env.DB.prepare(`
+      SELECT 
+        COUNT(DISTINCT CASE WHEN sp.status = 'completed' THEN sp.lesson_id END) as completed_lessons,
+        COUNT(DISTINCT CASE WHEN sp.status = 'in_progress' THEN sp.lesson_id END) as in_progress_lessons,
+        COUNT(DISTINCT l.id) as total_lessons
+      FROM lessons l
+      LEFT JOIN student_progress sp ON l.id = sp.lesson_id AND sp.student_id = ?
+      WHERE l.is_published = 1
+    `).bind(studentId).first()
+    
+    // Get test results
+    const testResults = await c.env.DB.prepare(`
+      SELECT tr.*, lt.title as test_title
+      FROM test_results tr
+      JOIN live_tests lt ON tr.test_id = lt.id
+      WHERE tr.student_id = ?
+      ORDER BY tr.submitted_at DESC
+    `).bind(studentId).all()
+    
+    // Get submissions
+    const submissions = await c.env.DB.prepare(`
+      SELECT s.*, a.title as assignment_title, a.max_score
+      FROM submissions s
+      JOIN assignments a ON s.assignment_id = a.id
+      WHERE s.student_id = ?
+      ORDER BY s.submitted_at DESC
+    `).bind(studentId).all()
+    
+    return c.json({
+      student,
+      progress,
+      testResults: testResults.results,
+      submissions: submissions.results
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch student details' }, 500)
+  }
+})
+
+// Get pending submissions for mentor
+app.get('/api/mentor/:mentorId/submissions/pending', async (c) => {
+  try {
+    const mentorId = c.req.param('mentorId')
+    
+    const submissions = await c.env.DB.prepare(`
+      SELECT 
+        s.*,
+        a.title as assignment_title,
+        a.max_score,
+        st.full_name as student_name,
+        st.email as student_email,
+        m.title as module_title
+      FROM submissions s
+      JOIN assignments a ON s.assignment_id = a.id
+      JOIN students st ON s.student_id = st.id
+      JOIN modules m ON a.module_id = m.id
+      JOIN student_mentor_mapping smm ON st.id = smm.student_id
+      WHERE smm.mentor_id = ? AND s.status = 'pending'
+      ORDER BY s.submitted_at ASC
+    `).bind(mentorId).all()
+    
+    return c.json(submissions.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch pending submissions' }, 500)
+  }
+})
+
+// Grade submission
+app.post('/api/mentor/submission/:submissionId/grade', async (c) => {
+  try {
+    const submissionId = c.req.param('submissionId')
+    const { score, feedback, status } = await c.req.json()
+    
+    await c.env.DB.prepare(`
+      UPDATE submissions
+      SET score = ?, feedback = ?, status = ?, graded_at = datetime("now")
+      WHERE id = ?
+    `).bind(score, feedback, status || 'graded', submissionId).run()
+    
+    return c.json({ success: true, message: 'Submission graded successfully' })
+  } catch (error) {
+    return c.json({ error: 'Failed to grade submission' }, 500)
+  }
+})
+
+// Get all submissions (graded and pending)
+app.get('/api/mentor/:mentorId/submissions/all', async (c) => {
+  try {
+    const mentorId = c.req.param('mentorId')
+    
+    const submissions = await c.env.DB.prepare(`
+      SELECT 
+        s.*,
+        a.title as assignment_title,
+        a.max_score,
+        st.full_name as student_name,
+        st.email as student_email,
+        m.title as module_title
+      FROM submissions s
+      JOIN assignments a ON s.assignment_id = a.id
+      JOIN students st ON s.student_id = st.id
+      JOIN modules m ON a.module_id = m.id
+      JOIN student_mentor_mapping smm ON st.id = smm.student_id
+      WHERE smm.mentor_id = ?
+      ORDER BY s.submitted_at DESC
+    `).bind(mentorId).all()
+    
+    return c.json(submissions.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch submissions' }, 500)
+  }
+})
+
+// Get mentor messages
+app.get('/api/mentor/:mentorId/messages', async (c) => {
+  try {
+    const mentorId = c.req.param('mentorId')
+    
+    const messages = await c.env.DB.prepare(`
+      SELECT m.*, s.full_name as sender_name
+      FROM messages m
+      LEFT JOIN students s ON m.sender_id = s.id
+      WHERE m.receiver_id = ? OR m.sender_id = ?
+      ORDER BY m.sent_at DESC
+      LIMIT 50
+    `).bind(mentorId, mentorId).all()
+    
+    return c.json(messages.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch messages' }, 500)
+  }
+})
+
+// Send message from mentor
+app.post('/api/mentor/message/send', async (c) => {
+  try {
+    const { senderId, receiverId, message } = await c.req.json()
+    
+    await c.env.DB.prepare(`
+      INSERT INTO messages (sender_id, receiver_id, message, sent_at, is_read)
+      VALUES (?, ?, ?, datetime("now"), 0)
+    `).bind(senderId, receiverId, message).run()
+    
+    return c.json({ success: true, message: 'Message sent' })
+  } catch (error) {
+    return c.json({ error: 'Failed to send message' }, 500)
+  }
+})
+
+// Get analytics/reports
+app.get('/api/mentor/:mentorId/analytics', async (c) => {
+  try {
+    const mentorId = c.req.param('mentorId')
+    
+    // Student engagement stats
+    const engagement = await c.env.DB.prepare(`
+      SELECT 
+        COUNT(DISTINCT s.id) as total_students,
+        COUNT(DISTINCT CASE WHEN sp.last_accessed > datetime('now', '-7 days') THEN s.id END) as active_students,
+        AVG(CASE WHEN l_total.count > 0 THEN (l_completed.count * 100.0 / l_total.count) ELSE 0 END) as avg_progress
+      FROM students s
+      JOIN student_mentor_mapping smm ON s.id = smm.student_id
+      LEFT JOIN student_progress sp ON s.id = sp.student_id
+      LEFT JOIN (
+        SELECT COUNT(*) as count FROM lessons WHERE is_published = 1
+      ) l_total
+      LEFT JOIN (
+        SELECT student_id, COUNT(*) as count 
+        FROM student_progress 
+        WHERE status = 'completed'
+        GROUP BY student_id
+      ) l_completed ON s.id = l_completed.student_id
+      WHERE smm.mentor_id = ?
+    `).bind(mentorId).first()
+    
+    // Assignment completion rate
+    const assignmentStats = await c.env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total_assignments,
+        COUNT(CASE WHEN status = 'graded' THEN 1 END) as graded,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+        AVG(CASE WHEN score IS NOT NULL THEN score ELSE 0 END) as avg_score
+      FROM submissions s
+      JOIN student_mentor_mapping smm ON s.student_id = smm.student_id
+      WHERE smm.mentor_id = ?
+    `).bind(mentorId).first()
+    
+    // Test performance
+    const testStats = await c.env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total_tests,
+        AVG(score) as avg_score,
+        MAX(score) as highest_score,
+        MIN(score) as lowest_score
+      FROM test_results tr
+      JOIN student_mentor_mapping smm ON tr.student_id = smm.student_id
+      WHERE smm.mentor_id = ?
+    `).bind(mentorId).first()
+    
+    return c.json({
+      engagement,
+      assignments: assignmentStats,
+      tests: testStats
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch analytics' }, 500)
   }
 })
 
