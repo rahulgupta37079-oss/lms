@@ -1,18 +1,37 @@
 // Global state
-let currentStudent = null;
+let currentStudent = {
+    id: 1,
+    full_name: 'Demo Student',
+    email: 'demo@student.com'
+};
 let modules = [];
+
+// Make functions globally available
+window.showApp = showApp;
+window.showMyCourses = showMyCourses;
+window.viewCourse = viewCourse;
+window.logout = logout;
 
 // Show main app
 function showApp(section = 'dashboard') {
-    document.getElementById('welcomeScreen').classList.add('hidden');
-    document.getElementById('appContainer').classList.add('active');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const appContainer = document.getElementById('appContainer');
     
-    if (section) {
-        showSection(section);
+    if (welcomeScreen) {
+        welcomeScreen.classList.add('hidden');
+    }
+    if (appContainer) {
+        appContainer.classList.add('active');
     }
     
-    // Load data
-    loadDashboard();
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+        if (section) {
+            showSection(section);
+        } else {
+            loadDashboard();
+        }
+    }, 100);
 }
 
 function showMyCourses() {
@@ -21,25 +40,27 @@ function showMyCourses() {
 
 // Navigation
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing...');
+    
     // Sidebar navigation
-    document.querySelectorAll('.sidebar-item').forEach(item => {
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    console.log('Found sidebar items:', sidebarItems.length);
+    
+    sidebarItems.forEach(item => {
         item.addEventListener('click', (e) => {
+            e.preventDefault();
             const section = item.getAttribute('data-section');
+            console.log('Clicked section:', section);
             if (section) {
                 showSection(section);
             }
         });
     });
-    
-    // Set demo student
-    currentStudent = {
-        id: 1,
-        full_name: 'Demo Student',
-        email: 'demo@student.com'
-    };
 });
 
 function showSection(section) {
+    console.log('Showing section:', section);
+    
     // Update sidebar active state
     document.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.remove('active');
@@ -54,6 +75,8 @@ function showSection(section) {
     });
     
     const sectionElement = document.getElementById(section + 'Section');
+    console.log('Section element:', sectionElement);
+    
     if (sectionElement) {
         sectionElement.classList.add('active');
     }
@@ -67,7 +90,10 @@ function showSection(section) {
         settings: 'Settings'
     };
     
-    document.getElementById('pageTitle').textContent = titles[section] || 'Dashboard';
+    const pageTitleEl = document.getElementById('pageTitle');
+    if (pageTitleEl) {
+        pageTitleEl.textContent = titles[section] || 'Dashboard';
+    }
     
     // Load section data
     switch(section) {
@@ -85,20 +111,32 @@ function showSection(section) {
 
 // Load dashboard data
 async function loadDashboard() {
+    console.log('Loading dashboard...');
     try {
         // Load modules for courses
         const response = await axios.get(`/api/modules/${currentStudent.id}`);
         modules = response.data;
+        console.log('Loaded modules:', modules.length);
         
         renderCourses();
     } catch (error) {
         console.error('Failed to load dashboard:', error);
+        const grid = document.getElementById('coursesGrid');
+        if (grid) {
+            grid.innerHTML = '<p style="color: var(--text-secondary);">Error loading courses. Please refresh.</p>';
+        }
     }
 }
 
 // Render course cards
 function renderCourses() {
     const grid = document.getElementById('coursesGrid');
+    console.log('Rendering courses, grid element:', grid);
+    
+    if (!grid) {
+        console.error('coursesGrid element not found!');
+        return;
+    }
     
     if (!modules || modules.length === 0) {
         grid.innerHTML = '<p style="color: var(--text-secondary);">No courses available yet.</p>';
@@ -136,15 +174,25 @@ function renderCourses() {
             </div>
         `;
     }).join('');
+    
+    console.log('Rendered', coursesToShow.length, 'courses');
 }
 
 // Load all courses
 async function loadAllCourses() {
+    console.log('Loading all courses...');
     try {
-        const response = await axios.get(`/api/modules/${currentStudent.id}`);
-        modules = response.data;
+        if (modules.length === 0) {
+            const response = await axios.get(`/api/modules/${currentStudent.id}`);
+            modules = response.data;
+        }
         
         const grid = document.getElementById('allCoursesGrid');
+        
+        if (!grid) {
+            console.error('allCoursesGrid element not found!');
+            return;
+        }
         
         grid.innerHTML = modules.map(module => {
             const progress = module.total_lessons > 0 
@@ -174,6 +222,8 @@ async function loadAllCourses() {
                 </div>
             `;
         }).join('');
+        
+        console.log('Rendered all courses');
     } catch (error) {
         console.error('Failed to load courses:', error);
     }
@@ -181,11 +231,17 @@ async function loadAllCourses() {
 
 // Load progress page
 async function loadProgress() {
+    console.log('Loading progress...');
     try {
         const response = await axios.get(`/api/dashboard/${currentStudent.id}`);
         const { stats } = response.data;
         
         const progressContent = document.getElementById('progressContent');
+        
+        if (!progressContent) {
+            console.error('progressContent element not found!');
+            return;
+        }
         
         const overallProgress = stats.overallProgress || 0;
         const circumference = 2 * Math.PI * 90;
@@ -278,6 +334,8 @@ async function loadProgress() {
                 </div>
             </div>
         `;
+        
+        console.log('Progress page rendered');
     } catch (error) {
         console.error('Failed to load progress:', error);
     }
@@ -285,7 +343,13 @@ async function loadProgress() {
 
 // View course details
 function viewCourse(moduleId) {
-    alert('Course details coming soon! Module ID: ' + moduleId);
+    console.log('Viewing course:', moduleId);
+    const module = modules.find(m => m.id === moduleId);
+    if (module) {
+        alert(`Course: ${module.title}\n\nModule ${module.module_number}: ${module.description}\n\nProgress: ${module.completed_lessons} of ${module.total_lessons} lessons completed`);
+    } else {
+        alert('Course details coming soon! Module ID: ' + moduleId);
+    }
 }
 
 // Logout
@@ -294,3 +358,5 @@ function logout() {
         location.reload();
     }
 }
+
+console.log('App.js loaded successfully');
