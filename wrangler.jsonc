@@ -10,7 +10,7 @@
     {
       "binding": "DB",
       "database_name": "passionbots-lms-production",
-      "database_id": "local-db-id"
+      "database_id": "425fe9a7-d2d4-4cb5-bc46-090b1981ed8b"
     }
   ]
 }
