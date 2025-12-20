@@ -1244,6 +1244,97 @@ app.get('/api/analytics/:studentId', async (c) => {
 })
 
 // ============================================
+// CONTENT MANAGEMENT ROUTES (v6.0)
+// ============================================
+
+// Content manager interface
+app.get('/content-manager', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Manager - PassionBots LMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+      const MentorState = {
+        currentMentor: JSON.parse(localStorage.getItem('currentMentor') || '{"full_name": "Mentor"}')
+      }
+    </script>
+    <script src="/static/content-manager.js"></script>
+</body>
+</html>
+  `)
+})
+
+// Create module API
+app.post('/api/content/modules/create', async (c) => {
+  try {
+    const { module_number, title, description, duration_weeks, icon } = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO modules (module_number, title, description, duration_weeks, icon, is_published)
+      VALUES (?, ?, ?, ?, ?, 1)
+    `).bind(module_number, title, description, duration_weeks, icon || '📚').run()
+    
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: 'Module created successfully' 
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to create module' }, 500)
+  }
+})
+
+// Create lesson API
+app.post('/api/content/lessons/create', async (c) => {
+  try {
+    const { module_id, title, content, duration_minutes, video_url, order_number } = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO lessons (module_id, title, content, duration_minutes, video_url, order_number, is_published)
+      VALUES (?, ?, ?, ?, ?, ?, 1)
+    `).bind(module_id, title, content, duration_minutes, video_url || null, order_number).run()
+    
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: 'Lesson created successfully' 
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to create lesson' }, 500)
+  }
+})
+
+// Create assignment API
+app.post('/api/content/assignments/create', async (c) => {
+  try {
+    const { title, description, module_id, due_date, max_score, submission_type } = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO assignments (title, description, module_id, due_date, max_score, submission_type)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(title, description, module_id, due_date, max_score || 100, submission_type || 'file').run()
+    
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: 'Assignment created successfully' 
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to create assignment' }, 500)
+  }
+})
+
+// ============================================
 // ROOT ROUTE
 // ============================================
 

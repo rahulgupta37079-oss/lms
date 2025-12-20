@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PassionBots LMS - Transform Your IoT & Robotics Learning Journey</title>
+    <meta name="description" content="Advanced Learning Management System for IoT & Robotics with AI-powered learning, gamification, and real-time collaboration">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="PassionBots LMS - IoT & Robotics Education Platform">
+    <meta property="og:description" content="Enterprise-grade LMS with AI assistant, gamification, and hands-on projects">
+    <meta property="og:image" content="https://passionbots-lms.pages.dev/og-image.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,144C960,149,1056,139,1152,128C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            animation: wave 15s ease-in-out infinite;
+        }
+        
+        @keyframes wave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 900;
+            color: white;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: rgba(255,255,255,0.95);
+            margin-bottom: 3rem;
+            max-width: 700px;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 1.25rem 2.5rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 70px rgba(0,0,0,0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+            color: #667eea;
+            transform: translateY(-5px);
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 6rem 2rem;
+            background: white;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 4rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, rgba(102,126,234,0.05), rgba(118,75,162,0.05));
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: #667eea;
+            box-shadow: 0 30px 60px rgba(102,126,234,0.2);
+        }
+        
+        .feature-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .feature-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+        
+        /* Stats Section */
+        .stats {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 6rem 2rem;
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .stat-label {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, rgba(102,126,234,0.05), rgba(118,75,162,0.05));
+            text-align: center;
+        }
+        
+        .cta-section h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        
+        .cta-section p {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Footer */
+        footer {
+            background: #1a1a2e;
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .stat-number {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>🚀 Transform Your IoT & Robotics Journey</h1>
+            <p class="hero-subtitle">
+                Master IoT & Robotics with an enterprise-grade learning platform featuring AI assistance, 
+                gamification, real-time collaboration, and hands-on projects.
+            </p>
+            <div class="cta-buttons">
+                <a href="https://passionbots-lms.pages.dev" class="btn btn-primary">
+                    <i class="fas fa-rocket"></i>
+                    Launch Platform
+                </a>
+                <a href="#features" class="btn btn-secondary">
+                    <i class="fas fa-info-circle"></i>
+                    Learn More
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <h2 class="section-title">🌟 World-Class Features</h2>
+        <p class="section-subtitle">
+            Everything you need to become an IoT & Robotics expert, powered by cutting-edge technology
+        </p>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>AI Learning Assistant</h3>
+                <p>24/7 intelligent chatbot for doubts, code explanations, and personalized guidance</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <h3>Gamification System</h3>
+                <p>Earn XP, unlock badges, compete on leaderboards, and complete daily challenges</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Advanced Analytics</h3>
+                <p>Track learning curves, time spent, strengths/weaknesses with beautiful visualizations</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Live Collaboration</h3>
+                <p>Real-time code editor, digital whiteboard, video conferencing, and study groups</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h3>Progressive Web App</h3>
+                <p>Works offline, install as native app, push notifications, and mobile-first design</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-universal-access"></i>
+                </div>
+                <h3>Full Accessibility</h3>
+                <p>WCAG 2.1 AAA compliant with screen reader support and keyboard navigation</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <h3>8 IoT Modules</h3>
+                <p>Comprehensive curriculum from basics to advanced projects with ESP32</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-keyboard"></i>
+                </div>
+                <h3>Command Palette</h3>
+                <p>Quick access with Cmd+K to navigate, search, and execute actions instantly</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h3>Dual Portals</h3>
+                <p>Separate student and mentor dashboards with role-based access control</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Advanced Features</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">8</div>
+                <div class="stat-label">IoT Modules</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">100+</div>
+                <div class="stat-label">Lessons & Projects</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">AI Support</div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Module Highlights -->
+    <section class="features">
+        <h2 class="section-title">📚 Comprehensive Curriculum</h2>
+        <p class="section-subtitle">
+            From fundamentals to advanced projects - everything you need to master IoT & Robotics
+        </p>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>Module 1: IoT Fundamentals</h3>
+                <p>Core concepts, sensors, actuators, and communication protocols</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">💻</div>
+                <h3>Module 2: ESP32 Basics</h3>
+                <p>Setup, GPIO, PWM, and your first IoT device</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📡</div>
+                <h3>Module 3: WiFi & Bluetooth</h3>
+                <p>Wireless communication and IoT connectivity</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>Module 4: Cloud Integration</h3>
+                <p>ThingSpeak, Blynk, AWS IoT, and data analytics</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔌</div>
+                <h3>Module 5: Sensors & Actuators</h3>
+                <p>DHT22, ultrasonic, servo motors, and relays</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🏗️</div>
+                <h3>Module 6: Real Projects</h3>
+                <p>Smart home, weather station, robot car</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔐</div>
+                <h3>Module 7: Security</h3>
+                <p>Secure communication, encryption, best practices</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3>Module 8: Capstone Project</h3>
+                <p>Build and deploy your own IoT solution</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <h2>🎯 Ready to Start Your Journey?</h2>
+        <p>
+            Join thousands of students learning IoT & Robotics with the most advanced LMS platform. 
+            Get started in seconds with our demo account!
+        </p>
+        <div class="cta-buttons" style="justify-content: center;">
+            <a href="https://passionbots-lms.pages.dev" class="btn btn-primary">
+                <i class="fas fa-play"></i>
+                Try Demo Now
+            </a>
+            <a href="https://github.com/rahulgupta37079-oss/lms" class="btn btn-secondary">
+                <i class="fab fa-github"></i>
+                View on GitHub
+            </a>
+        </div>
+        
+        <div style="margin-top: 3rem; padding: 2rem; background: white; border-radius: 20px; max-width: 600px; margin-left: auto; margin-right: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 1rem; color: #333;">🎓 Demo Credentials</h3>
+            <div style="text-align: left; font-family: monospace; background: #f5f5f5; padding: 1.5rem; border-radius: 10px;">
+                <div style="margin-bottom: 1rem;">
+                    <strong>👨‍🎓 Student Login:</strong><br>
+                    Email: demo@student.com<br>
+                    Password: demo123
+                </div>
+                <div>
+                    <strong>👨‍🏫 Mentor Login:</strong><br>
+                    Email: mentor@passionbots.in<br>
+                    Password: mentor123
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer>
+        <p>
+            <strong>PassionBots LMS v6.0</strong> - Enterprise-Grade IoT & Robotics Learning Platform
+        </p>
+        <p style="margin-top: 1rem;">
+            Built with 🧡 using Hono, Cloudflare Workers, D1 Database, and AI
+        </p>
+        <p style="margin-top: 1rem;">
+            <a href="https://github.com/rahulgupta37079-oss/lms" target="_blank">
+                <i class="fab fa-github"></i> GitHub
+            </a> • 
+            <a href="https://passionbots-lms.pages.dev/features.html" target="_blank">
+                <i class="fas fa-star"></i> Features
+            </a> • 
+            <a href="https://passionbots-lms.pages.dev" target="_blank">
+                <i class="fas fa-rocket"></i> Launch App
+            </a>
+        </p>
+        <p style="margin-top: 2rem; opacity: 0.7;">
+            © 2025 PassionBots. All rights reserved.
+        </p>
+    </footer>
+</body>
+</html>
