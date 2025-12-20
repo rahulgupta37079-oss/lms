@@ -4,6 +4,8 @@ import { serveStatic } from 'hono/cloudflare-workers'
 
 type Bindings = {
   DB: D1Database;
+  OPENAI_API_KEY?: string;  // Optional: OpenAI API key
+  OPENAI_BASE_URL?: string;  // Optional: Custom API base URL
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -971,20 +973,225 @@ app.post('/api/ai/chat', async (c) => {
   try {
     const { studentId, messageType, messageText, context } = await c.req.json()
     
+    // Save user message to database
     await c.env.DB.prepare(`
       INSERT INTO ai_chat_history (student_id, message_type, message_text, context)
       VALUES (?, ?, ?, ?)
     `).bind(studentId, messageType, messageText, context || null).run()
     
-    // TODO: Call OpenAI API here when API key is configured
-    // For now, return a mock response
-    const response = "I'm your AI assistant! How can I help you learn today?"
+    // Get recent chat history for context
+    const history = await c.env.DB.prepare(`
+      SELECT message_type, message_text FROM ai_chat_history
+      WHERE student_id = ?
+      ORDER BY created_at DESC
+      LIMIT 10
+    `).bind(studentId).all()
+    
+    // Build conversation history
+    const messages = [
+      {
+        role: 'system',
+        content: `You are an expert IoT & Robotics tutor for PassionBots LMS.
+                 Help students learn ESP32, Arduino, sensors, actuators, WiFi, Bluetooth, and IoT concepts.
+                 Be encouraging, clear, and provide step-by-step explanations.
+                 Use simple language and real-world examples.
+                 If asked about code, provide well-commented code snippets.`
+      },
+      ...history.results.reverse().map(msg => ({
+        role: msg.message_type === 'user' ? 'user' : 'assistant',
+        content: msg.message_text
+      }))
+    ]
+    
+    // Call OpenAI API (or GenSpark LLM Proxy)
+    let response = ''
+    
+    try {
+      // Try to use OpenAI API if key is available
+      const openaiKey = c.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY
+      const openaiBaseUrl = c.env.OPENAI_BASE_URL || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+      
+      if (openaiKey) {
+        const aiResponse = await fetch(`${openaiBaseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 500
+          })
+        })
+        
+        if (aiResponse.ok) {
+          const data = await aiResponse.json()
+          response = data.choices[0].message.content
+        } else {
+          throw new Error('API call failed')
+        }
+      } else {
+        // Fallback intelligent responses
+        response = generateIntelligentResponse(messageText)
+      }
+    } catch (error) {
+      console.error('AI API Error:', error)
+      response = generateIntelligentResponse(messageText)
+    }
+    
+    // Save AI response to database
+    await c.env.DB.prepare(`
+      INSERT INTO ai_chat_history (student_id, message_type, message_text, context)
+      VALUES (?, 'assistant', ?, ?)
+    `).bind(studentId, response, context || null).run()
     
     return c.json({ response })
   } catch (error) {
-    return c.json({ error: 'Failed to process chat' }, 500)
+    console.error('Chat error:', error)
+    return c.json({ 
+      error: 'Failed to process chat',
+      response: "I apologize, I'm having trouble connecting right now. Please try again in a moment."
+    }, 500)
   }
 })
+
+// Intelligent fallback response generator
+function generateIntelligentResponse(question: string): string {
+  const lowerQ = question.toLowerCase()
+  
+  // ESP32 related
+  if (lowerQ.includes('esp32')) {
+    if (lowerQ.includes('wifi') || lowerQ.includes('connect')) {
+      return `ESP32 WiFi connectivity is one of its best features! Here's how it works:
+
+1. **Include the WiFi library**: \`#include <WiFi.h>\`
+2. **Connect to network**: Use \`WiFi.begin(ssid, password)\`
+3. **Check connection**: \`WiFi.status() == WL_CONNECTED\`
+
+Example code:
+\`\`\`cpp
+#include <WiFi.h>
+
+const char* ssid = "YourWiFi";
+const char* password = "YourPassword";
+
+void setup() {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+  Serial.println("Connected!");
+}
+\`\`\`
+
+Would you like to know more about HTTP requests or WebSocket communication?`
+    }
+    
+    if (lowerQ.includes('pin') || lowerQ.includes('gpio')) {
+      return `ESP32 has versatile GPIO pins! Here's what you need to know:
+
+**Digital Pins**: GPIO 0-39 (some are input-only)
+**Analog Input**: GPIO 32-39 (ADC1), GPIO 0, 2, 4, 12-15, 25-27 (ADC2)
+**PWM**: Almost all GPIO pins support PWM
+
+**Basic Usage**:
+\`\`\`cpp
+// Digital Output
+pinMode(2, OUTPUT);
+digitalWrite(2, HIGH);
+
+// Digital Input
+pinMode(4, INPUT);
+int value = digitalRead(4);
+
+// Analog Input (0-4095)
+int analogValue = analogRead(34);
+\`\`\`
+
+Which specific pin functionality would you like to explore?`
+    }
+    
+    return `ESP32 is a powerful microcontroller with dual-core processors, WiFi, and Bluetooth! 
+
+**Key Features**:
+- 240MHz dual-core processor
+- Built-in WiFi & Bluetooth
+- 34 GPIO pins
+- Multiple communication protocols (SPI, I2C, UART)
+- Low power consumption modes
+
+What would you like to learn about ESP32? WiFi setup, pin configuration, or sensor interfacing?`
+  }
+  
+  // Sensors
+  if (lowerQ.includes('sensor')) {
+    return `Sensors are the eyes and ears of your IoT projects! 
+
+**Common Sensors**:
+🌡️ **Temperature**: DHT11, DHT22, DS18B20
+📏 **Distance**: HC-SR04 (ultrasonic), VL53L0X (laser)
+💡 **Light**: LDR, BH1750
+🎯 **Motion**: PIR sensor
+🧭 **Orientation**: MPU6050 (gyroscope + accelerometer)
+
+**Basic Connection**:
+1. Power: 3.3V or 5V (check sensor specs)
+2. Ground: GND
+3. Data: Connect to GPIO pin
+
+Would you like specific code examples for any sensor?`
+  }
+  
+  // General IoT
+  if (lowerQ.includes('iot') || lowerQ.includes('internet of things')) {
+    return `IoT (Internet of Things) connects physical devices to the internet for smart automation!
+
+**Core Concepts**:
+1. **Sensors**: Collect data from environment
+2. **Microcontroller**: Process and control (ESP32, Arduino)
+3. **Communication**: WiFi, Bluetooth, LoRa
+4. **Cloud**: Store and analyze data
+5. **Actuators**: Take physical actions
+
+**Popular IoT Platforms**:
+- ThingSpeak
+- Blynk
+- AWS IoT
+- Google Cloud IoT
+
+What IoT project are you thinking of building?`
+  }
+  
+  // Code help
+  if (lowerQ.includes('code') || lowerQ.includes('program')) {
+    return `I'd love to help with your code! 
+
+**Tips for good IoT code**:
+1. ✅ Add comments explaining your logic
+2. ✅ Use meaningful variable names
+3. ✅ Handle errors gracefully
+4. ✅ Test in small increments
+5. ✅ Monitor serial output for debugging
+
+Can you share your code snippet? Or describe what you're trying to achieve?`
+  }
+  
+  // Default helpful response
+  return `Great question! I'm here to help you learn IoT & Robotics. 
+
+**I can help with**:
+- 🤖 ESP32 programming and setup
+- 📡 WiFi and Bluetooth connectivity
+- 🔌 Sensors and actuators
+- 💻 Arduino IDE and libraries
+- 🌐 IoT cloud platforms
+- 🐛 Debugging code issues
+- 💡 Project ideas and guidance
+
+What would you like to explore? Feel free to ask specific questions or share code you're working on!`
+}
 
 // Get AI recommendations
 app.get('/api/ai/recommendations/:studentId', async (c) => {
