@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PassionBots LMS v6.0 - Feature Showcase</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    
+    <!-- Monaco Editor -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/static/styles-v2.css">
+    
+    <style>
+        .feature-showcase {
+            min-height: 100vh;
+            padding: 48px 24px;
+        }
+        
+        .hero-section {
+            text-align: center;
+            padding: 80px 24px;
+            max-width: 1200px;
+            margin: 0 auto 80px;
+        }
+        
+        .hero-title {
+            font-size: 72px;
+            font-weight: 900;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.8s ease;
+        }
+        
+        .hero-subtitle {
+            font-size: 24px;
+            color: var(--text-secondary);
+            max-width: 800px;
+            margin: 0 auto 48px;
+            line-height: 1.6;
+            animation: fadeInUp 0.8s ease 0.2s backwards;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .feature-card-large {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 48px;
+            box-shadow: var(--shadow-xl);
+            transition: all 0.4s var(--ease-smooth);
+            animation: fadeInUp 0.8s ease backwards;
+        }
+        
+        .feature-card-large:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card-large:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card-large:nth-child(3) { animation-delay: 0.3s; }
+        .feature-card-large:nth-child(4) { animation-delay: 0.4s; }
+        .feature-card-large:nth-child(5) { animation-delay: 0.5s; }
+        .feature-card-large:nth-child(6) { animation-delay: 0.6s; }
+        
+        .feature-card-large:hover {
+            transform: translateY(-12px);
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+        
+        .feature-icon-large {
+            width: 100px;
+            height: 100px;
+            background: var(--gradient-primary);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin: 0 auto 32px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .feature-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .feature-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+        }
+        
+        .feature-list li::before {
+            content: '✓';
+            width: 24px;
+            height: 24px;
+            background: var(--accent-success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        .demo-button {
+            width: 100%;
+            padding: 16px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-smooth);
+            margin-top: 24px;
+        }
+        
+        .demo-button:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .stats-banner {
+            background: var(--gradient-primary);
+            padding: 48px 24px;
+            text-align: center;
+            margin: 80px 0;
+            border-radius: 32px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 48px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 56px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    
+    <div class="feature-showcase">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="level-badge" style="width: 120px; height: 120px; font-size: 64px; margin: 0 auto 32px;">🚀</div>
+            <h1 class="hero-title">PassionBots LMS v6.0</h1>
+            <p class="hero-subtitle">
+                The most advanced Learning Management System powered by AI, Gamification, 
+                and Real-time Collaboration. Experience education like never before.
+            </p>
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <button class="glass-button" style="padding: 16px 32px; font-size: 18px;" onclick="window.location.href='/'">
+                    <i class="fas fa-sign-in-alt"></i> Launch LMS
+                </button>
+                <button class="glass-button" style="padding: 16px 32px; font-size: 18px;" onclick="scrollToFeatures()">
+                    <i class="fas fa-rocket"></i> Explore Features
+                </button>
+            </div>
+        </div>
+        
+        <!-- Stats Banner -->
+        <div class="stats-banner glass-card">
+            <h2 style="font-size: 40px; font-weight: 800; margin-bottom: 48px; color: white;">Powered by Innovation</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">50+</div>
+                    <div class="stat-label">Advanced Features</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">100%</div>
+                    <div class="stat-label">AI-Powered</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">24/7</div>
+                    <div class="stat-label">Available</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">∞</div>
+                    <div class="stat-label">Learning Potential</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Feature Grid -->
+        <div id="features" class="feature-grid">
+            <!-- Feature 1: Modern UI -->
+            <div class="feature-card-large">
+                <div class="feature-icon-large">🎨</div>
+                <h3 class="feature-title">Modern UI & Glassmorphism</h3>
+                <p class="feature-description">
+                    Beautiful, intuitive interface with cutting-edge design principles
+                </p>
+                <ul class="feature-list">
+                    <li>Glassmorphism effects with blur & transparency</li>
+                    <li>Smooth micro-interactions & animations</li>
+                    <li>Dark/Light theme with auto-switching</li>
+                    <li>Responsive design for all devices</li>
+                    <li>High-contrast accessibility mode</li>
+                    <li>Fluid typography with Inter font</li>
+                </ul>
+                <button class="demo-button" onclick="demoGlassmorphism()">
+                    <i class="fas fa-play"></i> View Demo
+                </button>
+            </div>
+            
+            <!-- Feature 2: Command Palette -->
+            <div class="feature-card-large">
+                <div class="feature-icon-large">⌨️</div>
+                <h3 class="feature-title">Command Palette (Cmd+K)</h3>
+                <p class="feature-description">
+                    Lightning-fast navigation powered by keyboard shortcuts
+                </p>
+                <ul class="feature-list">
+                    <li>Fuzzy search across all features</li>
+                    <li>Keyboard-first navigation</li>
+                    <li>Custom shortcuts for power users</li>
+                    <li>Recent commands history</li>
+                    <li>Quick actions & workflows</li>
+                    <li>Inspired by Notion & Linear</li>
+                </ul>
+                <button class="demo-button" onclick="CommandPalette.open()">
+                    <i class="fas fa-keyboard"></i> Try Now (Cmd+K)
+                </button>
+            </div>
+            
+            <!-- Feature 3: AI Assistant -->
+            <div class="feature-card-large">
+                <div class="feature-icon-large">🤖</div>
+                <h3 class="feature-title">AI Learning Assistant</h3>
+                <p class="feature-description">
+                    Your personal AI tutor available 24/7
+                </p>
+                <ul class="feature-list">
+                    <li>Real-time doubt solving</li>
+                    <li>Code explanation & debugging</li>
+                    <li>Personalized learning recommendations</li>
+                    <li>Auto-grading with detailed feedback</li>
+                    <li>Project idea generation</li>
+                    <li>Study schedule optimization</li>
+                </ul>
+                <button class="demo-button" onclick="AIAssistant.openChat()">
+                    <i class="fas fa-robot"></i> Chat with AI
+                </button>
+            </div>
+            
+            <!-- Feature 4: Gamification -->
+            <div class="feature-card-large">
+                <div class="feature-icon-large">🎮</div>
+                <h3 class="feature-title">Gamification & XP System</h3>
+                <p class="feature-description">
+                    Learn through play with levels, badges, and achievements
+                </p>
+                <ul class="feature-list">
+                    <li>XP system with 25+ levels</li>
+                    <li>50+ collectible badges</li>
+                    <li>Daily challenges & quests</li>
+                    <li>Global & batch leaderboards</li>
+                    <li>Streak tracking with rewards</li>
+                    <li>Achievement animations</li>
+                </ul>
+                <button class="demo-button" onclick="demoLevelUp()">
+                    <i class="fas fa-trophy"></i> See Level Up
+                </button>
+            </div>
+            
+            <!-- Feature 5: Analytics -->
+            <div class="feature-card-large">
+                <div class="feature-icon-large">📊</div>
+                <h3 class="feature-title">Advanced Analytics</h3>
+                <p class="feature-description">
+                    Data-driven insights to track your learning journey
+                </p>
+                <ul class="feature-list">
+                    <li>Interactive charts & visualizations</li>
+                    <li>Learning curve analysis</li>
+                    <li>Strengths & weaknesses radar</li>
+                    <li>Time spent heatmaps</li>
+                    <li>Predictive completion dates</li>
+                    <li>Skill gap identification</li>
+                </ul>
+                <button class="demo-button" onclick="demoAnalytics()">
+                    <i class="fas fa-chart-line"></i> View Analytics
+                </button>
+            </div>
+            
+            <!-- Feature 6: Live Collaboration -->
+            <div class="feature-card-large">
+                <div class="feature-icon-large">🔴</div>
+                <h3 class="feature-title">Real-time Collaboration</h3>
+                <p class="feature-description">
+                    Code together, learn together, grow together
+                </p>
+                <ul class="feature-list">
+                    <li>Live code editor (Monaco)</li>
+                    <li>Digital whiteboard (Excalidraw)</li>
+                    <li>Video conferencing integration</li>
+                    <li>Screen sharing capabilities</li>
+                    <li>Real-time commenting</li>
+                    <li>Study groups & channels</li>
+                </ul>
+                <button class="demo-button" onclick="demoCollaboration()">
+                    <i class="fas fa-users"></i> Start Collaborating
+                </button>
+            </div>
+            
+            <!-- Feature 7: PWA -->
+            <div class="feature-card-large">
+                <div class="feature-icon-large">📱</div>
+                <h3 class="feature-title">Progressive Web App</h3>
+                <p class="feature-description">
+                    Native app experience on any device
+                </p>
+                <ul class="feature-list">
+                    <li>Offline mode with sync</li>
+                    <li>Install as native app</li>
+                    <li>Push notifications</li>
+                    <li>Background sync</li>
+                    <li>Touch-optimized interface</li>
+                    <li>Biometric authentication</li>
+                </ul>
+                <button class="demo-button" onclick="installPWA()">
+                    <i class="fas fa-download"></i> Install App
+                </button>
+            </div>
+            
+            <!-- Feature 8: Accessibility -->
+            <div class="feature-card-large">
+                <div class="feature-icon-large">♿</div>
+                <h3 class="feature-title">Accessibility First</h3>
+                <p class="feature-description">
+                    Inclusive education for everyone
+                </p>
+                <ul class="feature-list">
+                    <li>Screen reader optimized</li>
+                    <li>Keyboard-only navigation</li>
+                    <li>High contrast mode</li>
+                    <li>Font size adjustment</li>
+                    <li>Voice commands</li>
+                    <li>WCAG 2.1 AAA compliant</li>
+                </ul>
+                <button class="demo-button" onclick="demoAccessibility()">
+                    <i class="fas fa-universal-access"></i> Learn More
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tech Stack Section -->
+        <div style="margin-top: 120px; max-width: 1200px; margin-left: auto; margin-right: auto;">
+            <h2 style="font-size: 48px; font-weight: 800; text-align: center; margin-bottom: 24px;">
+                Built with Cutting-Edge Technology
+            </h2>
+            <p style="text-align: center; color: var(--text-secondary); font-size: 18px; margin-bottom: 64px;">
+                Leveraging the best tools and frameworks from tech giants
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;">
+                <div class="modern-card" style="text-align: center; padding: 32px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">⚡</div>
+                    <div style="font-weight: 700; margin-bottom: 8px;">Cloudflare Workers</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">Edge Computing</div>
+                </div>
+                
+                <div class="modern-card" style="text-align: center; padding: 32px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🎨</div>
+                    <div style="font-weight: 700; margin-bottom: 8px;">Tailwind CSS</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">Utility-First CSS</div>
+                </div>
+                
+                <div class="modern-card" style="text-align: center; padding: 32px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🤖</div>
+                    <div style="font-weight: 700; margin-bottom: 8px;">OpenAI GPT-4</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">AI Assistant</div>
+                </div>
+                
+                <div class="modern-card" style="text-align: center; padding: 32px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                    <div style="font-weight: 700; margin-bottom: 8px;">Chart.js</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">Data Visualization</div>
+                </div>
+                
+                <div class="modern-card" style="text-align: center; padding: 32px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">💻</div>
+                    <div style="font-weight: 700; margin-bottom: 8px;">Monaco Editor</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">VS Code Editor</div>
+                </div>
+                
+                <div class="modern-card" style="text-align: center; padding: 32px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🎯</div>
+                    <div style="font-weight: 700; margin-bottom: 8px;">Hono Framework</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">Fast Backend</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CTA Section -->
+        <div style="text-align: center; margin-top: 120px; padding: 80px 24px;">
+            <h2 style="font-size: 56px; font-weight: 900; margin-bottom: 24px;">
+                Ready to Transform Your Learning?
+            </h2>
+            <p style="font-size: 20px; color: var(--text-secondary); margin-bottom: 48px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Join thousands of students already experiencing the future of education
+            </p>
+            <button class="glass-button" style="padding: 24px 64px; font-size: 20px; background: var(--gradient-gold);" onclick="window.location.href='/'">
+                <i class="fas fa-rocket"></i> Get Started Now
+            </button>
+        </div>
+    </div>
+    
+    <!-- Load Scripts -->
+    <script src="/static/app-v2.js"></script>
+    
+    <script>
+        // Demo Functions
+        function scrollToFeatures() {
+            document.getElementById('features').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function demoGlassmorphism() {
+            Utils.showToast('Glassmorphism is active throughout this page! 🎨', 'success');
+        }
+        
+        function demoLevelUp() {
+            Gamification.showLevelUpAnimation(10);
+        }
+        
+        function demoAnalytics() {
+            Utils.showToast('Analytics dashboard coming up! 📊', 'info');
+        }
+        
+        function demoCollaboration() {
+            Utils.showToast('Collaboration features available in full version! 🔴', 'info');
+        }
+        
+        function installPWA() {
+            Utils.showToast('PWA installation will be available soon! 📱', 'info');
+        }
+        
+        function demoAccessibility() {
+            Utils.showToast('All accessibility features are built-in! ♿', 'success');
+        }
+        
+        // Show welcome toast
+        setTimeout(() => {
+            Utils.showToast('Welcome to the most advanced LMS! Press Cmd+K to explore', 'success', 5000);
+        }, 1000);
+    </script>
+</body>
+</html>
