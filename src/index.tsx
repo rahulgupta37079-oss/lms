@@ -851,6 +851,195 @@ app.get('/api/mentor/:mentorId/analytics', async (c) => {
 // FRONTEND
 // ============================================
 
+// ============================================
+// GAMIFICATION ROUTES (v6.0)
+// ============================================
+
+// Get student gamification data
+app.get('/api/gamification/:studentId', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    let gamification = await c.env.DB.prepare(
+      'SELECT * FROM student_gamification WHERE student_id = ?'
+    ).bind(studentId).first()
+    
+    // Create if doesn't exist
+    if (!gamification) {
+      await c.env.DB.prepare(`
+        INSERT INTO student_gamification (student_id, xp, level, streak_days, last_login_date)
+        VALUES (?, 0, 1, 0, date('now'))
+      `).bind(studentId).run()
+      
+      gamification = { xp: 0, level: 1, streak_days: 0, badges: [] }
+    }
+    
+    // Get badges
+    const badges = await c.env.DB.prepare(`
+      SELECT b.* FROM student_badges sb
+      JOIN badges b ON sb.badge_id = b.badge_id
+      WHERE sb.student_id = ?
+    `).bind(studentId).all()
+    
+    return c.json({
+      ...gamification,
+      badges: badges.results
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch gamification data' }, 500)
+  }
+})
+
+// Update gamification data
+app.post('/api/gamification/update', async (c) => {
+  try {
+    const { studentId, xp, level, streak } = await c.req.json()
+    
+    await c.env.DB.prepare(`
+      UPDATE student_gamification
+      SET xp = ?, level = ?, streak_days = ?, updated_at = datetime('now')
+      WHERE student_id = ?
+    `).bind(xp, level, streak, studentId).run()
+    
+    return c.json({ success: true })
+  } catch (error) {
+    return c.json({ error: 'Failed to update gamification data' }, 500)
+  }
+})
+
+// Unlock badge
+app.post('/api/gamification/badge/unlock', async (c) => {
+  try {
+    const { studentId, badgeId } = await c.req.json()
+    
+    await c.env.DB.prepare(`
+      INSERT OR IGNORE INTO student_badges (student_id, badge_id)
+      VALUES (?, ?)
+    `).bind(studentId, badgeId).run()
+    
+    return c.json({ success: true })
+  } catch (error) {
+    return c.json({ error: 'Failed to unlock badge' }, 500)
+  }
+})
+
+// Get leaderboard
+app.get('/api/leaderboard/:category', async (c) => {
+  try {
+    const category = c.req.param('category')
+    
+    const leaderboard = await c.env.DB.prepare(`
+      SELECT 
+        s.id,
+        s.full_name,
+        sg.xp,
+        sg.level,
+        sg.streak_days,
+        ROW_NUMBER() OVER (ORDER BY sg.xp DESC) as rank
+      FROM student_gamification sg
+      JOIN students s ON sg.student_id = s.id
+      ORDER BY sg.xp DESC
+      LIMIT 100
+    `).all()
+    
+    return c.json(leaderboard.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch leaderboard' }, 500)
+  }
+})
+
+// Get daily challenges
+app.get('/api/challenges/daily', async (c) => {
+  try {
+    const challenges = await c.env.DB.prepare(`
+      SELECT * FROM daily_challenges
+      WHERE challenge_date = date('now') AND is_active = 1
+    `).all()
+    
+    return c.json(challenges.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch challenges' }, 500)
+  }
+})
+
+// ============================================
+// AI ASSISTANT ROUTES (v6.0)
+// ============================================
+
+// Save AI chat message
+app.post('/api/ai/chat', async (c) => {
+  try {
+    const { studentId, messageType, messageText, context } = await c.req.json()
+    
+    await c.env.DB.prepare(`
+      INSERT INTO ai_chat_history (student_id, message_type, message_text, context)
+      VALUES (?, ?, ?, ?)
+    `).bind(studentId, messageType, messageText, context || null).run()
+    
+    // TODO: Call OpenAI API here when API key is configured
+    // For now, return a mock response
+    const response = "I'm your AI assistant! How can I help you learn today?"
+    
+    return c.json({ response })
+  } catch (error) {
+    return c.json({ error: 'Failed to process chat' }, 500)
+  }
+})
+
+// Get AI recommendations
+app.get('/api/ai/recommendations/:studentId', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    const recommendations = await c.env.DB.prepare(`
+      SELECT * FROM ai_recommendations
+      WHERE student_id = ? AND is_viewed = 0
+      ORDER BY confidence_score DESC
+      LIMIT 5
+    `).bind(studentId).all()
+    
+    return c.json(recommendations.results)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch recommendations' }, 500)
+  }
+})
+
+// ============================================
+// ANALYTICS ROUTES (v6.0)
+// ============================================
+
+// Get learning analytics
+app.get('/api/analytics/:studentId', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    // Last 30 days analytics
+    const analytics = await c.env.DB.prepare(`
+      SELECT * FROM learning_analytics
+      WHERE student_id = ? AND date >= date('now', '-30 days')
+      ORDER BY date DESC
+    `).bind(studentId).all()
+    
+    // Skill progress
+    const skills = await c.env.DB.prepare(`
+      SELECT * FROM skill_progress
+      WHERE student_id = ?
+      ORDER BY proficiency_level DESC
+    `).bind(studentId).all()
+    
+    return c.json({
+      daily_analytics: analytics.results,
+      skill_progress: skills.results
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch analytics' }, 500)
+  }
+})
+
+// ============================================
+// ROOT ROUTE
+// ============================================
+
 app.get('/', (c) => {
   return c.html(`
 <!DOCTYPE html>
@@ -858,16 +1047,29 @@ app.get('/', (c) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PassionBots LMS - Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>PassionBots LMS v6.0 - IoT & Robotics Excellence</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Custom Styles - v6.0 -->
     <link href="/static/styles.css" rel="stylesheet">
+    <link href="/static/styles-v2.css" rel="stylesheet">
 </head>
 <body>
+    <div class="animated-bg"></div>
     <div id="app"></div>
     
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app.js"></script>
+    <script src="/static/app-v2.js"></script>
 </body>
 </html>
   `)
