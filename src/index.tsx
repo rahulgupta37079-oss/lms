@@ -974,13 +974,15 @@ app.get('/api/challenges/daily', async (c) => {
 // Save AI chat message
 app.post('/api/ai/chat', async (c) => {
   try {
-    const { studentId, messageType, messageText, context } = await c.req.json()
+    const { studentId, message, context } = await c.req.json()
+    const messageType = 'user'
+    const messageText = message
     
     // Save user message to database
     await c.env.DB.prepare(`
       INSERT INTO ai_chat_history (student_id, message_type, message_text, context)
       VALUES (?, ?, ?, ?)
-    `).bind(studentId, messageType, messageText, context || null).run()
+    `).bind(studentId, messageType, messageText, context || '').run()
     
     // Get recent chat history for context
     const history = await c.env.DB.prepare(`
@@ -1011,8 +1013,8 @@ app.post('/api/ai/chat', async (c) => {
     
     try {
       // Try to use OpenAI API if key is available
-      const openaiKey = c.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY
-      const openaiBaseUrl = c.env.OPENAI_BASE_URL || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+      const openaiKey = c.env.OPENAI_API_KEY
+      const openaiBaseUrl = c.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
       
       if (openaiKey) {
         const aiResponse = await fetch(`${openaiBaseUrl}/chat/completions`, {
