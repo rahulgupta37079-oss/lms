@@ -15,6 +15,9 @@ app.use('/api/*', cors())
 
 // Serve static files
 app.use('/static/*', serveStatic({ root: './public' }))
+app.use('/landing.html', serveStatic({ path: 'landing.html' }))
+app.use('/features.html', serveStatic({ path: 'features.html' }))
+app.use('/manifest.json', serveStatic({ path: 'manifest.json' }))
 
 // ============================================
 // AUTHENTICATION ROUTES
