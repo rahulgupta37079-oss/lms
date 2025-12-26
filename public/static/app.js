@@ -66,6 +66,10 @@ function renderView() {
     case 'verify':
       app.innerHTML = renderVerifyCertificate();
       break;
+    case 'curriculum':
+      app.innerHTML = renderCurriculumBrowser();
+      loadCurriculumGrades();
+      break;
     default:
       app.innerHTML = renderLogin();
   }
@@ -219,6 +223,10 @@ function renderDashboard() {
         <div class="quick-link-card" onclick="navigateTo('verify')">
           <div class="quick-link-icon"><i class="fas fa-shield-alt"></i></div>
           <div class="quick-link-title">Verify Certificate</div>
+        </div>
+        <div class="quick-link-card" onclick="navigateTo('curriculum')">
+          <div class="quick-link-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="quick-link-title">Curriculum Browser</div>
         </div>
       </div>
       
@@ -1177,6 +1185,274 @@ function logout() {
     AppState.currentView = 'login';
     renderView();
   }
+}
+
+// ============================================
+// CURRICULUM BROWSER
+// ============================================
+
+function renderCurriculumBrowser() {
+  return `
+    ${renderHeader('K-12 Curriculum Browser')}
+    <div class="main-content">
+      <div style="background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-indigo) 100%); padding: 2rem; border-radius: 12px; margin-bottom: 2rem; color: white;">
+        <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 0.5rem;">📚 Complete K-12 Robotics Curriculum</h2>
+        <p style="opacity: 0.9;">Explore all 13 grades from Kindergarten to Grade 12 with 624 total sessions</p>
+      </div>
+
+      <div id="curriculumStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;"></div>
+
+      <div class="card">
+        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fas fa-layer-group" style="color: var(--primary-indigo);"></i>
+          All Grades
+        </h3>
+        <div id="gradesContainer" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="text-align: center; padding: 3rem;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: var(--primary-indigo);"></i>
+            <p style="margin-top: 1rem; color: var(--text-secondary);">Loading curriculum...</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="modulesView" style="display: none;" class="card" style="margin-top: 2rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+          <h3 style="font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-book" style="color: var(--accent-purple);"></i>
+            Modules for <span id="selectedGradeName" style="color: var(--primary-indigo);"></span>
+          </h3>
+          <button onclick="backToGrades()" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Grades
+          </button>
+        </div>
+        <div id="modulesContainer"></div>
+      </div>
+
+      <div id="sessionsView" style="display: none;" class="card" style="margin-top: 2rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+          <h3 style="font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-list-alt" style="color: var(--accent-green);"></i>
+            Sessions for <span id="selectedModuleName" style="color: var(--primary-indigo);"></span>
+          </h3>
+          <button onclick="backToModules()" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Modules
+          </button>
+        </div>
+        <div id="sessionsContainer"></div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadCurriculumGrades() {
+  try {
+    const response = await axios.get('/api/curriculum/grades');
+    const grades = response.data;
+    
+    displayCurriculumStats(grades);
+    displayGrades(grades);
+  } catch (error) {
+    console.error('Error loading grades:', error);
+    document.getElementById('gradesContainer').innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: #dc2626;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 40px; margin-bottom: 1rem;"></i>
+        <p>Error loading curriculum. Please try again.</p>
+      </div>
+    `;
+  }
+}
+
+function displayCurriculumStats(grades) {
+  const statsHtml = `
+    <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 1.5rem; border-radius: 10px; color: white;">
+      <div style="font-size: 14px; opacity: 0.9; margin-bottom: 0.5rem;">Total Grades</div>
+      <div style="font-size: 32px; font-weight: 700;">${grades.length}</div>
+    </div>
+    <div style="background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%); padding: 1.5rem; border-radius: 10px; color: white;">
+      <div style="font-size: 14px; opacity: 0.9; margin-bottom: 0.5rem;">Phase 1 Complete</div>
+      <div style="font-size: 32px; font-weight: 700;">144</div>
+      <div style="font-size: 12px; opacity: 0.9; margin-top: 0.25rem;">Sessions (KG-2)</div>
+    </div>
+    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 1.5rem; border-radius: 10px; color: white;">
+      <div style="font-size: 14px; opacity: 0.9; margin-bottom: 0.5rem;">Total Planned</div>
+      <div style="font-size: 32px; font-weight: 700;">624</div>
+      <div style="font-size: 12px; opacity: 0.9; margin-top: 0.25rem;">Sessions (KG-12)</div>
+    </div>
+    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 1.5rem; border-radius: 10px; color: white;">
+      <div style="font-size: 14px; opacity: 0.9; margin-bottom: 0.5rem;">Age Range</div>
+      <div style="font-size: 32px; font-weight: 700;">5-17</div>
+      <div style="font-size: 12px; opacity: 0.9; margin-top: 0.25rem;">Years</div>
+    </div>
+  `;
+  document.getElementById('curriculumStats').innerHTML = statsHtml;
+}
+
+function displayGrades(grades) {
+  const gradesHtml = grades.map(grade => `
+    <div style="border-left: 4px solid var(--primary-indigo); background: linear-gradient(90deg, rgba(99, 102, 241, 0.05) 0%, rgba(255,255,255,0) 100%); padding: 1.5rem; border-radius: 10px; cursor: pointer; transition: all 0.3s;" 
+         onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" 
+         onmouseout="this.style.boxShadow='none'"
+         onclick="loadCurriculumModules(${grade.id}, '${grade.grade_name}')">
+      <div style="display: flex; align-items: center; gap: 1.5rem;">
+        <div style="width: 60px; height: 60px; background: var(--primary-indigo); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0;">
+          ${grade.grade_code}
+        </div>
+        <div style="flex: 1;">
+          <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 0.5rem;">${grade.grade_name}</h4>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 0.75rem;">${grade.description}</p>
+          <div style="display: flex; gap: 1.5rem; font-size: 13px; color: var(--text-secondary);">
+            <span><i class="fas fa-users" style="color: var(--primary-indigo);"></i> Age: ${grade.age_range}</span>
+            <span><i class="fas fa-palette" style="color: var(--accent-purple);"></i> Theme: ${grade.theme}</span>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right" style="font-size: 24px; color: var(--primary-indigo);"></i>
+      </div>
+    </div>
+  `).join('');
+  
+  document.getElementById('gradesContainer').innerHTML = gradesHtml;
+}
+
+async function loadCurriculumModules(gradeId, gradeName) {
+  document.getElementById('selectedGradeName').textContent = gradeName;
+  document.getElementById('modulesView').style.display = 'block';
+  document.getElementById('sessionsView').style.display = 'none';
+  
+  document.getElementById('modulesContainer').innerHTML = `
+    <div style="text-align: center; padding: 2rem;">
+      <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary-indigo);"></i>
+    </div>
+  `;
+  
+  // Scroll to modules
+  document.getElementById('modulesView').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  
+  try {
+    const response = await axios.get(`/api/curriculum/grade/${gradeId}/modules`);
+    const modules = response.data;
+    
+    if (modules.length === 0) {
+      document.getElementById('modulesContainer').innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+          <p>No modules available for this grade yet.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const modulesHtml = modules.map(module => `
+      <div style="border: 2px solid rgba(139, 92, 246, 0.2); border-radius: 10px; padding: 1.5rem; margin-bottom: 1rem; cursor: pointer; transition: all 0.3s;" 
+           onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.boxShadow='0 4px 12px rgba(139, 92, 246, 0.2)'" 
+           onmouseout="this.style.borderColor='rgba(139, 92, 246, 0.2)'; this.style.boxShadow='none'"
+           onclick="loadCurriculumSessions(${module.id}, '${module.title.replace(/'/g, "\\'")}')">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+          <span style="background: var(--accent-purple); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 13px; font-weight: 600;">
+            Module ${module.module_number}
+          </span>
+          <h4 style="font-size: 18px; font-weight: 600; flex: 1;">${module.title}</h4>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">${module.description}</p>
+        <div style="display: flex; gap: 2rem; font-size: 14px;">
+          <span style="color: var(--primary-indigo); font-weight: 600;">
+            <i class="fas fa-book-open"></i> ${module.total_sessions} Sessions
+          </span>
+          <span style="color: var(--accent-green); font-weight: 600;">
+            <i class="fas fa-palette"></i> ${module.theme}
+          </span>
+        </div>
+      </div>
+    `).join('');
+    
+    document.getElementById('modulesContainer').innerHTML = modulesHtml;
+  } catch (error) {
+    console.error('Error loading modules:', error);
+    document.getElementById('modulesContainer').innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: #dc2626;">
+        <p>Error loading modules. Please try again.</p>
+      </div>
+    `;
+  }
+}
+
+async function loadCurriculumSessions(moduleId, moduleName) {
+  document.getElementById('selectedModuleName').textContent = moduleName;
+  document.getElementById('sessionsView').style.display = 'block';
+  
+  document.getElementById('sessionsContainer').innerHTML = `
+    <div style="text-align: center; padding: 2rem;">
+      <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary-indigo);"></i>
+    </div>
+  `;
+  
+  // Scroll to sessions
+  document.getElementById('sessionsView').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  
+  try {
+    const response = await axios.get(`/api/curriculum/module/${moduleId}/sessions`);
+    const sessions = response.data;
+    
+    if (sessions.length === 0) {
+      document.getElementById('sessionsContainer').innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+          <p>No sessions available for this module yet.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const sessionsHtml = sessions.map(session => `
+      <div style="border: 1px solid rgba(209, 213, 219, 0.5); border-radius: 8px; padding: 1.25rem; margin-bottom: 0.75rem; ${session.is_project ? 'border-left: 4px solid var(--accent-green); background: rgba(16, 185, 129, 0.05);' : ''} transition: all 0.3s;" 
+           onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'" 
+           onmouseout="this.style.boxShadow='none'">
+        <div style="display: flex; align-items: start; gap: 1rem;">
+          <div style="width: 40px; height: 40px; background: var(--text-primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;">
+            ${session.session_number}
+          </div>
+          <div style="flex: 1;">
+            <h5 style="font-size: 16px; font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+              ${session.title}
+              ${session.is_project ? '<span style="background: var(--accent-green); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 11px; font-weight: 600;">PROJECT</span>' : ''}
+            </h5>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 0.75rem;">${session.description}</p>
+            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 0.5rem;">
+              <i class="fas fa-clock" style="color: var(--primary-indigo);"></i>
+              <strong>Duration:</strong> ${session.duration_minutes} minutes
+            </div>
+            ${session.objectives ? `
+              <div style="margin-top: 0.75rem;">
+                <strong style="font-size: 13px; color: var(--text-primary);">
+                  <i class="fas fa-bullseye" style="color: var(--accent-purple);"></i> Learning Objectives:
+                </strong>
+                <ul style="list-style: disc; padding-left: 1.5rem; margin-top: 0.5rem; font-size: 13px; color: var(--text-secondary);">
+                  ${JSON.parse(session.objectives).map(obj => `<li style="margin-bottom: 0.25rem;">${obj}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+    
+    document.getElementById('sessionsContainer').innerHTML = sessionsHtml;
+  } catch (error) {
+    console.error('Error loading sessions:', error);
+    document.getElementById('sessionsContainer').innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: #dc2626;">
+        <p>Error loading sessions. Please try again.</p>
+      </div>
+    `;
+  }
+}
+
+function backToGrades() {
+  document.getElementById('modulesView').style.display = 'none';
+  document.getElementById('sessionsView').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function backToModules() {
+  document.getElementById('sessionsView').style.display = 'none';
+  document.getElementById('modulesView').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 console.log('✅ PassionBots LMS App Loaded Successfully');

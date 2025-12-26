@@ -17,6 +17,7 @@ app.use('/api/*', cors())
 app.use('/static/*', serveStatic({ root: './public' }))
 app.use('/landing.html', serveStatic({ path: 'landing.html' }))
 app.use('/features.html', serveStatic({ path: 'features.html' }))
+app.use('/curriculum-browser.html', serveStatic({ path: 'curriculum-browser.html' }))
 app.use('/manifest.json', serveStatic({ path: 'manifest.json' }))
 
 // ============================================
@@ -1843,6 +1844,14 @@ app.get('/api/assessments/:assessmentId/stats', async (c) => {
   } catch (error) {
     return c.json({ error: 'Failed to fetch stats' }, 500)
   }
+})
+
+// ============================================
+// CURRICULUM BROWSER
+// ============================================
+
+app.get('/curriculum-browser', (c) => {
+  return c.redirect('/curriculum-browser.html')
 })
 
 // ============================================
