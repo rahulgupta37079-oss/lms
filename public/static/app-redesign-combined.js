@@ -456,25 +456,10 @@ function renderHeader() {
 }
 
 // Continue in next file...
-// ============================================
-// CURRICULUM BROWSER - REDESIGNED
-// ============================================
 
-function renderCurriculumBrowser() {
-  return `
-    ${renderHeader()}
-    
-    <div class="main-content">
-      <div class="container">
-        
-        <!-- Page Header -->
-        <div class="flex-between mb-xl">
-          <div>
-            <h1 class="gradient-text" style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">
-              Curriculum Browser
-            </h1>
-            <p style="font-size: 1.125rem; color: var(--text-secondary);">
-              Explore our comprehensive K-12 Robotics & IoT curriculum
+// ============================================
+// PART 2 - Additional Functions
+// ============================================
             </p>
           </div>
           <button class="btn btn-primary">
