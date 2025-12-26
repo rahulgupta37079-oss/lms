@@ -191,8 +191,15 @@ async function handleLogin(event) {
     
     const data = await response.json();
     
-    if (response.ok && data.user) {
-      AppState.currentUser = data.user;
+    // API returns data.student or data.mentor based on role
+    const user = data.student || data.mentor;
+    
+    if (response.ok && user) {
+      AppState.currentUser = {
+        ...user,
+        name: user.full_name || user.name,
+        role: role
+      };
       AppState.isLoggedIn = true;
       AppState.currentView = 'dashboard';
       renderView();
