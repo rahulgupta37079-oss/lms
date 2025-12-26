@@ -1340,6 +1340,206 @@ app.post('/api/content/assignments/create', async (c) => {
 })
 
 // ============================================
+// K-12 CURRICULUM ROUTES
+// ============================================
+
+// Get all grades
+app.get('/api/curriculum/grades', async (c) => {
+  try {
+    const grades = await c.env.DB.prepare(
+      'SELECT * FROM grades ORDER BY CASE grade_code WHEN \'KG\' THEN 0 ELSE CAST(grade_code AS INTEGER) END'
+    ).all()
+    
+    return c.json(grades.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch grades' }, 500)
+  }
+})
+
+// Get curriculum modules for a grade
+app.get('/api/curriculum/grade/:gradeId/modules', async (c) => {
+  try {
+    const gradeId = c.req.param('gradeId')
+    
+    const modules = await c.env.DB.prepare(`
+      SELECT cm.*, g.grade_name, g.grade_code 
+      FROM curriculum_modules cm
+      JOIN grades g ON cm.grade_id = g.id
+      WHERE cm.grade_id = ?
+      ORDER BY cm.module_number
+    `).bind(gradeId).all()
+    
+    return c.json(modules.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch modules' }, 500)
+  }
+})
+
+// Get sessions for a module
+app.get('/api/curriculum/module/:moduleId/sessions', async (c) => {
+  try {
+    const moduleId = c.req.param('moduleId')
+    
+    const sessions = await c.env.DB.prepare(`
+      SELECT * FROM curriculum_sessions
+      WHERE module_id = ? AND is_published = 1
+      ORDER BY order_number
+    `).bind(moduleId).all()
+    
+    return c.json(sessions.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch sessions' }, 500)
+  }
+})
+
+// Get session details
+app.get('/api/curriculum/session/:sessionId', async (c) => {
+  try {
+    const sessionId = c.req.param('sessionId')
+    
+    const session = await c.env.DB.prepare(
+      'SELECT * FROM curriculum_sessions WHERE id = ?'
+    ).bind(sessionId).first()
+    
+    if (!session) {
+      return c.json({ error: 'Session not found' }, 404)
+    }
+    
+    // Get components for this session
+    const components = await c.env.DB.prepare(`
+      SELECT kc.*, sc.quantity, sc.is_required
+      FROM session_components sc
+      JOIN kit_components kc ON sc.component_id = kc.id
+      WHERE sc.session_id = ?
+    `).bind(sessionId).all()
+    
+    // Get project if exists
+    const project = await c.env.DB.prepare(
+      'SELECT * FROM curriculum_projects WHERE session_id = ?'
+    ).bind(sessionId).first()
+    
+    // Get quiz if exists
+    const quiz = await c.env.DB.prepare(
+      'SELECT * FROM curriculum_quizzes WHERE session_id = ?'
+    ).bind(sessionId).first()
+    
+    return c.json({
+      ...session,
+      components: components.results || [],
+      project,
+      quiz
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch session details' }, 500)
+  }
+})
+
+// Get student progress for a module
+app.get('/api/curriculum/student/:studentId/progress/:moduleId', async (c) => {
+  try {
+    const { studentId, moduleId } = c.req.param()
+    
+    const progress = await c.env.DB.prepare(`
+      SELECT scp.*, cs.title, cs.session_number
+      FROM student_curriculum_progress scp
+      JOIN curriculum_sessions cs ON scp.session_id = cs.id
+      WHERE scp.student_id = ? AND cs.module_id = ?
+      ORDER BY cs.order_number
+    `).bind(studentId, moduleId).all()
+    
+    return c.json(progress.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch progress' }, 500)
+  }
+})
+
+// Update session progress
+app.post('/api/curriculum/progress/update', async (c) => {
+  try {
+    const { studentId, sessionId, status, attendance, participationScore, quizScore, projectSubmission, feedback } = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO student_curriculum_progress 
+      (student_id, session_id, status, attendance, participation_score, quiz_score, project_submission, feedback, completed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'completed' THEN CURRENT_TIMESTAMP ELSE NULL END)
+      ON CONFLICT(student_id, session_id) DO UPDATE SET
+        status = excluded.status,
+        attendance = excluded.attendance,
+        participation_score = excluded.participation_score,
+        quiz_score = excluded.quiz_score,
+        project_submission = excluded.project_submission,
+        feedback = excluded.feedback,
+        completed_at = excluded.completed_at
+    `).bind(studentId, sessionId, status || 'in_progress', attendance || 0, participationScore || 0, quizScore || 0, projectSubmission || null, feedback || null, status).run()
+    
+    return c.json({ success: true, message: 'Progress updated' })
+  } catch (error) {
+    return c.json({ error: 'Failed to update progress' }, 500)
+  }
+})
+
+// Get all kit components
+app.get('/api/curriculum/components', async (c) => {
+  try {
+    const components = await c.env.DB.prepare(
+      'SELECT * FROM kit_components ORDER BY category, name'
+    ).all()
+    
+    return c.json(components.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch components' }, 500)
+  }
+})
+
+// Get student badges
+app.get('/api/curriculum/student/:studentId/badges', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    const badges = await c.env.DB.prepare(`
+      SELECT cb.*, scb.earned_at
+      FROM student_curriculum_badges scb
+      JOIN curriculum_badges cb ON scb.badge_id = cb.id
+      WHERE scb.student_id = ?
+      ORDER BY scb.earned_at DESC
+    `).bind(studentId).all()
+    
+    return c.json(badges.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch badges' }, 500)
+  }
+})
+
+// Get available badges
+app.get('/api/curriculum/badges', async (c) => {
+  try {
+    const badges = await c.env.DB.prepare(
+      'SELECT * FROM curriculum_badges ORDER BY category, points'
+    ).all()
+    
+    return c.json(badges.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch badges' }, 500)
+  }
+})
+
+// Award badge to student
+app.post('/api/curriculum/badge/award', async (c) => {
+  try {
+    const { studentId, badgeId } = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT OR IGNORE INTO student_curriculum_badges (student_id, badge_id)
+      VALUES (?, ?)
+    `).bind(studentId, badgeId).run()
+    
+    return c.json({ success: true, message: 'Badge awarded' })
+  } catch (error) {
+    return c.json({ error: 'Failed to award badge' }, 500)
+  }
+})
+
+// ============================================
 // ROOT ROUTE
 // ============================================
 
