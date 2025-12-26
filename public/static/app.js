@@ -812,11 +812,11 @@ async function loadSessions() {
               
               ${!isPast && session.meeting_url ? `
                 <a href="${session.meeting_url}" target="_blank" class="btn-primary" style="width: 100%; justify-content: center; text-decoration: none; display: flex;">
-                  <i class="fas fa-video"></i> Join Session
+                  <i class="fas fa-video"></i> Join Zoom Session
                 </a>
               ` : isPast && session.recording_url ? `
                 <a href="${session.recording_url}" target="_blank" class="btn-secondary" style="width: 100%; justify-content: center; text-decoration: none; display: flex;">
-                  <i class="fas fa-play-circle"></i> Watch Recording
+                  <i class="fas fa-play-circle"></i> Watch Zoom Recording
                 </a>
               ` : ''}
             </div>
