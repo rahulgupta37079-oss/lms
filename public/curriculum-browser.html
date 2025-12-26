@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curriculum Browser - PassionBots LMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <h1 class="text-3xl font-bold">
+                <i class="fas fa-graduation-cap mr-2"></i>
+                PassionBots LMS - Curriculum Browser
+            </h1>
+            <p class="mt-2 text-indigo-100">K-12 Robotics & IoT Curriculum Explorer</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Statistics Cards -->
+        <div id="statsCards" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Will be populated by JS -->
+        </div>
+
+        <!-- Grades List -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-layer-group mr-2 text-indigo-600"></i>
+                All Grades
+            </h2>
+            <div id="gradesList" class="space-y-4">
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
+                    <p class="mt-2 text-gray-600">Loading grades...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modules List -->
+        <div id="modulesSection" class="bg-white rounded-lg shadow-md p-6 mb-8 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-book mr-2 text-indigo-600"></i>
+                Modules for <span id="selectedGradeName" class="text-indigo-600"></span>
+            </h2>
+            <button onclick="backToGrades()" class="mb-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Grades
+            </button>
+            <div id="modulesList" class="space-y-4">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
+
+        <!-- Sessions List -->
+        <div id="sessionsSection" class="bg-white rounded-lg shadow-md p-6 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-list-alt mr-2 text-indigo-600"></i>
+                Sessions for <span id="selectedModuleName" class="text-indigo-600"></span>
+            </h2>
+            <button onclick="backToModules()" class="mb-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Modules
+            </button>
+            <div id="sessionsList" class="space-y-3">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE = 'https://passionbots-lms.pages.dev/api';
+        let currentGrade = null;
+        let currentModule = null;
+        let allGrades = [];
+
+        // Load all grades on page load
+        async function loadGrades() {
+            try {
+                const response = await axios.get(`${API_BASE}/curriculum/grades`);
+                allGrades = response.data;
+                displayGrades(allGrades);
+                updateStats();
+            } catch (error) {
+                console.error('Error loading grades:', error);
+                document.getElementById('gradesList').innerHTML = `
+                    <div class="text-center py-8 text-red-600">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-2"></i>
+                        <p>Error loading grades. Please refresh the page.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayGrades(grades) {
+            const gradesList = document.getElementById('gradesList');
+            
+            if (grades.length === 0) {
+                gradesList.innerHTML = '<p class="text-gray-600 text-center py-8">No grades available</p>';
+                return;
+            }
+
+            gradesList.innerHTML = grades.map(grade => `
+                <div class="border-l-4 border-indigo-500 bg-gradient-to-r from-indigo-50 to-white p-4 rounded-lg hover:shadow-md transition cursor-pointer"
+                     onclick="loadModules(${grade.id}, '${grade.grade_name}')">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-indigo-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold">
+                                ${grade.grade_code}
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">${grade.grade_name}</h3>
+                                <p class="text-gray-600 mt-1">${grade.description}</p>
+                                <div class="flex space-x-4 mt-2 text-sm text-gray-500">
+                                    <span><i class="fas fa-users mr-1"></i> Age: ${grade.age_range}</span>
+                                    <span><i class="fas fa-palette mr-1"></i> Theme: ${grade.theme}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-2xl text-indigo-600"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadModules(gradeId, gradeName) {
+            currentGrade = gradeId;
+            document.getElementById('selectedGradeName').textContent = gradeName;
+            
+            try {
+                const response = await axios.get(`${API_BASE}/curriculum/grade/${gradeId}/modules`);
+                const modules = response.data;
+                
+                document.getElementById('modulesSection').classList.remove('hidden');
+                document.getElementById('sessionsSection').classList.add('hidden');
+                
+                const modulesList = document.getElementById('modulesList');
+                
+                if (modules.length === 0) {
+                    modulesList.innerHTML = '<p class="text-gray-600 text-center py-8">No modules available for this grade</p>';
+                    return;
+                }
+
+                modulesList.innerHTML = modules.map(module => `
+                    <div class="border border-gray-200 rounded-lg p-5 hover:shadow-md transition cursor-pointer bg-white"
+                         onclick="loadSessions(${module.id}, '${module.title.replace(/'/g, "\\'")}')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3">
+                                    <span class="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                        Module ${module.module_number}
+                                    </span>
+                                    <h3 class="text-lg font-bold text-gray-800">${module.title}</h3>
+                                </div>
+                                <p class="text-gray-600 mt-2">${module.description}</p>
+                                <div class="flex space-x-4 mt-3 text-sm">
+                                    <span class="text-indigo-600 font-semibold">
+                                        <i class="fas fa-book-open mr-1"></i> ${module.total_sessions} Sessions
+                                    </span>
+                                    <span class="text-green-600 font-semibold">
+                                        <i class="fas fa-palette mr-1"></i> ${module.theme}
+                                    </span>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-2xl text-purple-600"></i>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Scroll to modules
+                document.getElementById('modulesSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                console.error('Error loading modules:', error);
+            }
+        }
+
+        async function loadSessions(moduleId, moduleName) {
+            currentModule = moduleId;
+            document.getElementById('selectedModuleName').textContent = moduleName;
+            
+            try {
+                const response = await axios.get(`${API_BASE}/curriculum/module/${moduleId}/sessions`);
+                const sessions = response.data;
+                
+                document.getElementById('sessionsSection').classList.remove('hidden');
+                
+                const sessionsList = document.getElementById('sessionsList');
+                
+                if (sessions.length === 0) {
+                    sessionsList.innerHTML = '<p class="text-gray-600 text-center py-8">No sessions available for this module</p>';
+                    return;
+                }
+
+                sessionsList.innerHTML = sessions.map(session => `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition ${session.is_project ? 'border-l-4 border-l-green-500 bg-green-50' : ''}">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3">
+                                    <span class="bg-gray-700 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
+                                        ${session.session_number}
+                                    </span>
+                                    <div>
+                                        <h4 class="text-lg font-bold text-gray-800 flex items-center">
+                                            ${session.title}
+                                            ${session.is_project ? '<span class="ml-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">PROJECT</span>' : ''}
+                                        </h4>
+                                        <p class="text-gray-600 text-sm mt-1">${session.description}</p>
+                                    </div>
+                                </div>
+                                <div class="ml-13 mt-3">
+                                    <div class="text-sm text-gray-700">
+                                        <i class="fas fa-clock text-indigo-600 mr-1"></i>
+                                        <strong>Duration:</strong> ${session.duration_minutes} minutes
+                                    </div>
+                                    ${session.objectives ? `
+                                        <div class="mt-2">
+                                            <strong class="text-sm text-gray-700"><i class="fas fa-bullseye text-purple-600 mr-1"></i> Objectives:</strong>
+                                            <ul class="list-disc list-inside text-sm text-gray-600 mt-1 ml-4">
+                                                ${JSON.parse(session.objectives).map(obj => `<li>${obj}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Scroll to sessions
+                document.getElementById('sessionsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        function backToGrades() {
+            document.getElementById('modulesSection').classList.add('hidden');
+            document.getElementById('sessionsSection').classList.add('hidden');
+            currentGrade = null;
+            currentModule = null;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function backToModules() {
+            document.getElementById('sessionsSection').classList.add('hidden');
+            currentModule = null;
+            document.getElementById('modulesSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        async function updateStats() {
+            try {
+                // Count total sessions across all implemented grades
+                let totalSessions = 0;
+                for (const grade of allGrades.slice(0, 3)) { // KG, Grade 1, Grade 2
+                    const response = await axios.get(`${API_BASE}/curriculum/grade/${grade.id}/modules`);
+                    const modules = response.data;
+                    totalSessions += modules.reduce((sum, m) => sum + m.total_sessions, 0);
+                }
+
+                const statsCards = document.getElementById('statsCards');
+                statsCards.innerHTML = `
+                    <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-lg shadow-md p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-indigo-100 text-sm font-semibold uppercase">Total Grades</p>
+                                <p class="text-3xl font-bold mt-2">${allGrades.length}</p>
+                            </div>
+                            <i class="fas fa-graduation-cap text-5xl opacity-20"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow-md p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-purple-100 text-sm font-semibold uppercase">Phase 1 Sessions</p>
+                                <p class="text-3xl font-bold mt-2">${totalSessions}</p>
+                            </div>
+                            <i class="fas fa-book-open text-5xl opacity-20"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow-md p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-100 text-sm font-semibold uppercase">Projects</p>
+                                <p class="text-3xl font-bold mt-2">24</p>
+                            </div>
+                            <i class="fas fa-project-diagram text-5xl opacity-20"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow-md p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-orange-100 text-sm font-semibold uppercase">Age Range</p>
+                                <p class="text-3xl font-bold mt-2">5-17</p>
+                            </div>
+                            <i class="fas fa-users text-5xl opacity-20"></i>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+
+        // Load grades when page loads
+        window.addEventListener('DOMContentLoaded', loadGrades);
+    </script>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p>&copy; 2025 PassionBots LMS. All rights reserved.</p>
+            <p class="mt-2 text-gray-400 text-sm">K-12 Robotics & IoT Education Platform</p>
+            <div class="mt-4 space-x-4">
+                <a href="https://github.com/rahulgupta37079-oss/lms" target="_blank" class="text-gray-400 hover:text-white transition">
+                    <i class="fab fa-github text-2xl"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
