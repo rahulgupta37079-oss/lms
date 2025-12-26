@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LMS Test</title>
+    <style>
+        body { background: #1a1d29; color: white; font-family: Arial; padding: 50px; text-align: center; }
+        .btn { background: #667eea; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>PassionBots LMS Test Page</h1>
+    <p>If you see this, the server is working!</p>
+    <button class="btn" onclick="location.href='/'">Go to Main App</button>
+    <button class="btn" onclick="testAPI()">Test API</button>
+    <div id="result" style="margin-top: 30px;"></div>
+    <script>
+        async function testAPI() {
+            try {
+                const res = await fetch('/api/curriculum/grades');
+                const data = await res.json();
+                document.getElementById('result').innerHTML = '<h3>API Works!</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch(e) {
+                document.getElementById('result').innerHTML = '<h3>API Error</h3><p>' + e.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

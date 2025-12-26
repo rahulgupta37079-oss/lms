@@ -19,6 +19,7 @@ app.use('/landing.html', serveStatic({ path: 'landing.html' }))
 app.use('/features.html', serveStatic({ path: 'features.html' }))
 app.use('/curriculum-browser.html', serveStatic({ path: 'curriculum-browser.html' }))
 app.use('/manifest.json', serveStatic({ path: 'manifest.json' }))
+app.use('/test.html', serveStatic({ path: 'test.html' }))
 
 // ============================================
 // AUTHENTICATION ROUTES
@@ -1896,11 +1897,12 @@ app.get('/', (c) => {
     
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/static/app-redesign-combined.js?v=${v}"></script>
+    <script src="/static/app-minimal.js?v=${v}"></script>
     <script>
-      window.onerror = function(msg, url, line) {
-        console.error('Error:', msg, 'at', url, ':', line);
-        document.getElementById('app').innerHTML = '<div style="padding:50px;color:#fff;"><h2>Error Loading App</h2><p>' + msg + '</p><p>Please refresh the page</p></div>';
+      window.onerror = function(msg, url, line, col, error) {
+        console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
+        console.error('Error object:', error);
+        document.getElementById('app').innerHTML = '<div style="padding:50px;color:#fff;background:rgba(255,0,0,0.2);border:2px solid #ff6b6b;border-radius:12px;max-width:800px;margin:50px auto;"><h2>🚨 Error Loading App</h2><p style="font-size:18px;margin:20px 0;"><strong>Message:</strong> ' + msg + '</p><p><strong>Location:</strong> ' + url + ':' + line + '</p><p><strong>Stack:</strong> ' + (error ? error.stack : 'N/A') + '</p><button onclick="location.reload()" style="background:#667eea;color:white;padding:12px 30px;border:none;border-radius:8px;font-size:16px;cursor:pointer;margin-top:20px;">Reload Page</button></div>';
       };
     </script>
 </body>
