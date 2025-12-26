@@ -1859,6 +1859,7 @@ app.get('/curriculum-browser', (c) => {
 // ============================================
 
 app.get('/', (c) => {
+  const v = Date.now(); // Cache busting version
   return c.html(`
 <!DOCTYPE html>
 <html lang="en">
@@ -1879,18 +1880,29 @@ app.get('/', (c) => {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <!-- REDESIGNED UI v7.0 - Modern & Clean -->
-    <link href="/static/styles-redesign.css" rel="stylesheet">
+    <link href="/static/styles-redesign.css?v=${v}" rel="stylesheet">
 </head>
 <body>
     <!-- Animated Background -->
     <div class="animated-bg"></div>
     
     <!-- Main App -->
-    <div id="app"></div>
+    <div id="app">
+      <div style="text-align:center;padding:50px;color:#fff;">
+        <div class="spinner"></div>
+        <p>Loading PassionBots LMS...</p>
+      </div>
+    </div>
     
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/static/app-redesign-combined.js"></script>
+    <script src="/static/app-redesign-combined.js?v=${v}"></script>
+    <script>
+      window.onerror = function(msg, url, line) {
+        console.error('Error:', msg, 'at', url, ':', line);
+        document.getElementById('app').innerHTML = '<div style="padding:50px;color:#fff;"><h2>Error Loading App</h2><p>' + msg + '</p><p>Please refresh the page</p></div>';
+      };
+    </script>
 </body>
 </html>
   `)
