@@ -1540,6 +1540,312 @@ app.post('/api/curriculum/badge/award', async (c) => {
 })
 
 // ============================================
+// ASSESSMENT SYSTEM ROUTES
+// ============================================
+
+// Get all assessments for a grade
+app.get('/api/assessments/grade/:gradeId', async (c) => {
+  try {
+    const gradeId = c.req.param('gradeId')
+    
+    const assessments = await c.env.DB.prepare(`
+      SELECT * FROM assessment_templates 
+      WHERE grade_id = ? AND is_published = 1
+      ORDER BY assessment_type, created_at
+    `).bind(gradeId).all()
+    
+    return c.json(assessments.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch assessments' }, 500)
+  }
+})
+
+// Get assessment details with questions
+app.get('/api/assessments/:assessmentId', async (c) => {
+  try {
+    const assessmentId = c.req.param('assessmentId')
+    
+    const assessment = await c.env.DB.prepare(
+      'SELECT * FROM assessment_templates WHERE id = ?'
+    ).bind(assessmentId).first()
+    
+    if (!assessment) {
+      return c.json({ error: 'Assessment not found' }, 404)
+    }
+    
+    const questions = await c.env.DB.prepare(`
+      SELECT id, question_type, question_text, question_image_url, options, marks, order_number
+      FROM assessment_questions 
+      WHERE assessment_id = ?
+      ORDER BY order_number
+    `).bind(assessmentId).all()
+    
+    return c.json({
+      ...assessment,
+      questions: questions.results || []
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch assessment' }, 500)
+  }
+})
+
+// Start an assessment attempt
+app.post('/api/assessments/start', async (c) => {
+  try {
+    const { studentId, assessmentId, sessionId } = await c.req.json()
+    
+    // Get latest attempt number
+    const lastAttempt = await c.env.DB.prepare(`
+      SELECT COALESCE(MAX(attempt_number), 0) as last_attempt
+      FROM student_assessments
+      WHERE student_id = ? AND assessment_id = ?
+    `).bind(studentId, assessmentId).first()
+    
+    const attemptNumber = (lastAttempt?.last_attempt || 0) + 1
+    
+    // Get total marks
+    const assessment = await c.env.DB.prepare(
+      'SELECT total_marks FROM assessment_templates WHERE id = ?'
+    ).bind(assessmentId).first()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO student_assessments 
+      (student_id, assessment_id, session_id, attempt_number, total_marks, status)
+      VALUES (?, ?, ?, ?, ?, 'in_progress')
+    `).bind(studentId, assessmentId, sessionId || null, attemptNumber, assessment?.total_marks || 100).run()
+    
+    return c.json({ 
+      success: true, 
+      assessmentAttemptId: result.meta.last_row_id,
+      attemptNumber 
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to start assessment' }, 500)
+  }
+})
+
+// Submit an answer
+app.post('/api/assessments/answer', async (c) => {
+  try {
+    const { studentAssessmentId, questionId, studentAnswer, timeSpentSeconds } = await c.req.json()
+    
+    // Get correct answer and marks
+    const question = await c.env.DB.prepare(
+      'SELECT correct_answer, marks FROM assessment_questions WHERE id = ?'
+    ).bind(questionId).first()
+    
+    if (!question) {
+      return c.json({ error: 'Question not found' }, 404)
+    }
+    
+    const isCorrect = studentAnswer?.toLowerCase().trim() === question.correct_answer?.toLowerCase().trim() ? 1 : 0
+    const marksObtained = isCorrect ? question.marks : 0
+    
+    await c.env.DB.prepare(`
+      INSERT OR REPLACE INTO student_answers 
+      (student_assessment_id, question_id, student_answer, is_correct, marks_obtained, time_spent_seconds)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(studentAssessmentId, questionId, studentAnswer, isCorrect, marksObtained, timeSpentSeconds || 0).run()
+    
+    return c.json({ 
+      success: true, 
+      isCorrect,
+      marksObtained 
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to submit answer' }, 500)
+  }
+})
+
+// Complete assessment
+app.post('/api/assessments/complete', async (c) => {
+  try {
+    const { studentAssessmentId } = await c.req.json()
+    
+    // Calculate total score
+    const scoreResult = await c.env.DB.prepare(`
+      SELECT SUM(marks_obtained) as total_score
+      FROM student_answers
+      WHERE student_assessment_id = ?
+    `).bind(studentAssessmentId).first()
+    
+    const totalScore = scoreResult?.total_score || 0
+    
+    // Get total marks
+    const assessment = await c.env.DB.prepare(`
+      SELECT total_marks FROM assessment_templates at
+      JOIN student_assessments sa ON at.id = sa.assessment_id
+      WHERE sa.id = ?
+    `).bind(studentAssessmentId).first()
+    
+    const totalMarks = assessment?.total_marks || 100
+    const percentage = (totalScore / totalMarks) * 100
+    
+    // Get start time to calculate duration
+    const attemptData = await c.env.DB.prepare(
+      'SELECT start_time FROM student_assessments WHERE id = ?'
+    ).bind(studentAssessmentId).first()
+    
+    const startTime = new Date(attemptData?.start_time as string)
+    const endTime = new Date()
+    const timeTaken = Math.round((endTime.getTime() - startTime.getTime()) / 60000) // minutes
+    
+    // Update assessment with results
+    await c.env.DB.prepare(`
+      UPDATE student_assessments 
+      SET 
+        end_time = CURRENT_TIMESTAMP,
+        time_taken_minutes = ?,
+        score_obtained = ?,
+        percentage = ?,
+        status = 'completed'
+      WHERE id = ?
+    `).bind(timeTaken, totalScore, percentage, studentAssessmentId).run()
+    
+    return c.json({ 
+      success: true,
+      scoreObtained: totalScore,
+      totalMarks,
+      percentage,
+      timeTaken 
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to complete assessment' }, 500)
+  }
+})
+
+// Get student assessment history
+app.get('/api/assessments/student/:studentId/history', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    const history = await c.env.DB.prepare(`
+      SELECT 
+        sa.*,
+        at.title as assessment_title,
+        at.assessment_type,
+        at.difficulty_level
+      FROM student_assessments sa
+      JOIN assessment_templates at ON sa.assessment_id = at.id
+      WHERE sa.student_id = ?
+      ORDER BY sa.start_time DESC
+    `).bind(studentId).all()
+    
+    return c.json(history.results || [])
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch history' }, 500)
+  }
+})
+
+// Get assessment results with answers
+app.get('/api/assessments/results/:studentAssessmentId', async (c) => {
+  try {
+    const studentAssessmentId = c.req.param('studentAssessmentId')
+    
+    const assessment = await c.env.DB.prepare(`
+      SELECT 
+        sa.*,
+        at.title as assessment_title,
+        at.description,
+        at.assessment_type
+      FROM student_assessments sa
+      JOIN assessment_templates at ON sa.assessment_id = at.id
+      WHERE sa.id = ?
+    `).bind(studentAssessmentId).first()
+    
+    if (!assessment) {
+      return c.json({ error: 'Assessment not found' }, 404)
+    }
+    
+    const answers = await c.env.DB.prepare(`
+      SELECT 
+        sa.*,
+        aq.question_text,
+        aq.question_type,
+        aq.correct_answer,
+        aq.explanation,
+        aq.marks as total_marks
+      FROM student_answers sa
+      JOIN assessment_questions aq ON sa.question_id = aq.id
+      WHERE sa.student_assessment_id = ?
+      ORDER BY aq.order_number
+    `).bind(studentAssessmentId).all()
+    
+    return c.json({
+      assessment,
+      answers: answers.results || []
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch results' }, 500)
+  }
+})
+
+// Create new assessment (for mentors)
+app.post('/api/assessments/create', async (c) => {
+  try {
+    const { gradeId, assessmentType, title, description, durationMinutes, totalMarks, passingMarks, difficultyLevel } = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO assessment_templates 
+      (grade_id, assessment_type, title, description, duration_minutes, total_marks, passing_marks, difficulty_level)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(gradeId, assessmentType, title, description, durationMinutes, totalMarks, passingMarks, difficultyLevel).run()
+    
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: 'Assessment created' 
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to create assessment' }, 500)
+  }
+})
+
+// Add question to assessment
+app.post('/api/assessments/:assessmentId/questions', async (c) => {
+  try {
+    const assessmentId = c.req.param('assessmentId')
+    const { questionType, questionText, questionImageUrl, options, correctAnswer, marks, orderNumber, explanation } = await c.req.json()
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO assessment_questions 
+      (assessment_id, question_type, question_text, question_image_url, options, correct_answer, marks, order_number, explanation)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(assessmentId, questionType, questionText, questionImageUrl || null, options || null, correctAnswer, marks, orderNumber, explanation || null).run()
+    
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: 'Question added' 
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to add question' }, 500)
+  }
+})
+
+// Get assessment statistics
+app.get('/api/assessments/:assessmentId/stats', async (c) => {
+  try {
+    const assessmentId = c.req.param('assessmentId')
+    
+    const stats = await c.env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total_attempts,
+        AVG(percentage) as avg_score,
+        MAX(percentage) as highest_score,
+        MIN(percentage) as lowest_score,
+        AVG(time_taken_minutes) as avg_time
+      FROM student_assessments
+      WHERE assessment_id = ? AND status = 'completed'
+    `).bind(assessmentId).first()
+    
+    return c.json(stats || {})
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch stats' }, 500)
+  }
+})
+
+// ============================================
 // ROOT ROUTE
 // ============================================
 
