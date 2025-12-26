@@ -1865,29 +1865,84 @@ app.get('/', (c) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PassionBots LMS v6.0 - IoT & Robotics Excellence</title>
+    <title>PassionBots LMS v7.0 - IoT & Robotics Excellence</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#6366f1">
+    <meta name="theme-color" content="#667eea">
     
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
-    <!-- Custom Styles - v6.0 -->
-    <link href="/static/styles.css" rel="stylesheet">
-    <link href="/static/styles-v2.css" rel="stylesheet">
+    <!-- REDESIGNED UI v7.0 - Modern & Playful -->
+    <link href="/static/styles-redesign.css" rel="stylesheet">
+    
+    <style>
+      /* Loading Animation */
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #0f0f1e;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.5s;
+      }
+      
+      .loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .loading-logo {
+        animation: pulse 2s ease-in-out infinite;
+      }
+    </style>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="text-center">
+        <div class="loading-logo" style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);">
+          <i class="fas fa-robot" style="font-size: 3rem; color: white;"></i>
+        </div>
+        <h2 style="color: white; font-size: 1.5rem; font-weight: 700;">PassionBots LMS</h2>
+        <p style="color: #a8b2d1;">Loading your robotics journey...</p>
+      </div>
+    </div>
+    
+    <!-- Animated Background -->
     <div class="animated-bg"></div>
+    
+    <!-- Main App -->
     <div id="app"></div>
     
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/static/app.js"></script>
-    <script src="/static/app-v2.js"></script>
+    <script src="/static/app-redesign.js"></script>
+    <script src="/static/app-redesign-part2.js"></script>
+    
+    <script>
+      // Hide loading screen when app loads
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          document.getElementById('loadingScreen').classList.add('hidden');
+        }, 1000);
+      });
+    </script>
 </body>
 </html>
   `)
