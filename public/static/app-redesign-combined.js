@@ -456,10 +456,25 @@ function renderHeader() {
 }
 
 // Continue in next file...
+// ============================================
+// CURRICULUM BROWSER - REDESIGNED
+// ============================================
 
-// ============================================
-// PART 2 - Additional Functions
-// ============================================
+function renderCurriculumBrowser() {
+  return `
+    ${renderHeader()}
+    
+    <div class="main-content">
+      <div class="container">
+        
+        <!-- Page Header -->
+        <div class="flex-between mb-xl">
+          <div>
+            <h1 class="gradient-text" style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">
+              Curriculum Browser
+            </h1>
+            <p style="font-size: 1.125rem; color: var(--text-secondary);">
+              Explore our comprehensive K-12 Robotics & IoT curriculum
             </p>
           </div>
           <button class="btn btn-primary">
@@ -591,11 +606,11 @@ function renderGradeCard(grade, index) {
 
 async function loadGradeModules(gradeId, gradeName) {
   try {
-    const response = await fetch(\`/api/curriculum/grade/\${gradeId}/modules\`);
+    const response = await fetch(`/api/curriculum/grade/${gradeId}/modules`);
     const modules = await response.json();
     
     if (modules.length === 0) {
-      alert(\`📚 No modules available for \${gradeName} yet. Coming soon!\`);
+      alert(`📚 No modules available for ${gradeName} yet. Coming soon!`);
       return;
     }
     
@@ -682,7 +697,7 @@ function renderModuleDetail(module, index) {
 
 async function loadModuleSessions(moduleId, moduleTitle) {
   try {
-    const response = await fetch(\`/api/curriculum/module/\${moduleId}/sessions\`);
+    const response = await fetch(`/api/curriculum/module/${moduleId}/sessions`);
     const sessions = await response.json();
     
     if (sessions.length === 0) {
@@ -757,16 +772,16 @@ function renderSessionCard(session, index) {
         ${session.description}
       </p>
       
-      ${objectives.length > 0 ? \`
+      ${objectives.length > 0 ? `
         <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
           <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">
             <i class="fas fa-bullseye"></i> Learning Objectives:
           </div>
           <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.875rem; color: var(--text-primary);">
-            \${objectives.slice(0, 3).map(obj => \`<li>\${obj}</li>\`).join('')}
+            ${objectives.slice(0, 3).map(obj => `<li>${obj}</li>`).join('')}
           </ul>
         </div>
-      \` : ''}
+      ` : ''}
       
       <div class="flex-between">
         <span style="font-size: 0.75rem; color: var(--text-secondary);">
@@ -813,7 +828,7 @@ function initAnimations() {
   const gridItems = document.querySelectorAll('.grid > *');
   gridItems.forEach((item, index) => {
     if (!item.style.animationDelay) {
-      item.style.animationDelay = \`\${index * 0.1}s\`;
+      item.style.animationDelay = `${index * 0.1}s`;
     }
   });
 }
@@ -830,8 +845,8 @@ document.addEventListener('click', (e) => {
 // ============================================
 
 function renderModules() {
-  return \`
-    \${renderHeader()}
+  return `
+    ${renderHeader()}
     
     <div class="main-content">
       <div class="container">
@@ -847,7 +862,7 @@ function renderModules() {
         </div>
       </div>
     </div>
-  \`;
+  `;
 }
 
 async function loadModules() {
@@ -863,8 +878,8 @@ async function loadModules() {
 // ============================================
 
 function renderSessions() {
-  return \`
-    \${renderHeader()}
+  return `
+    ${renderHeader()}
     
     <div class="main-content">
       <div class="container">
@@ -886,7 +901,7 @@ function renderSessions() {
         </div>
       </div>
     </div>
-  \`;
+  `;
 }
 
 async function loadSessions() {
@@ -896,12 +911,12 @@ async function loadSessions() {
     
     const grid = document.getElementById('sessionsGrid');
     if (sessions.length === 0) {
-      grid.innerHTML = \`
+      grid.innerHTML = `
         <div class="card text-center" style="grid-column: span 2; padding: 3rem;">
           <i class="fas fa-video" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
           <p style="color: var(--text-secondary);">No live sessions scheduled yet.</p>
         </div>
-      \`;
+      `;
       return;
     }
     
@@ -917,39 +932,39 @@ function renderLiveSessionCard(session) {
   const isLive = Math.abs(sessionDate - now) < 3600000; // Within 1 hour
   const isPast = sessionDate < now;
   
-  return \`
-    <div class="card \${isLive ? 'glow' : ''}">
-      \${isLive ? '<span class="badge badge-danger pulse" style="position: absolute; top: 1rem; right: 1rem;"><i class="fas fa-circle"></i> LIVE NOW</span>' : ''}
+  return `
+    <div class="card ${isLive ? 'glow' : ''}">
+      ${isLive ? '<span class="badge badge-danger pulse" style="position: absolute; top: 1rem; right: 1rem;"><i class="fas fa-circle"></i> LIVE NOW</span>' : ''}
       
       <div style="width: 60px; height: 60px; background: var(--gradient-purple); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
         <i class="fas fa-video" style="font-size: 1.5rem; color: white;"></i>
       </div>
       
-      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">\${session.title}</h3>
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">${session.title}</h3>
       <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.875rem;">
-        \${session.description}
+        ${session.description}
       </p>
       
       <div class="flex gap-sm mb-md">
         <span class="badge badge-primary">
-          <i class="fas fa-calendar"></i> \${sessionDate.toLocaleDateString()}
+          <i class="fas fa-calendar"></i> ${sessionDate.toLocaleDateString()}
         </span>
         <span class="badge badge-success">
-          <i class="fas fa-clock"></i> \${sessionDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          <i class="fas fa-clock"></i> ${sessionDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
         </span>
       </div>
       
-      \${!isPast && session.meeting_url ? \`
-        <a href="\${session.meeting_url}" target="_blank" class="btn btn-primary w-full">
+      ${!isPast && session.meeting_url ? `
+        <a href="${session.meeting_url}" target="_blank" class="btn btn-primary w-full">
           <i class="fas fa-video"></i> Join Zoom Session
         </a>
-      \` : isPast && session.recording_url ? \`
-        <a href="\${session.recording_url}" target="_blank" class="btn btn-secondary w-full">
+      ` : isPast && session.recording_url ? `
+        <a href="${session.recording_url}" target="_blank" class="btn btn-secondary w-full">
           <i class="fas fa-play-circle"></i> Watch Recording
         </a>
-      \` : ''}
+      ` : ''}
     </div>
-  \`;
+  `;
 }
 
 // ============================================
@@ -957,8 +972,8 @@ function renderLiveSessionCard(session) {
 // ============================================
 
 function renderProgress() {
-  return \`
-    \${renderHeader()}
+  return `
+    ${renderHeader()}
     
     <div class="main-content">
       <div class="container">
@@ -971,7 +986,7 @@ function renderProgress() {
         </div>
       </div>
     </div>
-  \`;
+  `;
 }
 
 async function loadProgress() {
