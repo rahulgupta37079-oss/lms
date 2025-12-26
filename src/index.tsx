@@ -1897,7 +1897,7 @@ app.get('/', (c) => {
     
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/static/app-minimal.js?v=${v}"></script>
+    <script src="/static/app-redesign-combined.js?v=${v}"></script>
     <script>
       window.onerror = function(msg, url, line, col, error) {
         console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
