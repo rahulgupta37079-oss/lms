@@ -13,8 +13,8 @@ const app = new Hono<{ Bindings: Bindings }>()
 // Enable CORS
 app.use('/api/*', cors())
 
-// Serve static files
-app.use('/static/*', serveStatic({ root: './public' }))
+// Serve static files from public directory
+app.use('/static/*', serveStatic({ root: './' }))
 app.use('/landing.html', serveStatic({ path: 'landing.html' }))
 app.use('/features.html', serveStatic({ path: 'features.html' }))
 app.use('/curriculum-browser.html', serveStatic({ path: 'curriculum-browser.html' }))
