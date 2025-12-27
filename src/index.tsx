@@ -1867,7 +1867,7 @@ app.get('/', (c) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PassionBots LMS v8.0 - Yellow Black White Theme</title>
+    <title>PassionBots LMS v7.0 - IoT & Robotics Excellence</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
