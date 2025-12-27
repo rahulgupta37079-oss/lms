@@ -296,7 +296,69 @@ function renderDashboard() {
               </h3>
               <a href="#" onclick="navigateTo('modules')" class="btn btn-sm btn-secondary">View All</a>
             </div>
-            <div id="recentModules" class="loader"></div>
+            <div id="recentModules">
+              <div class="grid gap-md">
+                <!-- Kindergarten Module -->
+                <div class="card" style="padding: 1.5rem;">
+                  <div class="flex gap-md">
+                    <div style="width: 60px; height: 60px; background: var(--gradient-purple); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                      <i class="fas fa-robot" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                      <div class="badge badge-primary mb-xs">Kindergarten</div>
+                      <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">My Robot Friends</h4>
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%;"></div>
+                      </div>
+                      <div class="flex-between mt-xs">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">65% Complete</span>
+                        <a href="#" class="btn btn-sm btn-primary" onclick="navigateTo('modules')">Continue</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Grade 1 Module -->
+                <div class="card" style="padding: 1.5rem;">
+                  <div class="flex gap-md">
+                    <div style="width: 60px; height: 60px; background: var(--gradient-blue); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                      <i class="fas fa-robot" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                      <div class="badge badge-primary mb-xs">Grade 1</div>
+                      <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">Little Engineers</h4>
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: 42%;"></div>
+                      </div>
+                      <div class="flex-between mt-xs">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">42% Complete</span>
+                        <a href="#" class="btn btn-sm btn-primary" onclick="navigateTo('modules')">Continue</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Grade 2 Module -->
+                <div class="card" style="padding: 1.5rem;">
+                  <div class="flex gap-md">
+                    <div style="width: 60px; height: 60px; background: var(--gradient-green); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                      <i class="fas fa-robot" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                      <div class="badge badge-primary mb-xs">Grade 2</div>
+                      <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">Smart Robots</h4>
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: 28%;"></div>
+                      </div>
+                      <div class="flex-between mt-xs">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">28% Complete</span>
+                        <a href="#" class="btn btn-sm btn-primary" onclick="navigateTo('modules')">Continue</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           
           <!-- Upcoming Sessions -->
@@ -305,8 +367,49 @@ function renderDashboard() {
               <i class="fas fa-calendar-alt" style="color: var(--accent-blue);"></i> Upcoming
             </h3>
             <div id="upcomingSessions">
-              <div class="skeleton" style="height: 80px; margin-bottom: 1rem;"></div>
-              <div class="skeleton" style="height: 80px; margin-bottom: 1rem;"></div>
+              <div class="card" style="padding: 1rem; margin-bottom: 0.75rem;">
+                <div class="flex gap-sm">
+                  <div style="width: 40px; height: 40px; background: rgba(102, 126, 234, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-video" style="color: var(--primary-purple);"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">KG Week 1</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                      <i class="fas fa-clock"></i> Jan 20, 10:00 AM
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card" style="padding: 1rem; margin-bottom: 0.75rem;">
+                <div class="flex gap-sm">
+                  <div style="width: 40px; height: 40px; background: rgba(102, 126, 234, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-video" style="color: var(--primary-purple);"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">Grade 1 Week 2</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                      <i class="fas fa-clock"></i> Jan 21, 2:00 PM
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card" style="padding: 1rem; margin-bottom: 0.75rem;">
+                <div class="flex gap-sm">
+                  <div style="width: 40px; height: 40px; background: rgba(102, 126, 234, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-video" style="color: var(--primary-purple);"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">Grade 2 Week 3</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                      <i class="fas fa-clock"></i> Jan 22, 4:00 PM
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
               <div class="skeleton" style="height: 80px;"></div>
             </div>
           </div>
