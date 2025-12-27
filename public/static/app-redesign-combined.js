@@ -286,6 +286,39 @@ function renderDashboard() {
           ${renderQuickAction('progress', 'chart-line', 'My Progress', 'Track your journey', 'var(--gradient-green)', '0.4s')}
         </div>
         
+        <!-- New Features -->
+        <h3 class="mb-md" style="font-size: 1.5rem; font-weight: 700;">Advanced Features</h3>
+        <div class="grid grid-4 mb-xl">
+          <div class="card animate-fadeIn" style="padding: 1.5rem; cursor: pointer; transition: var(--transition);" onclick="showQuizzes()">
+            <div style="width: 60px; height: 60px; background: var(--gradient-yellow); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+              <i class="fas fa-question-circle" style="font-size: 2rem; color: var(--text-black);"></i>
+            </div>
+            <h4 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Quizzes</h4>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Test your knowledge</p>
+          </div>
+          <div class="card animate-fadeIn" style="padding: 1.5rem; cursor: pointer; transition: var(--transition);" onclick="showAssignments()">
+            <div style="width: 60px; height: 60px; background: var(--gradient-yellow); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+              <i class="fas fa-file-alt" style="font-size: 2rem; color: var(--text-black);"></i>
+            </div>
+            <h4 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Assignments</h4>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Submit your work</p>
+          </div>
+          <div class="card animate-fadeIn" style="padding: 1.5rem; cursor: pointer; transition: var(--transition);" onclick="showCertificates()">
+            <div style="width: 60px; height: 60px; background: var(--gradient-yellow); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+              <i class="fas fa-certificate" style="font-size: 2rem; color: var(--text-black);"></i>
+            </div>
+            <h4 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Certificates</h4>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Your achievements</p>
+          </div>
+          <div class="card animate-fadeIn" style="padding: 1.5rem; cursor: pointer; transition: var(--transition);" onclick="showMessaging()">
+            <div style="width: 60px; height: 60px; background: var(--gradient-yellow); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+              <i class="fas fa-comment" style="font-size: 2rem; color: var(--text-black);"></i>
+            </div>
+            <h4 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Messages</h4>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Connect with mentors</p>
+          </div>
+        </div>
+        
         <!-- Recent Activity -->
         <div class="grid grid-3">
           <!-- Recent Modules -->
@@ -536,6 +569,18 @@ function renderHeader() {
             </a></li>
             <li><a href="#" class="nav-link ${AppState.currentView === 'sessions' ? 'active' : ''}" onclick="navigateTo('sessions')">
               <i class="fas fa-video"></i> Live Sessions
+            </a></li>
+            <li><a href="#" class="nav-link ${AppState.currentView === 'quizzes' ? 'active' : ''}" onclick="showQuizzes()">
+              <i class="fas fa-question-circle"></i> Quizzes
+            </a></li>
+            <li><a href="#" class="nav-link ${AppState.currentView === 'assignments' ? 'active' : ''}" onclick="showAssignments()">
+              <i class="fas fa-file-alt"></i> Assignments
+            </a></li>
+            <li><a href="#" class="nav-link ${AppState.currentView === 'certificates' ? 'active' : ''}" onclick="showCertificates()">
+              <i class="fas fa-certificate"></i> Certificates
+            </a></li>
+            <li><a href="#" class="nav-link ${AppState.currentView === 'messaging' ? 'active' : ''}" onclick="showMessaging()">
+              <i class="fas fa-comment"></i> Messages
             </a></li>
           </ul>
         </nav>

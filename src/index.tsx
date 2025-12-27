@@ -1867,7 +1867,7 @@ app.get('/', (c) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PassionBots LMS v7.0 - IoT & Robotics Excellence</title>
+    <title>PassionBots LMS v8.0 - Yellow Black White Theme</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
@@ -1880,8 +1880,8 @@ app.get('/', (c) => {
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
-    <!-- REDESIGNED UI v7.0 - Modern & Clean -->
-    <link href="/static/styles-redesign.css?v=${v}" rel="stylesheet">
+    <!-- REDESIGNED UI v8.0 - Yellow Black White Theme -->
+    <link href="/static/styles-yellow-theme.css?v=${v}" rel="stylesheet">
 </head>
 <body>
     <!-- Animated Background -->
@@ -1898,6 +1898,7 @@ app.get('/', (c) => {
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app-redesign-combined.js?v=${v}"></script>
+    <script src="/static/app-advanced-features.js?v=${v}"></script>
     <script>
       window.onerror = function(msg, url, line, col, error) {
         console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
