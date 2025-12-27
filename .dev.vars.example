@@ -1,0 +1,8 @@
+# Razorpay API Credentials
+# Replace with your actual credentials from Razorpay Dashboard
+
+RAZORPAY_KEY_ID=rzp_test_YOUR_KEY_ID_HERE
+RAZORPAY_KEY_SECRET=YOUR_KEY_SECRET_HERE
+
+# For production, use: wrangler secret put RAZORPAY_KEY_ID
+# For production, use: wrangler secret put RAZORPAY_KEY_SECRET

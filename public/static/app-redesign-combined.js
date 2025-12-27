@@ -159,8 +159,14 @@ function renderLogin() {
           </div>
           
           <!-- Footer Links -->
-          <div class="text-center" style="margin-top: 2rem; color: var(--text-muted); font-size: 0.875rem;">
-            <p>Don't have an account? <a href="#" style="color: var(--primary-purple); font-weight: 600; text-decoration: none;">Request Access</a></p>
+          <div class="text-center" style="margin-top: 2rem;">
+            <!-- Subscribe Button -->
+            <button onclick="showSubscriptionPlans()" class="btn btn-secondary" style="margin-bottom: 1rem; background: var(--gradient-purple); color: white; border: none;">
+              <i class="fas fa-crown"></i> Subscribe to Premium Plans
+            </button>
+            <p style="color: var(--text-muted); font-size: 0.875rem;">
+              Don't have an account? <a href="#" onclick="showSubscriptionPlans(); return false;" style="color: var(--primary-purple); font-weight: 600; text-decoration: none;">Subscribe Now</a>
+            </p>
           </div>
         </div>
       </div>

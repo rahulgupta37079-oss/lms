@@ -1856,6 +1856,214 @@ app.get('/curriculum-browser', (c) => {
 })
 
 // ============================================
+// SUBSCRIPTION & PAYMENT ROUTES (RAZORPAY)
+// ============================================
+
+// Create Razorpay Order
+app.post('/api/subscriptions/create-order', async (c) => {
+  try {
+    const { planId, planName, amount } = await c.req.json()
+    
+    // Get Razorpay credentials from environment
+    const RAZORPAY_KEY_ID = c.env.RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY_ID'
+    const RAZORPAY_KEY_SECRET = c.env.RAZORPAY_KEY_SECRET || 'YOUR_KEY_SECRET'
+    
+    // Create order with Razorpay API
+    const orderData = {
+      amount: amount * 100, // Amount in paise
+      currency: 'INR',
+      receipt: `receipt_${Date.now()}`,
+      notes: {
+        plan_id: planId,
+        plan_name: planName
+      }
+    }
+    
+    const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
+      },
+      body: JSON.stringify(orderData)
+    })
+    
+    if (!razorpayResponse.ok) {
+      throw new Error('Failed to create Razorpay order')
+    }
+    
+    const order = await razorpayResponse.json()
+    
+    return c.json({
+      success: true,
+      order_id: order.id,
+      razorpay_key: RAZORPAY_KEY_ID,
+      amount: amount
+    })
+  } catch (error) {
+    console.error('Create order error:', error)
+    return c.json({ success: false, error: 'Failed to create order' }, 500)
+  }
+})
+
+// Verify Payment and Create Subscription
+app.post('/api/subscriptions/verify-payment', async (c) => {
+  try {
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan_id } = await c.req.json()
+    
+    // Verify signature
+    const crypto = await import('crypto')
+    const RAZORPAY_KEY_SECRET = c.env.RAZORPAY_KEY_SECRET || 'YOUR_KEY_SECRET'
+    
+    const body = razorpay_order_id + '|' + razorpay_payment_id
+    const expectedSignature = crypto.createHmac('sha256', RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest('hex')
+    
+    if (expectedSignature !== razorpay_signature) {
+      return c.json({ success: false, error: 'Invalid payment signature' }, 400)
+    }
+    
+    // Get plan details
+    const plan = await c.env.DB.prepare(
+      'SELECT * FROM subscription_plans WHERE plan_id = ?'
+    ).bind(plan_id).first()
+    
+    if (!plan) {
+      return c.json({ success: false, error: 'Invalid plan' }, 400)
+    }
+    
+    // Generate random credentials
+    const email = `student${Date.now()}@passionbots.in`
+    const password = `PB${Math.random().toString(36).substring(2, 10).toUpperCase()}`
+    
+    // Create student account
+    const studentResult = await c.env.DB.prepare(`
+      INSERT INTO students (email, password, full_name, enrollment_date, program_type, subscription_plan_id, subscription_status, subscription_end_date)
+      VALUES (?, ?, ?, datetime('now'), ?, ?, 'active', datetime('now', '+30 days'))
+    `).bind(
+      email,
+      password,
+      'New Student',
+      plan.plan_name,
+      plan.plan_id
+    ).run()
+    
+    const userId = studentResult.meta.last_row_id
+    
+    // Create subscription record
+    const subscriptionResult = await c.env.DB.prepare(`
+      INSERT INTO subscriptions (user_id, plan_id, plan_name, amount, payment_id, order_id, signature, status, end_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active', datetime('now', '+30 days'))
+    `).bind(
+      userId,
+      plan.plan_id,
+      plan.plan_name,
+      plan.price,
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature
+    ).run()
+    
+    // Create payment transaction record
+    await c.env.DB.prepare(`
+      INSERT INTO payment_transactions (user_id, subscription_id, razorpay_payment_id, razorpay_order_id, razorpay_signature, amount, status, payment_date)
+      VALUES (?, ?, ?, ?, ?, ?, 'success', datetime('now'))
+    `).bind(
+      userId,
+      subscriptionResult.meta.last_row_id,
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature,
+      plan.price
+    ).run()
+    
+    // Create user customization entry
+    await c.env.DB.prepare(`
+      INSERT INTO user_customizations (user_id, theme_color, dashboard_layout)
+      VALUES (?, '#FFD700', 'default')
+    `).bind(userId).run()
+    
+    // Grant resources based on plan
+    const resources = {
+      basic: ['K-12 Curriculum', 'Live Sessions (2/week)', 'Video Lessons'],
+      standard: ['K-12 Curriculum', 'Live Sessions (4/week)', 'Assignments', 'Quizzes', 'Certificates'],
+      premium: ['K-12 Curriculum', 'Unlimited Sessions', '1-on-1 Mentoring', 'IoT Kit', 'Advanced Projects']
+    }
+    
+    const planResources = resources[plan.plan_id] || []
+    for (const resource of planResources) {
+      await c.env.DB.prepare(`
+        INSERT INTO subscription_resources (subscription_id, resource_type, resource_name)
+        VALUES (?, 'access', ?)
+      `).bind(subscriptionResult.meta.last_row_id, resource).run()
+    }
+    
+    // Calculate end date
+    const endDate = new Date()
+    endDate.setMonth(endDate.getMonth() + 1)
+    
+    return c.json({
+      success: true,
+      credentials: {
+        email: email,
+        password: password
+      },
+      subscription: {
+        plan_name: plan.plan_name,
+        amount: plan.price,
+        valid_until: endDate.toISOString(),
+        payment_id: razorpay_payment_id
+      }
+    })
+  } catch (error) {
+    console.error('Payment verification error:', error)
+    return c.json({ success: false, error: 'Payment verification failed' }, 500)
+  }
+})
+
+// Get User Subscription Details
+app.get('/api/subscriptions/:userId', async (c) => {
+  try {
+    const userId = c.req.param('userId')
+    
+    const subscription = await c.env.DB.prepare(`
+      SELECT s.*, sp.plan_name, sp.features
+      FROM subscriptions s
+      JOIN subscription_plans sp ON s.plan_id = sp.plan_id
+      WHERE s.user_id = ? AND s.status = 'active'
+      ORDER BY s.created_at DESC
+      LIMIT 1
+    `).bind(userId).first()
+    
+    if (!subscription) {
+      return c.json({ error: 'No active subscription' }, 404)
+    }
+    
+    return c.json(subscription)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch subscription' }, 500)
+  }
+})
+
+// Cancel Subscription
+app.post('/api/subscriptions/cancel', async (c) => {
+  try {
+    const { userId } = await c.req.json()
+    
+    await c.env.DB.prepare(`
+      UPDATE subscriptions
+      SET status = 'cancelled', auto_renew = 0
+      WHERE user_id = ? AND status = 'active'
+    `).bind(userId).run()
+    
+    return c.json({ success: true, message: 'Subscription cancelled' })
+  } catch (error) {
+    return c.json({ error: 'Failed to cancel subscription' }, 500)
+  }
+})
+
+// ============================================
 // ROOT ROUTE
 // ============================================
 
@@ -1880,6 +2088,9 @@ app.get('/', (c) => {
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
+    <!-- Razorpay Checkout -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    
     <!-- REDESIGNED UI v7.0 - Modern & Clean -->
     <link href="/static/styles-redesign.css?v=${v}" rel="stylesheet">
 </head>
@@ -1898,6 +2109,7 @@ app.get('/', (c) => {
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app-redesign-combined.js?v=${v}"></script>
+    <script src="/static/app-subscriptions.js?v=${v}"></script>
     <script>
       window.onerror = function(msg, url, line, col, error) {
         console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
