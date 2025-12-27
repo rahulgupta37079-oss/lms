@@ -1,33 +1,32 @@
 /* ============================================
-   PASSIONBOTS LMS - COMPLETE UI REDESIGN v8.0
-   Yellow, Black & White Professional Theme
+   PASSIONBOTS LMS - COMPLETE UI REDESIGN v7.0
+   Professional + Playful Design System
    ============================================ */
 
-/* Modern Color Palette - Yellow, Black, White */
+/* Modern Color Palette - Yellow, Black & White */
 :root {
-    /* Primary Colors - Yellow Theme */
+    /* Primary Colors - Changed to Yellow */
     --primary-gradient: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-    --primary-yellow: #FFD700;
-    --primary-gold: #FFA500;
+    --primary-purple: #FFD700;
+    --primary-indigo: #FFA500;
     
-    /* Backgrounds - Black & White */
+    /* Backgrounds - Changed to Black */
     --bg-primary: #000000;
     --bg-secondary: #1a1a1a;
     --bg-card: #262626;
     --bg-hover: #333333;
     
-    /* Accent Colors - Yellow Variations */
+    /* Accent Colors - Yellow variations */
     --accent-yellow: #FFD700;
-    --accent-yellow-light: #FFED4E;
-    --accent-yellow-dark: #FFA500;
-    --accent-orange: #FF8C00;
-    --accent-white: #FFFFFF;
+    --accent-orange: #FFA500;
+    --accent-green: #FFD700;
+    --accent-blue: #FFD700;
+    --accent-pink: #FFD700;
     
-    /* Text Colors */
-    --text-primary: #FFFFFF;
-    --text-secondary: #CCCCCC;
+    /* Text Colors - White */
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
     --text-muted: #888888;
-    --text-black: #000000;
     
     /* Borders & Shadows */
     --border-color: #333333;
@@ -35,13 +34,13 @@
     --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.7);
     --shadow-glow: 0 0 20px rgba(255, 215, 0, 0.4);
-    --shadow-yellow: 0 0 30px rgba(255, 215, 0, 0.5);
     
-    /* Gradients - Yellow Theme */
-    --gradient-yellow: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-    --gradient-yellow-light: linear-gradient(135deg, #FFED4E 0%, #FFD700 100%);
-    --gradient-black-yellow: linear-gradient(135deg, #1a1a1a 0%, #FFD700 100%);
-    --gradient-white-yellow: linear-gradient(135deg, #FFFFFF 0%, #FFD700 100%);
+    /* Gradients - All Yellow */
+    --gradient-purple: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    --gradient-blue: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    --gradient-orange: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    --gradient-green: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    --gradient-red: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
     
     /* Transitions */
     --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -135,7 +134,7 @@ p {
 }
 
 .gradient-text {
-    background: var(--gradient-yellow);
+    background: var(--gradient-purple);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -181,15 +180,14 @@ p {
 }
 
 .btn-primary {
-    background: var(--gradient-yellow);
-    color: var(--text-black);
+    background: var(--gradient-purple);
+    color: white;
     box-shadow: var(--shadow-md);
-    font-weight: 700;
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lg), var(--shadow-yellow);
+    box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
 .btn-secondary {
@@ -199,7 +197,7 @@ p {
 }
 
 .btn-secondary:hover {
-    border-color: var(--primary-yellow);
+    border-color: var(--primary-purple);
     background: var(--bg-hover);
     transform: translateY(-2px);
 }
