@@ -606,7 +606,7 @@ function renderCurriculumBrowser() {
         </div>
         
         <!-- Grades Grid -->
-        <div id="gradesContainer" class="loader" style="text-align: center; padding: 3rem;">
+        <div id="gradesContainer" style="text-align: center; padding: 3rem;">
           <div class="loader"></div>
           <p style="margin-top: 1rem; color: var(--text-secondary);">Loading curriculum...</p>
         </div>
