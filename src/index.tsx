@@ -2111,7 +2111,7 @@ app.get('/', (c) => {
     <script src="/static/app-redesign-combined.js?v=${v}"></script>
     <script src="/static/app-subscriptions.js?v=${v}"></script>
     <script src="/static/app-zoom-integration.js?v=${v}"></script>
-    <script src="/static/app-lesson-interface.js?v=${v}"></script>
+    <script src="/static/app-lesson-interface-enhanced.js?v=${v}"></script>
     <script>
       window.onerror = function(msg, url, line, col, error) {
         console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
@@ -2122,6 +2122,294 @@ app.get('/', (c) => {
 </body>
 </html>
   `)
+})
+
+// ============================================
+// LESSON INTERFACE ROUTES
+// ============================================
+
+// Get Course Structure with All Lessons
+app.get('/api/courses/:courseId/structure', async (c) => {
+  try {
+    const courseId = c.req.param('courseId')
+    
+    // Get course/module info
+    const course = await c.env.DB.prepare(`
+      SELECT * FROM modules WHERE module_id = ?
+    `).bind(courseId).first()
+    
+    if (!course) {
+      return c.json({ success: false, error: 'Course not found' }, 404)
+    }
+    
+    // Get all sessions/lessons for this course grouped by day
+    const sessions = await c.env.DB.prepare(`
+      SELECT 
+        session_id,
+        session_number,
+        session_title,
+        description,
+        objectives,
+        duration_minutes,
+        session_type
+      FROM curriculum_sessions
+      WHERE module_id = ?
+      ORDER BY session_number ASC
+    `).bind(courseId).all()
+    
+    // Group sessions by "day" (every 3 sessions = 1 day for demo)
+    const days = []
+    let currentDay = 11
+    
+    for (let i = 0; i < sessions.results.length; i += 3) {
+      const daySessions = sessions.results.slice(i, i + 3)
+      
+      days.push({
+        day: currentDay,
+        title: daySessions[0]?.session_title || `Day ${currentDay}`,
+        lessons: daySessions.length,
+        completed: 0, // TODO: Get from progress tracking
+        sessions: daySessions.map(s => ({
+          id: s.session_id,
+          number: s.session_number,
+          title: s.session_title,
+          description: s.description,
+          objectives: s.objectives,
+          duration: s.duration_minutes,
+          type: s.session_type || 'lesson'
+        }))
+      })
+      
+      currentDay++
+    }
+    
+    return c.json({
+      success: true,
+      course: {
+        id: course.module_id,
+        title: course.module_title,
+        description: course.description
+      },
+      days: days
+    })
+  } catch (error) {
+    console.error('Get course structure error:', error)
+    return c.json({ success: false, error: 'Failed to load course structure' }, 500)
+  }
+})
+
+// Get Specific Lesson Details
+app.get('/api/lessons/:lessonId', async (c) => {
+  try {
+    const lessonId = c.req.param('lessonId')
+    const studentId = c.req.query('student_id')
+    
+    // Get lesson details
+    const lesson = await c.env.DB.prepare(`
+      SELECT 
+        cs.*,
+        m.module_title,
+        m.grade_level
+      FROM curriculum_sessions cs
+      JOIN modules m ON cs.module_id = m.module_id
+      WHERE cs.session_id = ?
+    `).bind(lessonId).first()
+    
+    if (!lesson) {
+      return c.json({ success: false, error: 'Lesson not found' }, 404)
+    }
+    
+    // Get lesson components
+    const components = await c.env.DB.prepare(`
+      SELECT * FROM session_components
+      WHERE session_id = ?
+      ORDER BY sequence_order ASC
+    `).bind(lessonId).all()
+    
+    // Get student progress if studentId provided
+    let progress = null
+    if (studentId) {
+      progress = await c.env.DB.prepare(`
+        SELECT * FROM curriculum_progress
+        WHERE session_id = ? AND student_id = ?
+      `).bind(lessonId, studentId).first()
+    }
+    
+    // Get related live session if exists
+    const liveSession = await c.env.DB.prepare(`
+      SELECT ls.*, zm.join_url, zm.start_url, zm.zoom_meeting_id
+      FROM live_sessions ls
+      LEFT JOIN zoom_meetings zm ON ls.session_id = zm.session_id
+      WHERE ls.session_id = ?
+      ORDER BY ls.scheduled_time DESC
+      LIMIT 1
+    `).bind(lessonId).first()
+    
+    // Get recordings if available
+    const recordings = await c.env.DB.prepare(`
+      SELECT zr.*, zm.start_time
+      FROM zoom_recordings zr
+      JOIN zoom_meetings zm ON zr.meeting_id = zm.meeting_id
+      WHERE zm.session_id = ? AND zr.status = 'available'
+      ORDER BY zm.start_time DESC
+    `).bind(lessonId).all()
+    
+    return c.json({
+      success: true,
+      lesson: {
+        id: lesson.session_id,
+        number: lesson.session_number,
+        title: lesson.session_title,
+        description: lesson.description,
+        objectives: lesson.objectives ? JSON.parse(lesson.objectives) : [],
+        duration: lesson.duration_minutes,
+        type: lesson.session_type || 'lesson',
+        module: lesson.module_title,
+        grade: lesson.grade_level
+      },
+      components: components.results,
+      progress: progress,
+      liveSession: liveSession,
+      recordings: recordings.results
+    })
+  } catch (error) {
+    console.error('Get lesson error:', error)
+    return c.json({ success: false, error: 'Failed to load lesson' }, 500)
+  }
+})
+
+// Update Lesson Progress
+app.post('/api/lessons/:lessonId/progress', async (c) => {
+  try {
+    const lessonId = c.req.param('lessonId')
+    const { student_id, completion_percentage, time_spent, completed } = await c.req.json()
+    
+    // Check if progress record exists
+    const existing = await c.env.DB.prepare(`
+      SELECT * FROM curriculum_progress
+      WHERE session_id = ? AND student_id = ?
+    `).bind(lessonId, student_id).first()
+    
+    if (existing) {
+      // Update existing progress
+      await c.env.DB.prepare(`
+        UPDATE curriculum_progress
+        SET completion_percentage = ?,
+            completed = ?,
+            last_accessed = datetime('now')
+        WHERE session_id = ? AND student_id = ?
+      `).bind(completion_percentage, completed ? 1 : 0, lessonId, student_id).run()
+    } else {
+      // Create new progress record
+      await c.env.DB.prepare(`
+        INSERT INTO curriculum_progress (session_id, student_id, completion_percentage, completed, last_accessed)
+        VALUES (?, ?, ?, ?, datetime('now'))
+      `).bind(lessonId, student_id, completion_percentage, completed ? 1 : 0).run()
+    }
+    
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Update progress error:', error)
+    return c.json({ success: false, error: 'Failed to update progress' }, 500)
+  }
+})
+
+// Get Live Session Participants
+app.get('/api/live-sessions/:sessionId/participants', async (c) => {
+  try {
+    const sessionId = c.req.param('sessionId')
+    
+    // Get enrolled students for this session
+    const participants = await c.env.DB.prepare(`
+      SELECT 
+        s.student_id,
+        s.full_name,
+        s.email,
+        'student' as role,
+        1 as is_online
+      FROM session_enrollments se
+      JOIN students s ON se.student_id = s.student_id
+      WHERE se.session_id = ?
+      
+      UNION
+      
+      SELECT 
+        m.mentor_id as student_id,
+        m.full_name,
+        m.email,
+        'mentor' as role,
+        1 as is_online
+      FROM live_sessions ls
+      JOIN mentors m ON ls.mentor_id = m.mentor_id
+      WHERE ls.session_id = ?
+    `).bind(sessionId, sessionId).all()
+    
+    return c.json({ success: true, participants: participants.results })
+  } catch (error) {
+    console.error('Get participants error:', error)
+    return c.json({ success: false, error: 'Failed to load participants' }, 500)
+  }
+})
+
+// Send Chat Message
+app.post('/api/live-sessions/:sessionId/chat', async (c) => {
+  try {
+    const sessionId = c.req.param('sessionId')
+    const { user_id, user_name, message, user_role } = await c.req.json()
+    
+    // Store chat message (create table if not exists)
+    await c.env.DB.prepare(`
+      INSERT INTO chat_messages (session_id, user_id, user_name, user_role, message, sent_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `).bind(sessionId, user_id, user_name, user_role, message).run()
+    
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Send message error:', error)
+    return c.json({ success: false, error: 'Failed to send message' }, 500)
+  }
+})
+
+// Get Chat History
+app.get('/api/live-sessions/:sessionId/chat', async (c) => {
+  try {
+    const sessionId = c.req.param('sessionId')
+    const limit = c.req.query('limit') || '50'
+    
+    const messages = await c.env.DB.prepare(`
+      SELECT * FROM chat_messages
+      WHERE session_id = ?
+      ORDER BY sent_at DESC
+      LIMIT ?
+    `).bind(sessionId, limit).all()
+    
+    return c.json({ 
+      success: true, 
+      messages: messages.results.reverse() // Oldest first
+    })
+  } catch (error) {
+    console.error('Get chat history error:', error)
+    return c.json({ success: false, error: 'Failed to load chat' }, 500)
+  }
+})
+
+// Submit Quiz/MCQ Answer
+app.post('/api/lessons/:lessonId/quiz', async (c) => {
+  try {
+    const lessonId = c.req.param('lessonId')
+    const { student_id, question_id, selected_answer, is_correct } = await c.req.json()
+    
+    // Store answer
+    await c.env.DB.prepare(`
+      INSERT INTO quiz_responses (session_id, student_id, question_id, selected_answer, is_correct, submitted_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `).bind(lessonId, student_id, question_id, selected_answer, is_correct ? 1 : 0).run()
+    
+    return c.json({ success: true, is_correct })
+  } catch (error) {
+    console.error('Submit quiz error:', error)
+    return c.json({ success: false, error: 'Failed to submit answer' }, 500)
+  }
 })
 
 // ============================================
