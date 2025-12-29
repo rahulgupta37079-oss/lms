@@ -1,233 +1,347 @@
-# Zoom Integration Guide for PassionBots LMS
+# Zoom Integration Setup Guide
 
 ## Overview
-PassionBots LMS now integrates with Zoom for live robotics classes, replacing Google Meet with a more robust and feature-rich video conferencing solution.
+This system automatically schedules Zoom meetings, records them, downloads recordings, stores them in Cloudflare R2, and makes them available for students to watch anytime.
 
-## Features
-- **HD Video & Audio**: High-quality video for demonstrations
-- **Screen Sharing**: Share robot designs, code, and diagrams
-- **Breakout Rooms**: Create small groups for team projects
-- **Recording**: Record sessions for later viewing
-- **Virtual Background**: Professional classroom environment
-- **Chat & Reactions**: Interactive engagement during class
+## Architecture
 
-## Setting Up Zoom Integration
+```
+Mentor Schedules Meeting 
+    ↓
+Zoom API Creates Meeting (with auto-record enabled)
+    ↓
+Meeting Happens & Records Automatically
+    ↓
+Zoom Webhook Notifies Recording Ready
+    ↓
+System Downloads Recording from Zoom
+    ↓
+Uploads to Cloudflare R2 Storage
+    ↓
+Students Can Watch Anytime
+```
 
-### Step 1: Create Zoom Account
-1. Go to https://zoom.us/
-2. Sign up for Zoom account (Basic account is free for 40-minute sessions)
-3. For unlimited session duration, upgrade to Pro plan ($14.99/month)
+## Setup Steps
 
-### Step 2: Create Live Sessions
+### 1. Create Zoom App
 
-#### Option A: Manual Zoom Meeting Creation
-1. Log in to Zoom web portal
-2. Click "Schedule a Meeting"
-3. Set meeting details:
-   - **Topic**: Session title (e.g., "Grade 1 - Introduction to Arduino")
-   - **When**: Schedule time
-   - **Duration**: 90 minutes (or session duration)
-   - **Recurring**: Yes (if weekly class)
-   - **Meeting ID**: Generate automatically
-   - **Password**: Set secure password
-   - **Video**: Host and Participant ON
-   - **Audio**: Computer audio
-4. Save meeting and copy the Join URL
+1. Go to https://marketplace.zoom.us/
+2. Click "Develop" → "Build App"
+3. Choose "Server-to-Server OAuth" app type
+4. Fill in app details:
+   - App Name: PassionBots LMS
+   - Company Name: PassionBots
+   - Developer Contact: your@email.com
 
-#### Option B: Zoom API Integration (Advanced)
-For automated scheduling, use Zoom API:
+5. Get credentials:
+   - Account ID
+   - Client ID
+   - Client Secret
+
+6. Add Scopes:
+   - `meeting:write:admin` - Create meetings
+   - `meeting:read:admin` - Read meeting details
+   - `recording:write:admin` - Manage recordings
+   - `recording:read:admin` - Read recordings
+   - `user:read:admin` - Read user info
+
+7. Activate the app
+
+### 2. Enable Webhooks
+
+1. In Zoom App Dashboard → Features
+2. Enable "Event Subscriptions"
+3. Add Event Subscription:
+   - Subscription Name: Recording Ready
+   - Event notification endpoint URL: `https://passionbots-lms.pages.dev/api/zoom/webhook`
+   
+4. Add Events:
+   - `recording.completed` - When recording is ready
+   - `meeting.started` - When meeting starts
+   - `meeting.ended` - When meeting ends
+
+5. Copy Verification Token
+6. Save
+
+### 3. Create Cloudflare R2 Bucket
 
 ```bash
-# Install Zoom SDK (if using backend automation)
-npm install @zoom/meetingsdk
+# Create R2 bucket for video storage
+npx wrangler r2 bucket create passionbots-videos
 
-# Create meeting via API
-curl -X POST https://api.zoom.us/v2/users/me/meetings \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "topic": "Grade 1 - Introduction to Arduino",
-    "type": 2,
-    "start_time": "2025-01-15T10:00:00Z",
-    "duration": 90,
-    "timezone": "Asia/Kolkata",
-    "settings": {
-      "host_video": true,
-      "participant_video": true,
-      "join_before_host": false,
-      "mute_upon_entry": true,
-      "waiting_room": true
+# Update wrangler.jsonc
+```
+
+Add to `wrangler.jsonc`:
+```json
+{
+  "r2_buckets": [
+    {
+      "binding": "VIDEOS",
+      "bucket_name": "passionbots-videos"
     }
-  }'
+  ]
+}
 ```
 
-### Step 3: Add Sessions to LMS Database
+### 4. Add Environment Variables
 
-```sql
--- Example: Add Kindergarten Zoom session
-INSERT INTO live_sessions (
-  module_id, 
-  title, 
-  description, 
-  session_date, 
-  duration_minutes, 
-  meeting_url
-) VALUES (
-  1,  -- Kindergarten module
-  'KG Week 1: What is a Robot?',
-  'Interactive introduction to robots with show and tell',
-  '2025-01-20 10:00:00',
-  60,
-  'https://zoom.us/j/1234567890?pwd=yourpassword'
-);
+#### For Production (Cloudflare):
+```bash
+cd /home/user/webapp
 
--- Example: Add Grade 1 Zoom session
-INSERT INTO live_sessions (
-  module_id, 
-  title, 
-  description, 
-  session_date, 
-  duration_minutes, 
-  meeting_url
-) VALUES (
-  2,  -- Grade 1 module
-  'Grade 1 Week 1: Introduction to Electricity',
-  'Learn about electrical circuits and safety',
-  '2025-01-20 14:00:00',
-  90,
-  'https://zoom.us/j/9876543210?pwd=yourpassword'
-);
+# Zoom Credentials
+npx wrangler secret put ZOOM_ACCOUNT_ID --project-name passionbots-lms
+npx wrangler secret put ZOOM_CLIENT_ID --project-name passionbots-lms
+npx wrangler secret put ZOOM_CLIENT_SECRET --project-name passionbots-lms
+npx wrangler secret put ZOOM_WEBHOOK_SECRET --project-name passionbots-lms
 
--- Example: Add Grade 2 Zoom session
-INSERT INTO live_sessions (
-  module_id, 
-  title, 
-  description, 
-  session_date, 
-  duration_minutes, 
-  meeting_url
-) VALUES (
-  3,  -- Grade 2 module
-  'Grade 2 Week 1: Advanced Touch Sensors',
-  'Deep dive into touch sensing technology',
-  '2025-01-20 16:00:00',
-  90,
-  'https://zoom.us/j/5555555555?pwd=yourpassword'
-);
+# Redeploy
+npm run build
+npx wrangler pages deploy dist --project-name passionbots-lms
 ```
 
-### Step 4: Add Sessions via LMS Admin Panel (Coming Soon)
-Future feature: Admin interface to schedule Zoom meetings directly from LMS.
-
-## Best Practices for Zoom Classes
-
-### Before Class
-1. **Test Equipment**: Check camera, microphone, and robot demos
-2. **Prepare Materials**: Share screen presentations, circuit diagrams
-3. **Send Reminders**: Email students with Zoom link 1 day before
-4. **Enable Waiting Room**: Review students before admitting
-5. **Record Session**: Enable cloud recording for students who miss class
-
-### During Class
-1. **Mute Students**: Start with all students muted
-2. **Use Chat**: Monitor questions in chat
-3. **Breakout Rooms**: For team robot building activities
-4. **Screen Share**: Demonstrate coding, circuit design
-5. **Reactions**: Use thumbs up, clapping for engagement
-6. **Spotlight Video**: Feature student demos
-
-### After Class
-1. **Share Recording**: Upload to LMS recording_url
-2. **Review Chat**: Answer unanswered questions
-3. **Take Attendance**: Mark attendance in LMS
-4. **Homework Assignment**: Post in LMS assignments section
-
-## Recording Management
-
-After class ends, Zoom auto-uploads recording to cloud:
-
-1. Go to https://zoom.us/recording
-2. Find your class recording
-3. Click "Share" and copy link
-4. Update LMS database:
-
-```sql
-UPDATE live_sessions 
-SET recording_url = 'https://zoom.us/rec/share/your_recording_link',
-    is_completed = 1
-WHERE id = 1;  -- Replace with actual session ID
+#### For Local Development:
+Add to `.dev.vars`:
+```bash
+ZOOM_ACCOUNT_ID=your_account_id
+ZOOM_CLIENT_ID=your_client_id
+ZOOM_CLIENT_SECRET=your_client_secret
+ZOOM_WEBHOOK_SECRET=your_verification_token
 ```
 
-Students can now watch recordings from LMS dashboard.
+## Database Schema
 
-## Security Settings
+Tables created:
+- `zoom_meetings` - Scheduled meetings
+- `zoom_recordings` - Downloaded recordings
+- `recording_views` - View tracking
 
-### Recommended Zoom Settings
-- ✅ Enable Waiting Room
-- ✅ Require Password
-- ✅ Lock meeting once all students join
-- ✅ Disable file transfer
-- ✅ Disable private chat (use group chat only)
-- ✅ Mute participants upon entry
-- ✅ Only host can share screen (initially)
-- ✅ Enable cloud recording
+## Features
 
-### Zoom Room Guidelines
-1. Students must use real names
-2. Keep video ON during demonstrations
-3. Use "Raise Hand" feature for questions
-4. Respectful behavior in chat
-5. No recording by participants
+### For Mentors:
+✅ Schedule meetings with auto-recording
+✅ Set topic, description, duration
+✅ Select grade level
+✅ Optional password protection
+✅ View scheduled meetings
+
+### For Students:
+✅ View upcoming live sessions
+✅ Join meetings (15 min before start)
+✅ Watch recorded sessions anytime
+✅ Download recordings
+✅ Track progress
+
+### Automatic:
+✅ Recording starts when meeting starts
+✅ Recording downloads when ready
+✅ Upload to R2 storage
+✅ Notification to students
+✅ Thumbnail generation
+✅ View tracking
+
+## API Endpoints
+
+### Meeting Management:
+- `POST /api/zoom/schedule` - Schedule new meeting
+- `GET /api/zoom/upcoming` - Get upcoming meetings
+- `DELETE /api/zoom/meeting/:id` - Cancel meeting
+
+### Recording Management:
+- `GET /api/zoom/recordings` - List all recordings
+- `GET /api/zoom/recording/:id` - Get recording details
+- `POST /api/zoom/recording/:id/view` - Track view
+- `DELETE /api/zoom/recording/:id` - Delete recording
+
+### Webhooks:
+- `POST /api/zoom/webhook` - Receive Zoom events
+- `POST /api/zoom/download-recording/:id` - Manual download trigger
+
+## Workflow Details
+
+### 1. Scheduling a Meeting:
+
+```javascript
+// Mentor fills form → Frontend sends:
+POST /api/zoom/schedule
+{
+  "topic": "IoT Sensors Introduction",
+  "description": "Learn about temperature sensors",
+  "date": "2025-01-15",
+  "time": "10:00",
+  "duration": 60,
+  "grade_id": 2,
+  "auto_record": true
+}
+
+// Backend:
+1. Gets Zoom access token
+2. Creates meeting via Zoom API
+3. Saves to zoom_meetings table
+4. Returns meeting ID and join URL
+```
+
+### 2. Recording Process:
+
+```javascript
+// When meeting starts:
+- Zoom automatically starts recording (if auto_record = true)
+
+// When recording is ready:
+1. Zoom sends webhook to /api/zoom/webhook
+2. Webhook verified using secret token
+3. System downloads recording file
+4. Uploads to Cloudflare R2
+5. Creates thumbnail
+6. Saves to zoom_recordings table
+7. Updates zoom_meetings status
+8. Notifies students (optional)
+```
+
+### 3. Watching Recording:
+
+```javascript
+// Student clicks "Watch Recording":
+1. Fetches recording details
+2. Opens video player modal
+3. Streams from R2 URL
+4. Tracks view count
+5. Allows download
+```
+
+## Storage Strategy
+
+### Zoom Cloud (Temporary):
+- Recordings stored for 7 days
+- Auto-download within 24 hours
+- Deleted from Zoom after download
+
+### Cloudflare R2 (Permanent):
+- Unlimited storage time
+- Fast global CDN
+- Cost-effective ($0.015/GB)
+- No egress fees
+
+### File Structure:
+```
+passionbots-videos/
+  recordings/
+    {year}/
+      {month}/
+        {meeting_id}/
+          video.mp4
+          thumbnail.jpg
+```
+
+## Cost Estimate
+
+### Zoom:
+- Free: 40 min meetings, unlimited 1-on-1
+- Pro ($15/month): Unlimited meetings, recording
+- Business ($20/month): More features
+
+### Cloudflare R2:
+- Storage: $0.015/GB/month
+- No egress fees
+- Example: 100 recordings × 500MB = 50GB = $0.75/month
+
+### Total:
+- ~$15-20/month for unlimited recordings
+
+## Testing
+
+### 1. Schedule Test Meeting:
+```bash
+# Login as mentor
+# Go to Zoom Sessions → Schedule New
+# Fill form and submit
+# Check if meeting appears in upcoming
+```
+
+### 2. Test Recording:
+```bash
+# Join the meeting
+# Record for 1-2 minutes
+# End meeting
+# Wait 5-10 minutes for processing
+# Check if recording appears in recorded sessions
+```
+
+### 3. Test Playback:
+```bash
+# Login as student
+# Go to Zoom Sessions → Recorded Sessions
+# Click on recording
+# Verify video plays
+```
 
 ## Troubleshooting
 
-### Common Issues
+### Recording not appearing:
+1. Check Zoom dashboard - is recording ready?
+2. Check webhook logs - did we receive notification?
+3. Check R2 bucket - was file uploaded?
+4. Check database - is entry in zoom_recordings?
 
-**Issue**: Students can't join Zoom
-- **Solution**: Check if waiting room is enabled, admit students manually
+### Cannot schedule meeting:
+1. Verify Zoom credentials
+2. Check Zoom API scopes
+3. Review error logs
+4. Test Zoom API directly
 
-**Issue**: Audio echo/feedback
-- **Solution**: Ask students to use headphones, mute when not speaking
+### Video won't play:
+1. Check R2 file exists
+2. Verify URL is public
+3. Check CORS settings
+4. Try different browser
 
-**Issue**: Recording not saving
-- **Solution**: Ensure cloud recording is enabled in Zoom settings
+## Security
 
-**Issue**: Can't share screen
-- **Solution**: Check host sharing permissions, allow participants to share
+### Zoom Webhook Verification:
+```javascript
+// Verify webhook signature
+const signature = crypto
+  .createHmac('sha256', ZOOM_WEBHOOK_SECRET)
+  .update(JSON.stringify(payload))
+  .digest('hex');
+  
+if (signature !== receivedSignature) {
+  return 403; // Unauthorized
+}
+```
 
-**Issue**: Zoom link expired
-- **Solution**: Use recurring meeting link, not one-time links
+### Recording Access:
+- Only authenticated users
+- Based on subscription plan
+- View tracking for analytics
+- Download limits (optional)
 
-## Mobile App Support
-Students can join via Zoom mobile app:
-- **iOS**: Download from App Store
-- **Android**: Download from Play Store
-- Zoom meeting ID and password required
+## Monitoring
 
-## Upgrading Zoom Plan
+Track:
+- Meeting schedule rate
+- Recording success rate
+- Download completion time
+- Storage usage
+- View counts
+- User engagement
 
-| Plan | Price | Duration | Participants | Features |
-|------|-------|----------|--------------|----------|
-| Basic | Free | 40 min | 100 | HD video, screen share |
-| Pro | $14.99/mo | 30 hours | 100 | Unlimited time, cloud recording |
-| Business | $19.99/mo | 30 hours | 300 | Admin dashboard, SSO |
+## Future Enhancements
 
-**Recommendation**: Pro plan for unlimited class duration
+🔜 Live chat during meetings
+🔜 Q&A feature
+🔜 Breakout rooms support
+🔜 Polls and quizzes
+🔜 Auto-generated transcripts
+🔜 AI-powered highlights
+🔜 Multi-language subtitles
+🔜 Watch parties
 
-## Support Resources
-- **Zoom Help Center**: https://support.zoom.us/
-- **Zoom Test Meeting**: https://zoom.us/test
-- **Zoom System Requirements**: https://support.zoom.us/hc/en-us/articles/201362023
-- **LMS Support**: Contact mentor@passionbots.in
+## Support
 
----
-
-## Next Steps
-1. ✅ Create Zoom account
-2. ✅ Schedule first live session
-3. ✅ Add meeting URL to LMS database
-4. ✅ Test Zoom link from LMS
-5. ✅ Notify students via email
-6. ✅ Conduct first live robotics class!
-
-**Ready to teach amazing robotics classes! 🤖🎓**
+For issues:
+1. Check Zoom App logs
+2. Review Cloudflare logs
+3. Check database entries
+4. Contact support@passionbots.in

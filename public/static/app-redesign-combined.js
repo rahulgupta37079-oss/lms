@@ -45,6 +45,14 @@ function renderView() {
       app.innerHTML = renderSessions();
       loadSessions();
       break;
+    case 'recordings':
+      if (typeof ZoomManager !== 'undefined') {
+        app.innerHTML = ZoomManager.renderZoomSessions();
+        ZoomManager.loadRecordedSessions();
+      } else {
+        app.innerHTML = '<div style="padding:50px;text-align:center;"><h2>Zoom Integration Loading...</h2></div>';
+      }
+      break;
     case 'progress':
       app.innerHTML = renderProgress();
       loadProgress();
@@ -542,6 +550,9 @@ function renderHeader() {
             </a></li>
             <li><a href="#" class="nav-link ${AppState.currentView === 'sessions' ? 'active' : ''}" onclick="navigateTo('sessions')">
               <i class="fas fa-video"></i> Live Sessions
+            </a></li>
+            <li><a href="#" class="nav-link ${AppState.currentView === 'recordings' ? 'active' : ''}" onclick="navigateTo('recordings')">
+              <i class="fas fa-film"></i> Recordings
             </a></li>
           </ul>
         </nav>

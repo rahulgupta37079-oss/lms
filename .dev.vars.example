@@ -6,3 +6,18 @@ RAZORPAY_KEY_SECRET=YOUR_KEY_SECRET_HERE
 
 # For production, use: wrangler secret put RAZORPAY_KEY_ID
 # For production, use: wrangler secret put RAZORPAY_KEY_SECRET
+
+# Zoom API Credentials
+# Get these from Zoom Marketplace: https://marketplace.zoom.us/develop/create
+# Create a "Server-to-Server OAuth" app
+
+ZOOM_CLIENT_ID=YOUR_ZOOM_CLIENT_ID
+ZOOM_CLIENT_SECRET=YOUR_ZOOM_CLIENT_SECRET
+ZOOM_WEBHOOK_SECRET=YOUR_ZOOM_WEBHOOK_SECRET
+ZOOM_REDIRECT_URI=https://passionbots-lms.pages.dev/api/zoom/callback
+
+# For production, use:
+# wrangler secret put ZOOM_CLIENT_ID
+# wrangler secret put ZOOM_CLIENT_SECRET
+# wrangler secret put ZOOM_WEBHOOK_SECRET
+# wrangler secret put ZOOM_REDIRECT_URI

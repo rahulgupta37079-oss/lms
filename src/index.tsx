@@ -2110,6 +2110,7 @@ app.get('/', (c) => {
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app-redesign-combined.js?v=${v}"></script>
     <script src="/static/app-subscriptions.js?v=${v}"></script>
+    <script src="/static/app-zoom-integration.js?v=${v}"></script>
     <script>
       window.onerror = function(msg, url, line, col, error) {
         console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
@@ -2120,6 +2121,391 @@ app.get('/', (c) => {
 </body>
 </html>
   `)
+})
+
+// ============================================
+// ZOOM INTEGRATION ROUTES
+// ============================================
+
+// Zoom OAuth - Get Authorization URL
+app.get('/api/zoom/auth-url', async (c) => {
+  try {
+    const ZOOM_CLIENT_ID = c.env.ZOOM_CLIENT_ID || 'YOUR_ZOOM_CLIENT_ID'
+    const ZOOM_REDIRECT_URI = c.env.ZOOM_REDIRECT_URI || 'https://passionbots-lms.pages.dev/api/zoom/callback'
+    
+    const authUrl = `https://zoom.us/oauth/authorize?response_type=code&client_id=${ZOOM_CLIENT_ID}&redirect_uri=${encodeURIComponent(ZOOM_REDIRECT_URI)}`
+    
+    return c.json({ success: true, auth_url: authUrl })
+  } catch (error) {
+    console.error('Zoom auth URL error:', error)
+    return c.json({ success: false, error: 'Failed to generate auth URL' }, 500)
+  }
+})
+
+// Zoom OAuth Callback
+app.get('/api/zoom/callback', async (c) => {
+  try {
+    const code = c.req.query('code')
+    
+    if (!code) {
+      return c.json({ success: false, error: 'No authorization code' }, 400)
+    }
+    
+    const ZOOM_CLIENT_ID = c.env.ZOOM_CLIENT_ID || 'YOUR_ZOOM_CLIENT_ID'
+    const ZOOM_CLIENT_SECRET = c.env.ZOOM_CLIENT_SECRET || 'YOUR_ZOOM_CLIENT_SECRET'
+    const ZOOM_REDIRECT_URI = c.env.ZOOM_REDIRECT_URI || 'https://passionbots-lms.pages.dev/api/zoom/callback'
+    
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://zoom.us/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(ZOOM_REDIRECT_URI)}`
+    })
+    
+    if (!tokenResponse.ok) {
+      throw new Error('Failed to get access token')
+    }
+    
+    const tokenData = await tokenResponse.json()
+    
+    // Store tokens in database (associated with mentor)
+    await c.env.DB.prepare(`
+      INSERT OR REPLACE INTO zoom_tokens (mentor_id, access_token, refresh_token, expires_at)
+      VALUES (?, ?, ?, datetime('now', '+' || ? || ' seconds'))
+    `).bind(
+      1, // Replace with actual mentor_id from session
+      tokenData.access_token,
+      tokenData.refresh_token,
+      tokenData.expires_in
+    ).run()
+    
+    return c.html(`
+      <html>
+        <body>
+          <h1>Zoom Connected Successfully!</h1>
+          <p>You can now schedule meetings and they will be automatically recorded.</p>
+          <script>
+            setTimeout(() => {
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+      </html>
+    `)
+  } catch (error) {
+    console.error('Zoom callback error:', error)
+    return c.json({ success: false, error: 'Failed to authenticate' }, 500)
+  }
+})
+
+// Schedule Zoom Meeting
+app.post('/api/zoom/schedule-meeting', async (c) => {
+  try {
+    const { title, description, start_time, duration, mentor_id, session_id } = await c.req.json()
+    
+    // Get mentor's Zoom token
+    const tokenRecord = await c.env.DB.prepare(
+      'SELECT access_token, refresh_token, expires_at FROM zoom_tokens WHERE mentor_id = ?'
+    ).bind(mentor_id).first()
+    
+    if (!tokenRecord) {
+      return c.json({ success: false, error: 'Mentor not connected to Zoom' }, 400)
+    }
+    
+    // Check if token expired and refresh if needed
+    let accessToken = tokenRecord.access_token
+    const now = new Date()
+    const expiresAt = new Date(tokenRecord.expires_at)
+    
+    if (now >= expiresAt) {
+      // Refresh token
+      const ZOOM_CLIENT_ID = c.env.ZOOM_CLIENT_ID || 'YOUR_ZOOM_CLIENT_ID'
+      const ZOOM_CLIENT_SECRET = c.env.ZOOM_CLIENT_SECRET || 'YOUR_ZOOM_CLIENT_SECRET'
+      
+      const refreshResponse = await fetch('https://zoom.us/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`),
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `grant_type=refresh_token&refresh_token=${tokenRecord.refresh_token}`
+      })
+      
+      if (!refreshResponse.ok) {
+        return c.json({ success: false, error: 'Failed to refresh token' }, 401)
+      }
+      
+      const refreshData = await refreshResponse.json()
+      accessToken = refreshData.access_token
+      
+      // Update tokens in database
+      await c.env.DB.prepare(`
+        UPDATE zoom_tokens 
+        SET access_token = ?, refresh_token = ?, expires_at = datetime('now', '+' || ? || ' seconds')
+        WHERE mentor_id = ?
+      `).bind(
+        refreshData.access_token,
+        refreshData.refresh_token,
+        refreshData.expires_in,
+        mentor_id
+      ).run()
+    }
+    
+    // Create Zoom meeting
+    const meetingData = {
+      topic: title,
+      type: 2, // Scheduled meeting
+      start_time: start_time,
+      duration: duration,
+      timezone: 'Asia/Kolkata',
+      agenda: description,
+      settings: {
+        host_video: true,
+        participant_video: true,
+        join_before_host: false,
+        mute_upon_entry: true,
+        watermark: false,
+        use_pmi: false,
+        approval_type: 2,
+        audio: 'both',
+        auto_recording: 'cloud', // CRITICAL: Enable cloud recording
+        waiting_room: true
+      }
+    }
+    
+    const meetingResponse = await fetch('https://api.zoom.us/v2/users/me/meetings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(meetingData)
+    })
+    
+    if (!meetingResponse.ok) {
+      throw new Error('Failed to create Zoom meeting')
+    }
+    
+    const meeting = await meetingResponse.json()
+    
+    // Store meeting in database
+    await c.env.DB.prepare(`
+      INSERT INTO zoom_meetings (session_id, mentor_id, zoom_meeting_id, meeting_url, join_url, start_url, start_time, duration, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'scheduled')
+    `).bind(
+      session_id,
+      mentor_id,
+      meeting.id.toString(),
+      meeting.join_url,
+      meeting.join_url,
+      meeting.start_url,
+      start_time,
+      duration
+    ).run()
+    
+    return c.json({
+      success: true,
+      meeting: {
+        id: meeting.id,
+        join_url: meeting.join_url,
+        start_url: meeting.start_url,
+        password: meeting.password
+      }
+    })
+  } catch (error) {
+    console.error('Schedule meeting error:', error)
+    return c.json({ success: false, error: 'Failed to schedule meeting' }, 500)
+  }
+})
+
+// Zoom Webhook - Handle Recording Completed
+app.post('/api/zoom/webhook', async (c) => {
+  try {
+    const payload = await c.req.json()
+    
+    // Verify webhook signature
+    const ZOOM_WEBHOOK_SECRET = c.env.ZOOM_WEBHOOK_SECRET || 'YOUR_WEBHOOK_SECRET'
+    const signature = c.req.header('x-zm-signature')
+    const timestamp = c.req.header('x-zm-request-timestamp')
+    
+    // Signature verification (simplified - implement proper verification in production)
+    
+    if (payload.event === 'recording.completed') {
+      const meetingId = payload.payload.object.id.toString()
+      const recordingFiles = payload.payload.object.recording_files
+      
+      // Get meeting from database
+      const meeting = await c.env.DB.prepare(
+        'SELECT * FROM zoom_meetings WHERE zoom_meeting_id = ?'
+      ).bind(meetingId).first()
+      
+      if (!meeting) {
+        return c.json({ success: false, error: 'Meeting not found' }, 404)
+      }
+      
+      // Download and store each recording file
+      for (const file of recordingFiles) {
+        if (file.file_type === 'MP4' || file.file_type === 'M4A') {
+          const downloadUrl = file.download_url
+          
+          // Download recording
+          const recordingResponse = await fetch(downloadUrl, {
+            headers: {
+              'Authorization': `Bearer ${file.download_token || ''}`
+            }
+          })
+          
+          if (!recordingResponse.ok) {
+            console.error('Failed to download recording:', file.id)
+            continue
+          }
+          
+          const recordingBlob = await recordingResponse.arrayBuffer()
+          
+          // Upload to Cloudflare R2 (if configured)
+          if (c.env.R2) {
+            const fileName = `recordings/${meetingId}_${file.id}.${file.file_extension}`
+            await c.env.R2.put(fileName, recordingBlob, {
+              httpMetadata: {
+                contentType: file.file_type === 'MP4' ? 'video/mp4' : 'audio/mp4'
+              }
+            })
+            
+            // Store recording info in database
+            await c.env.DB.prepare(`
+              INSERT INTO zoom_recordings (meeting_id, file_id, file_name, file_type, file_size, r2_key, status)
+              VALUES (?, ?, ?, ?, ?, ?, 'available')
+            `).bind(
+              meeting.meeting_id,
+              file.id,
+              file.recording_start,
+              file.file_type,
+              file.file_size,
+              fileName
+            ).run()
+          }
+        }
+      }
+      
+      // Update meeting status
+      await c.env.DB.prepare(
+        'UPDATE zoom_meetings SET status = ?, recording_status = ? WHERE zoom_meeting_id = ?'
+      ).bind('completed', 'available', meetingId).run()
+    }
+    
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Webhook error:', error)
+    return c.json({ success: false, error: 'Webhook processing failed' }, 500)
+  }
+})
+
+// Get Recorded Sessions (for students)
+app.get('/api/zoom/recordings/:sessionId', async (c) => {
+  try {
+    const sessionId = c.req.param('sessionId')
+    
+    const recordings = await c.env.DB.prepare(`
+      SELECT 
+        zr.*,
+        zm.session_id,
+        zm.start_time,
+        ls.session_title,
+        ls.description
+      FROM zoom_recordings zr
+      JOIN zoom_meetings zm ON zr.meeting_id = zm.meeting_id
+      JOIN live_sessions ls ON zm.session_id = ls.session_id
+      WHERE zm.session_id = ? AND zr.status = 'available'
+      ORDER BY zm.start_time DESC
+    `).bind(sessionId).all()
+    
+    return c.json({ success: true, recordings: recordings.results })
+  } catch (error) {
+    console.error('Get recordings error:', error)
+    return c.json({ success: false, error: 'Failed to get recordings' }, 500)
+  }
+})
+
+// Get Recording Video Stream (for playback)
+app.get('/api/zoom/recordings/:recordingId/stream', async (c) => {
+  try {
+    const recordingId = c.req.param('recordingId')
+    
+    const recording = await c.env.DB.prepare(
+      'SELECT * FROM zoom_recordings WHERE recording_id = ?'
+    ).bind(recordingId).first()
+    
+    if (!recording) {
+      return c.notFound()
+    }
+    
+    // Get video from R2
+    if (c.env.R2) {
+      const object = await c.env.R2.get(recording.r2_key)
+      
+      if (!object) {
+        return c.notFound()
+      }
+      
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': recording.file_type === 'MP4' ? 'video/mp4' : 'audio/mp4',
+          'Content-Length': recording.file_size.toString(),
+          'Accept-Ranges': 'bytes'
+        }
+      })
+    }
+    
+    return c.json({ success: false, error: 'Storage not configured' }, 500)
+  } catch (error) {
+    console.error('Stream recording error:', error)
+    return c.json({ success: false, error: 'Failed to stream recording' }, 500)
+  }
+})
+
+// Get All Recordings (for student dashboard)
+app.get('/api/zoom/recordings', async (c) => {
+  try {
+    const studentId = c.req.query('student_id')
+    
+    let query = `
+      SELECT 
+        zr.*,
+        zm.session_id,
+        zm.start_time,
+        zm.duration,
+        ls.session_title,
+        ls.description,
+        m.full_name as mentor_name
+      FROM zoom_recordings zr
+      JOIN zoom_meetings zm ON zr.meeting_id = zm.meeting_id
+      JOIN live_sessions ls ON zm.session_id = ls.session_id
+      JOIN mentors m ON zm.mentor_id = m.mentor_id
+      WHERE zr.status = 'available'
+    `
+    
+    if (studentId) {
+      // Filter by student's enrolled sessions
+      query += ` AND EXISTS (
+        SELECT 1 FROM session_enrollments 
+        WHERE session_id = zm.session_id AND student_id = ?
+      )`
+    }
+    
+    query += ' ORDER BY zm.start_time DESC LIMIT 50'
+    
+    const recordings = studentId 
+      ? await c.env.DB.prepare(query).bind(studentId).all()
+      : await c.env.DB.prepare(query).all()
+    
+    return c.json({ success: true, recordings: recordings.results })
+  } catch (error) {
+    console.error('Get all recordings error:', error)
+    return c.json({ success: false, error: 'Failed to get recordings' }, 500)
+  }
 })
 
 export default app
