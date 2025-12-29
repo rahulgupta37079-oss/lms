@@ -10,6 +10,7 @@ const AppState = {
   currentView: 'login',
   modules: [],
   selectedModule: null,
+  selectedCourse: null,
   selectedLesson: null,
   selectedGrade: null,
   curriculumData: null
@@ -51,6 +52,15 @@ function renderView() {
         ZoomManager.loadRecordedSessions();
       } else {
         app.innerHTML = '<div style="padding:50px;text-align:center;"><h2>Zoom Integration Loading...</h2></div>';
+      }
+      break;
+    case 'lesson':
+      if (typeof LessonInterface !== 'undefined') {
+        const courseId = AppState.selectedCourse || 1;
+        const lessonId = AppState.selectedLesson || 1;
+        app.innerHTML = LessonInterface.renderLessonInterface(courseId, lessonId);
+      } else {
+        app.innerHTML = '<div style="padding:50px;text-align:center;"><h2>Lesson Interface Loading...</h2></div>';
       }
       break;
     case 'progress':
@@ -297,7 +307,7 @@ function renderDashboard() {
           ${renderQuickAction('curriculum', 'graduation-cap', 'Curriculum Browser', 'Browse all grades & sessions', 'var(--gradient-purple)', '0.1s')}
           ${renderQuickAction('modules', 'book', 'My Courses', 'Continue learning', 'var(--gradient-blue)', '0.2s')}
           ${renderQuickAction('sessions', 'video', 'Live Sessions', 'Join Zoom classes', 'var(--gradient-orange)', '0.3s')}
-          ${renderQuickAction('progress', 'chart-line', 'My Progress', 'Track your journey', 'var(--gradient-green)', '0.4s')}
+          ${renderQuickActionLesson()}
         </div>
         
         <!-- Recent Activity -->
@@ -443,6 +453,19 @@ function renderQuickAction(view, icon, title, desc, gradient, delay) {
       </div>
       <div class="card-title">${title}</div>
       <div class="card-text">${desc}</div>
+    </div>
+  `;
+}
+
+function renderQuickActionLesson() {
+  return `
+    <div class="card hover-lift animate-fadeIn" onclick="navigateToLesson(1, 15)" 
+         style="cursor: pointer; animation-delay: 0.4s; border: 2px solid transparent;">
+      <div style="width: 64px; height: 64px; background: var(--gradient-yellow); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+        <i class="fas fa-chalkboard-teacher" style="font-size: 2rem; color: #000;"></i>
+      </div>
+      <div class="card-title">View Lesson</div>
+      <div class="card-text">Interactive lesson interface</div>
     </div>
   `;
 }
@@ -929,6 +952,14 @@ function closeSessionsModal() {
 
 function navigateTo(view) {
   AppState.currentView = view;
+  renderView();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function navigateToLesson(courseId, lessonId) {
+  AppState.selectedCourse = courseId;
+  AppState.selectedLesson = lessonId;
+  AppState.currentView = 'lesson';
   renderView();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

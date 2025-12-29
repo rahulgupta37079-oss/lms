@@ -2111,6 +2111,7 @@ app.get('/', (c) => {
     <script src="/static/app-redesign-combined.js?v=${v}"></script>
     <script src="/static/app-subscriptions.js?v=${v}"></script>
     <script src="/static/app-zoom-integration.js?v=${v}"></script>
+    <script src="/static/app-lesson-interface.js?v=${v}"></script>
     <script>
       window.onerror = function(msg, url, line, col, error) {
         console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
