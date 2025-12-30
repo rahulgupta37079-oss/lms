@@ -2642,13 +2642,384 @@ app.get('/api/certificates/:id/view', async (c) => {
     
     const data = JSON.parse(certificate.certificate_data)
     
-    // Return certificate HTML
-    return c.html(renderCertificateHTML(data))
+    // Use simplified renderCertificateHTML with your exact template
+    return c.html(renderCertificateTemplate(data, certificate))
   } catch (error) {
     console.error('View certificate error:', error)
     return c.text('Failed to load certificate', 500)
   }
 })
+
+// Render Certificate with your exact 1920x1080 template
+function renderCertificateTemplate(data: any, certificate: any) {
+  const studentName = data.studentName || certificate.student_name
+  const courseName = data.courseName || certificate.course_name
+  const certificateCode = data.certificateCode || certificate.certificate_code
+  const issueDate = data.issueDate || new Date(certificate.issue_date).toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })
+  
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Certificate - ${studentName}</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+    body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'Roboto', sans-serif; }
+    .slide-container {
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+        background-color: #0a0a0a;
+        color: white;
+        display: flex;
+        overflow: hidden;
+    }
+    
+    .yellow-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 140px;
+        background-color: #fbbf24;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        box-shadow: 5px 0 20px rgba(0,0,0,0.5);
+    }
+    
+    .vertical-text {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        font-family: 'Oswald', sans-serif;
+        font-size: 5rem;
+        font-weight: 700;
+        color: #111;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+        text-transform: uppercase;
+        height: 90%;
+        text-align: center;
+    }
+
+    .diagonal-shape {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 55%;
+        height: 100%;
+        background-color: #161616;
+        clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%);
+        z-index: 0;
+    }
+    
+    .texture-overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 55%;
+        height: 100%;
+        background-image: radial-gradient(#333 1px, transparent 1px);
+        background-size: 20px 20px;
+        opacity: 0.1;
+        clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%);
+        z-index: 0;
+    }
+
+    .accent-triangle {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 250px;
+        height: 250px;
+        background-color: #fbbf24;
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        z-index: 1;
+    }
+    
+    .striped-header {
+        position: absolute;
+        top: 60px;
+        right: 60px;
+        width: 300px;
+        height: 30px;
+        display: flex;
+        gap: 15px;
+    }
+    .stripe {
+        width: 15px;
+        height: 100%;
+        background-color: #fbbf24;
+        transform: skewX(-20deg);
+    }
+
+    .content-wrapper {
+        flex: 1;
+        margin-left: 140px;
+        padding: 80px 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 10;
+        position: relative;
+    }
+
+    .logo-area {
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    .logo-icon-box {
+        width: 60px;
+        height: 60px;
+        background-color: #fbbf24;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #000;
+        font-size: 2rem;
+        border-radius: 4px;
+    }
+    .logo-text {
+        font-family: 'Oswald', sans-serif;
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: white;
+    }
+
+    .title-group {
+        margin-bottom: 3.5rem;
+        position: relative;
+    }
+    .cert-title-outline {
+        font-family: 'Oswald', sans-serif;
+        font-size: 9rem;
+        font-weight: 700;
+        line-height: 0.8;
+        text-transform: uppercase;
+        color: transparent;
+        -webkit-text-stroke: 2px rgba(255, 255, 255, 0.1);
+        position: absolute;
+        top: -4rem;
+        left: -10px;
+        z-index: -1;
+    }
+    .cert-title-main {
+        font-family: 'Oswald', sans-serif;
+        font-size: 7rem;
+        font-weight: 700;
+        line-height: 1;
+        text-transform: uppercase;
+        color: #fbbf24;
+        margin: 0;
+        text-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+    }
+    .cert-subtitle {
+        font-family: 'Oswald', sans-serif;
+        font-size: 2rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: white;
+        margin-top: 0.5rem;
+        font-weight: 400;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .cert-subtitle::after {
+        content: '';
+        height: 4px;
+        width: 100px;
+        background-color: #fbbf24;
+        display: block;
+    }
+
+    .recipient-container {
+        margin: 2rem 0 4rem 0;
+        position: relative;
+    }
+    .name-label {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1rem;
+        color: #9ca3af;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        font-weight: 500;
+    }
+    .recipient-name {
+        background-color: #fbbf24;
+        color: #000;
+        display: inline-block;
+        font-family: 'Oswald', sans-serif;
+        font-size: 4.5rem;
+        font-weight: 700;
+        padding: 0.2rem 4rem;
+        transform: skewX(-15deg);
+        box-shadow: 15px 15px 0px rgba(255, 255, 255, 0.1);
+        min-width: 600px;
+    }
+    .recipient-name span {
+        display: block;
+        transform: skewX(15deg);
+        text-align: center;
+    }
+
+    .description {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1.5rem;
+        line-height: 1.6;
+        color: #e5e7eb;
+        max-width: 950px;
+        margin-bottom: 4rem;
+        border-left: 6px solid #fbbf24;
+        padding-left: 2.5rem;
+        background: linear-gradient(90deg, rgba(251, 191, 36, 0.05) 0%, transparent 100%);
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4rem;
+        margin-top: auto;
+        border-top: 1px solid #333;
+        padding-top: 2.5rem;
+        width: 85%;
+    }
+
+    .footer-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .footer-label {
+        color: #fbbf24;
+        font-family: 'Oswald', sans-serif;
+        font-size: 1rem;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.1em;
+    }
+    .footer-value {
+        font-size: 1.4rem;
+        font-weight: 500;
+        color: white;
+    }
+    .signature-font {
+        font-family: 'Oswald', sans-serif;
+        font-size: 1.8rem;
+        font-style: italic;
+        color: white;
+    }
+
+    .serial-tag {
+        position: absolute;
+        top: 65px;
+        right: 400px;
+        font-family: 'Roboto', sans-serif;
+        font-size: 1rem;
+        color: #9ca3af;
+        letter-spacing: 0.15em;
+        font-weight: 500;
+    }
+    
+    .qr-placeholder {
+        position: absolute;
+        bottom: 80px;
+        right: 80px;
+        width: 120px;
+        height: 120px;
+        background-color: white;
+        padding: 8px;
+        z-index: 20;
+        transform: rotate(-5deg);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .qr-inner {
+        width: 100%;
+        height: 100%;
+        background-color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+</style>
+</head>
+<body>
+<div class="slide-container">
+<div class="yellow-bar">
+<p class="vertical-text">PASSIONBOTS // FUTURE TECH</p>
+</div>
+<div class="diagonal-shape"></div>
+<div class="texture-overlay"></div>
+<div class="accent-triangle"></div>
+<div class="striped-header">
+<div class="stripe"></div>
+<div class="stripe"></div>
+<div class="stripe"></div>
+<div class="stripe"></div>
+<div class="stripe"></div>
+</div>
+<div class="serial-tag">ID: ${certificateCode}</div>
+<div class="content-wrapper">
+<div class="logo-area">
+<div class="logo-icon-box">
+<i class="fas fa-robot"></i>
+</div>
+<p class="logo-text">Passionbots</p>
+</div>
+<div class="title-group">
+<p class="cert-title-outline">Certificate</p>
+<h1 class="cert-title-main">Certificate</h1>
+<p class="cert-subtitle">Of Completion // IoT &amp; Robotics</p>
+</div>
+<div class="recipient-container">
+<p class="name-label">This Certifies That</p>
+<div class="recipient-name">
+<span>${studentName}</span>
+</div>
+</div>
+<div class="description">
+<p>For outstanding performance and successful completion of the <strong style="color: #fbbf24;">${courseName}</strong>. Demonstrating exceptional skill in systems integration, automation logic, and robotics engineering principles.</p>
+</div>
+<div class="footer-grid">
+<div class="footer-item">
+<p class="footer-label">Date Issued</p>
+<p class="footer-value">${issueDate}</p>
+</div>
+<div class="footer-item">
+<p class="footer-label">Founder Signature</p>
+<p class="signature-font">Rahul Gupta</p>
+<p style="font-size: 0.9rem; color: #9ca3af; margin-top: 5px;">Rahul Gupta</p>
+</div>
+<div class="footer-item">
+<p class="footer-label">Verify At</p>
+<p class="footer-value" style="color: #fbbf24;">passionbots.co.in</p>
+</div>
+</div>
+</div>
+<div class="qr-placeholder">
+<div class="qr-inner">
+<i class="fas fa-qrcode fa-3x"></i>
+</div>
+</div>
+</div>
+</body>
+</html>`
+}
 
 // Render Certificate HTML
 function renderCertificateHTML(data: any) {
