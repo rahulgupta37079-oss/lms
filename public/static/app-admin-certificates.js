@@ -577,7 +577,7 @@ const AdminCertificateTool = {
       
       if (data.success) {
         this.currentAdmin = data.admin;
-        localStorage.setItem('admin_session', data.sessionToken);
+        localStorage.setItem('admin_session', data.session_token);
         localStorage.setItem('admin_user', JSON.stringify(data.admin));
         
         // Redirect to dashboard
