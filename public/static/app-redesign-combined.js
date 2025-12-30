@@ -63,6 +63,14 @@ function renderView() {
         app.innerHTML = '<div style="padding:50px;text-align:center;"><h2>Lesson Interface Loading...</h2></div>';
       }
       break;
+    case 'certificates':
+      if (typeof CertificateManager !== 'undefined') {
+        app.innerHTML = CertificateManager.renderCertificatesPage();
+        CertificateManager.loadCertificates();
+      } else {
+        app.innerHTML = '<div style="padding:50px;text-align:center;"><h2>Certificates Loading...</h2></div>';
+      }
+      break;
     case 'progress':
       app.innerHTML = renderProgress();
       loadProgress();
@@ -576,6 +584,9 @@ function renderHeader() {
             </a></li>
             <li><a href="#" class="nav-link ${AppState.currentView === 'recordings' ? 'active' : ''}" onclick="navigateTo('recordings')">
               <i class="fas fa-film"></i> Recordings
+            </a></li>
+            <li><a href="#" class="nav-link ${AppState.currentView === 'certificates' ? 'active' : ''}" onclick="navigateTo('certificates')">
+              <i class="fas fa-certificate"></i> Certificates
             </a></li>
           </ul>
         </nav>

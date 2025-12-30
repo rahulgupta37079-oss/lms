@@ -2112,6 +2112,7 @@ app.get('/', (c) => {
     <script src="/static/app-subscriptions.js?v=${v}"></script>
     <script src="/static/app-zoom-integration.js?v=${v}"></script>
     <script src="/static/app-lesson-interface-enhanced.js?v=${v}"></script>
+    <script src="/static/app-certificates.js?v=${v}"></script>
     <script>
       window.onerror = function(msg, url, line, col, error) {
         console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
@@ -2411,6 +2412,595 @@ app.post('/api/lessons/:lessonId/quiz', async (c) => {
     return c.json({ success: false, error: 'Failed to submit answer' }, 500)
   }
 })
+
+// ============================================
+// CERTIFICATE GENERATION ROUTES
+// ============================================
+
+// Generate unique certificate code
+function generateCertificateCode() {
+  const year = new Date().getFullYear()
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase()
+  const timestamp = Date.now().toString(36).toUpperCase()
+  return `PB-IOT-${year}-${random}${timestamp}`
+}
+
+// Generate Certificate
+app.post('/api/certificates/generate', async (c) => {
+  try {
+    const { student_id, course_id, course_name, completion_date } = await c.req.json()
+    
+    // Get student details
+    const student = await c.env.DB.prepare(`
+      SELECT full_name, email FROM students WHERE student_id = ?
+    `).bind(student_id).first()
+    
+    if (!student) {
+      return c.json({ success: false, error: 'Student not found' }, 404)
+    }
+    
+    // Check if certificate already exists
+    const existing = await c.env.DB.prepare(`
+      SELECT certificate_id, certificate_code FROM certificates
+      WHERE student_id = ? AND course_id = ?
+    `).bind(student_id, course_id).first()
+    
+    if (existing) {
+      return c.json({
+        success: true,
+        certificate: existing,
+        message: 'Certificate already exists'
+      })
+    }
+    
+    // Generate unique certificate code
+    const certificateCode = generateCertificateCode()
+    
+    // Create verification URL
+    const verificationUrl = `https://passionbots-lms.pages.dev/verify/${certificateCode}`
+    
+    // Certificate data
+    const certificateData = JSON.stringify({
+      studentName: student.full_name,
+      courseName: course_name || 'IoT & Robotics Course',
+      issueDate: new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      completionDate: completion_date || new Date().toISOString().split('T')[0],
+      certificateCode: certificateCode,
+      verificationUrl: verificationUrl
+    })
+    
+    // Insert certificate
+    const result = await c.env.DB.prepare(`
+      INSERT INTO certificates (
+        student_id, course_id, certificate_code, student_name, 
+        course_name, issue_date, completion_date, certificate_data, 
+        verification_url, status
+      )
+      VALUES (?, ?, ?, ?, ?, date('now'), ?, ?, ?, 'active')
+    `).bind(
+      student_id,
+      course_id,
+      certificateCode,
+      student.full_name,
+      course_name || 'IoT & Robotics Course',
+      completion_date || new Date().toISOString().split('T')[0],
+      certificateData,
+      verificationUrl
+    ).run()
+    
+    return c.json({
+      success: true,
+      certificate: {
+        certificate_id: result.meta.last_row_id,
+        certificate_code: certificateCode,
+        student_name: student.full_name,
+        course_name: course_name || 'IoT & Robotics Course',
+        issue_date: new Date().toISOString().split('T')[0],
+        verification_url: verificationUrl
+      }
+    })
+  } catch (error) {
+    console.error('Generate certificate error:', error)
+    return c.json({ success: false, error: 'Failed to generate certificate' }, 500)
+  }
+})
+
+// Get Student Certificates
+app.get('/api/certificates/student/:studentId', async (c) => {
+  try {
+    const studentId = c.req.param('studentId')
+    
+    const certificates = await c.env.DB.prepare(`
+      SELECT 
+        certificate_id,
+        certificate_code,
+        student_name,
+        course_name,
+        issue_date,
+        completion_date,
+        verification_url,
+        status
+      FROM certificates
+      WHERE student_id = ? AND status = 'active'
+      ORDER BY issue_date DESC
+    `).bind(studentId).all()
+    
+    return c.json({ success: true, certificates: certificates.results })
+  } catch (error) {
+    console.error('Get certificates error:', error)
+    return c.json({ success: false, error: 'Failed to load certificates' }, 500)
+  }
+})
+
+// Verify Certificate
+app.get('/api/certificates/verify/:code', async (c) => {
+  try {
+    const code = c.req.param('code')
+    
+    const certificate = await c.env.DB.prepare(`
+      SELECT 
+        certificate_code,
+        student_name,
+        course_name,
+        issue_date,
+        completion_date,
+        status
+      FROM certificates
+      WHERE certificate_code = ?
+    `).bind(code).first()
+    
+    if (!certificate) {
+      return c.json({ 
+        success: false, 
+        error: 'Certificate not found',
+        valid: false 
+      }, 404)
+    }
+    
+    return c.json({
+      success: true,
+      valid: certificate.status === 'active',
+      certificate: certificate
+    })
+  } catch (error) {
+    console.error('Verify certificate error:', error)
+    return c.json({ success: false, error: 'Verification failed' }, 500)
+  }
+})
+
+// Get Certificate HTML
+app.get('/api/certificates/:id/view', async (c) => {
+  try {
+    const certificateId = c.req.param('id')
+    
+    const certificate = await c.env.DB.prepare(`
+      SELECT * FROM certificates WHERE certificate_id = ?
+    `).bind(certificateId).first()
+    
+    if (!certificate) {
+      return c.notFound()
+    }
+    
+    const data = JSON.parse(certificate.certificate_data)
+    
+    // Return certificate HTML
+    return c.html(renderCertificateHTML(data))
+  } catch (error) {
+    console.error('View certificate error:', error)
+    return c.text('Failed to load certificate', 500)
+  }
+})
+
+// Render Certificate HTML
+function renderCertificateHTML(data: any) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Certificate - ${data.studentName}</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+    body { margin: 0; padding: 20px; background-color: #1a1a1a; font-family: 'Roboto', sans-serif; }
+    .certificate-wrapper { max-width: 1920px; margin: 0 auto; }
+    .slide-container {
+        width: 100%;
+        aspect-ratio: 16/9;
+        position: relative;
+        background-color: #0a0a0a;
+        color: white;
+        display: flex;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    
+    .yellow-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 7.3%;
+        background-color: #fbbf24;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        box-shadow: 5px 0 20px rgba(0,0,0,0.5);
+    }
+    
+    .vertical-text {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(2rem, 5vw, 5rem);
+        font-weight: 700;
+        color: #111;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .diagonal-shape {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 55%;
+        height: 100%;
+        background-color: #161616;
+        clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%);
+        z-index: 0;
+    }
+    
+    .texture-overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 55%;
+        height: 100%;
+        background-image: radial-gradient(#333 1px, transparent 1px);
+        background-size: 20px 20px;
+        opacity: 0.1;
+        clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%);
+        z-index: 0;
+    }
+
+    .accent-triangle {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 13%;
+        height: 23%;
+        background-color: #fbbf24;
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        z-index: 1;
+    }
+    
+    .striped-header {
+        position: absolute;
+        top: 5.5%;
+        right: 3%;
+        width: 15.6%;
+        height: 2.8%;
+        display: flex;
+        gap: 0.8%;
+    }
+    .stripe {
+        width: 0.8%;
+        height: 100%;
+        background-color: #fbbf24;
+        transform: skewX(-20deg);
+    }
+
+    .content-wrapper {
+        flex: 1;
+        margin-left: 7.3%;
+        padding: 4% 6.25%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 10;
+        position: relative;
+    }
+
+    .logo-area {
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    .logo-icon-box {
+        width: clamp(40px, 3.1vw, 60px);
+        height: clamp(40px, 3.1vw, 60px);
+        background-color: #fbbf24;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #000;
+        font-size: clamp(1.5rem, 2vw, 2rem);
+        border-radius: 4px;
+    }
+    .logo-text {
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(1.5rem, 2vw, 2rem);
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: white;
+    }
+
+    .title-group {
+        margin-bottom: 3.5rem;
+        position: relative;
+    }
+    .cert-title-outline {
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(4rem, 9vw, 9rem);
+        font-weight: 700;
+        line-height: 0.8;
+        text-transform: uppercase;
+        color: transparent;
+        -webkit-text-stroke: 2px rgba(255, 255, 255, 0.1);
+        position: absolute;
+        top: clamp(-2rem, -4vw, -4rem);
+        left: -10px;
+        z-index: -1;
+    }
+    .cert-title-main {
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(3rem, 7vw, 7rem);
+        font-weight: 700;
+        line-height: 1;
+        text-transform: uppercase;
+        color: #fbbf24;
+        margin: 0;
+        text-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+    }
+    .cert-subtitle {
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(1rem, 2vw, 2rem);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: white;
+        margin-top: 0.5rem;
+        font-weight: 400;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .cert-subtitle::after {
+        content: '';
+        height: 4px;
+        width: 5.2%;
+        background-color: #fbbf24;
+        display: block;
+    }
+
+    .recipient-container {
+        margin: 2rem 0 4rem 0;
+        position: relative;
+    }
+    .name-label {
+        font-family: 'Roboto', sans-serif;
+        font-size: clamp(0.8rem, 1vw, 1rem);
+        color: #9ca3af;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        font-weight: 500;
+    }
+    .recipient-name {
+        background-color: #fbbf24;
+        color: #000;
+        display: inline-block;
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(2rem, 4.5vw, 4.5rem);
+        font-weight: 700;
+        padding: 0.2rem 4rem;
+        transform: skewX(-15deg);
+        box-shadow: 15px 15px 0px rgba(255, 255, 255, 0.1);
+        min-width: 31.25%;
+    }
+    .recipient-name span {
+        display: block;
+        transform: skewX(15deg);
+        text-align: center;
+    }
+
+    .description {
+        font-family: 'Roboto', sans-serif;
+        font-size: clamp(1rem, 1.5vw, 1.5rem);
+        line-height: 1.6;
+        color: #e5e7eb;
+        max-width: 49.5%;
+        margin-bottom: 4rem;
+        border-left: 6px solid #fbbf24;
+        padding-left: 2.5rem;
+        background: linear-gradient(90deg, rgba(251, 191, 36, 0.05) 0%, transparent 100%);
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4rem;
+        margin-top: auto;
+        border-top: 1px solid #333;
+        padding-top: 2.5rem;
+        width: 85%;
+    }
+
+    .footer-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .footer-label {
+        color: #fbbf24;
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(0.8rem, 1vw, 1rem);
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.1em;
+    }
+    .footer-value {
+        font-size: clamp(1rem, 1.4vw, 1.4rem);
+        font-weight: 500;
+        color: white;
+    }
+    .signature-font {
+        font-family: 'Oswald', sans-serif;
+        font-size: clamp(1.2rem, 1.8vw, 1.8rem);
+        font-style: italic;
+        color: white;
+    }
+
+    .serial-tag {
+        position: absolute;
+        top: 6%;
+        right: 20.8%;
+        font-family: 'Roboto', sans-serif;
+        font-size: clamp(0.8rem, 1vw, 1rem);
+        color: #9ca3af;
+        letter-spacing: 0.15em;
+        font-weight: 500;
+    }
+    
+    .qr-placeholder {
+        position: absolute;
+        bottom: 7.4%;
+        right: 4.2%;
+        width: 6.25%;
+        height: 11.1%;
+        background-color: white;
+        padding: 8px;
+        z-index: 20;
+        transform: rotate(-5deg);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .qr-inner {
+        width: 100%;
+        height: 100%;
+        background-color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .download-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #fbbf24;
+        color: #000;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-family: 'Oswald', sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+        transition: all 0.2s;
+        z-index: 1000;
+    }
+    .download-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(251, 191, 36, 0.5);
+    }
+
+    @media print {
+        body { background: white; padding: 0; }
+        .download-btn { display: none; }
+        .certificate-wrapper { max-width: 100%; }
+    }
+</style>
+</head>
+<body>
+<button class="download-btn" onclick="window.print()">
+    <i class="fas fa-download"></i> Download Certificate
+</button>
+
+<div class="certificate-wrapper">
+<div class="slide-container">
+    <div class="yellow-bar">
+        <p class="vertical-text">PASSIONBOTS // FUTURE TECH</p>
+    </div>
+    
+    <div class="diagonal-shape"></div>
+    <div class="texture-overlay"></div>
+    <div class="accent-triangle"></div>
+    
+    <div class="striped-header">
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+    </div>
+    
+    <div class="serial-tag">ID: ${data.certificateCode}</div>
+    
+    <div class="content-wrapper">
+        <div class="logo-area">
+            <div class="logo-icon-box">
+                <i class="fas fa-robot"></i>
+            </div>
+            <p class="logo-text">Passionbots</p>
+        </div>
+        
+        <div class="title-group">
+            <p class="cert-title-outline">Certificate</p>
+            <h1 class="cert-title-main">Certificate</h1>
+            <p class="cert-subtitle">Of Completion // IoT &amp; Robotics</p>
+        </div>
+        
+        <div class="recipient-container">
+            <p class="name-label">This Certifies That</p>
+            <div class="recipient-name">
+                <span>${data.studentName}</span>
+            </div>
+        </div>
+        
+        <div class="description">
+            <p>For outstanding performance and successful completion of the <strong style="color: #fbbf24;">${data.courseName}</strong>. Demonstrating exceptional skill in systems integration, automation logic, and robotics engineering principles.</p>
+        </div>
+        
+        <div class="footer-grid">
+            <div class="footer-item">
+                <p class="footer-label">Date Issued</p>
+                <p class="footer-value">${data.issueDate}</p>
+            </div>
+            <div class="footer-item">
+                <p class="footer-label">Founder Signature</p>
+                <p class="signature-font">Rahul Gupta</p>
+                <p style="font-size: 0.9rem; color: #9ca3af; margin-top: 5px;">Rahul Gupta</p>
+            </div>
+            <div class="footer-item">
+                <p class="footer-label">Verify At</p>
+                <p class="footer-value" style="color: #fbbf24;">passionbots.co.in</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="qr-placeholder">
+        <div class="qr-inner">
+            <i class="fas fa-qrcode fa-3x"></i>
+        </div>
+    </div>
+</div>
+</div>
+</body>
+</html>`
+}
 
 // ============================================
 // ZOOM INTEGRATION ROUTES
