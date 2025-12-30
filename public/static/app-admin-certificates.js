@@ -924,6 +924,228 @@ const AdminCertificateTool = {
     }
   },
   
+  // Preview Certificate
+  previewCertificate() {
+    const studentName = document.getElementById('cert-student-search').value;
+    const courseName = document.getElementById('cert-course').value;
+    const completionDate = document.getElementById('cert-completion-date').value;
+    const grade = document.getElementById('cert-grade').value;
+    
+    if (!studentName || !courseName || !completionDate) {
+      alert('Please fill in required fields: Student Name, Course, and Completion Date');
+      return;
+    }
+    
+    // Generate preview code
+    const previewCode = `PB-${courseName.substring(0,3).toUpperCase()}-${new Date().getFullYear()}-PREVIEW`;
+    
+    // Open preview in new tab
+    const previewHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Certificate Preview</title>
+        <style>
+          body { background: #000; color: #fff; font-family: Arial; padding: 40px; text-align: center; }
+          .preview { background: #1a1a1a; border: 2px solid #ffd700; border-radius: 15px; padding: 60px; max-width: 800px; margin: 0 auto; }
+          h1 { color: #ffd700; font-size: 48px; margin-bottom: 20px; }
+          .student { font-size: 36px; color: #fff; margin: 30px 0; }
+          .course { font-size: 24px; color: #999; margin: 20px 0; }
+          .code { font-family: monospace; color: #ffd700; font-size: 18px; margin-top: 40px; }
+          .watermark { color: #666; font-size: 14px; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="preview">
+          <h1>🏆 Certificate of Completion</h1>
+          <p style="font-size: 20px; color: #999;">This certifies that</p>
+          <div class="student">${studentName}</div>
+          <p style="font-size: 18px; color: #999;">has successfully completed</p>
+          <div class="course">${courseName}</div>
+          ${grade ? `<p style="font-size: 20px; color: #4ade80; margin: 20px 0;">Grade: ${grade}</p>` : ''}
+          <p style="font-size: 16px; color: #999; margin-top: 30px;">Date: ${new Date(completionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <div class="code">Certificate ID: ${previewCode}</div>
+          <div class="watermark">⚠️ PREVIEW ONLY - NOT A VALID CERTIFICATE</div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const previewWindow = window.open('', '_blank');
+    previewWindow.document.write(previewHTML);
+    previewWindow.document.close();
+  },
+  
+  // Download Certificate
+  async downloadCertificate(certificateId) {
+    try {
+      window.open(`/api/certificates/${certificateId}/view`, '_blank');
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download certificate');
+    }
+  },
+  
+  // Revoke Certificate
+  async revokeCertificate(certificateId) {
+    const reason = prompt('Enter reason for revocation:');
+    if (!reason) return;
+    
+    if (!confirm('Are you sure you want to revoke this certificate?')) return;
+    
+    try {
+      const response = await fetch(`/api/admin/certificates/${certificateId}/revoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('admin_session')}`
+        },
+        body: JSON.stringify({ reason })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Certificate revoked successfully');
+        this.loadCertificates();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('Revoke error:', error);
+      alert('Failed to revoke certificate: ' + error.message);
+    }
+  },
+  
+  // Filter Certificates
+  filterCertificates() {
+    // This would filter the table in real-time
+    // For now, just reload with search params
+    this.loadCertificates();
+  },
+  
+  // Handle CSV Upload
+  handleCSVUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const csv = e.target.result;
+      const lines = csv.split('\n');
+      const headers = lines[0].split(',');
+      
+      const students = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const values = lines[i].split(',');
+        const student = {};
+        headers.forEach((header, index) => {
+          student[header.trim()] = values[index]?.trim();
+        });
+        students.push(student);
+      }
+      
+      // Show preview
+      const previewDiv = document.getElementById('csv-preview');
+      const previewContent = document.getElementById('csv-preview-content');
+      
+      previewContent.innerHTML = `
+        <p style="color: #ffd700; font-weight: 600; margin-bottom: 15px;">
+          ${students.length} students found in CSV
+        </p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #000; border-bottom: 1px solid #ffd700;">
+              ${headers.map(h => `<th style="padding: 10px; text-align: left; color: #ffd700;">${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${students.slice(0, 5).map(s => `
+              <tr style="border-bottom: 1px solid #333;">
+                ${headers.map(h => `<td style="padding: 10px; color: #fff;">${s[h] || '-'}</td>`).join('')}
+              </tr>
+            `).join('')}
+            ${students.length > 5 ? `<tr><td colspan="${headers.length}" style="padding: 10px; color: #999; text-align: center;">... and ${students.length - 5} more</td></tr>` : ''}
+          </tbody>
+        </table>
+      `;
+      
+      previewDiv.style.display = 'block';
+      
+      // Enable generate button
+      const generateBtn = document.getElementById('bulk-generate-btn');
+      generateBtn.disabled = false;
+      generateBtn.style.background = 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)';
+      generateBtn.style.color = '#000';
+      generateBtn.style.cursor = 'pointer';
+      
+      // Store students data
+      this.certificateQueue = students;
+    };
+    
+    reader.readAsText(file);
+  },
+  
+  // Handle Bulk Generate
+  async handleBulkGenerate() {
+    if (!this.certificateQueue || this.certificateQueue.length === 0) {
+      alert('No students loaded. Please upload a CSV file first.');
+      return;
+    }
+    
+    const courseName = prompt('Enter course name for all certificates:');
+    if (!courseName) return;
+    
+    const completionDate = prompt('Enter completion date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+    if (!completionDate) return;
+    
+    // Show progress
+    const progressDiv = document.getElementById('bulk-progress');
+    const progressBar = document.getElementById('bulk-progress-bar');
+    const progressText = document.getElementById('bulk-progress-text');
+    
+    progressDiv.style.display = 'block';
+    
+    try {
+      const response = await fetch('/api/admin/certificates/bulk-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('admin_session')}`
+        },
+        body: JSON.stringify({
+          batch_name: `Batch ${new Date().toISOString()}`,
+          course_name: courseName,
+          students: this.certificateQueue,
+          completion_date: completionDate
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        progressText.textContent = `${data.batch.generated} / ${data.batch.total}`;
+        progressBar.style.width = '100%';
+        
+        setTimeout(() => {
+          alert(`Successfully generated ${data.batch.generated} certificates!\nFailed: ${data.batch.failed}`);
+          progressDiv.style.display = 'none';
+          document.getElementById('csv-preview').style.display = 'none';
+          document.getElementById('bulk-csv-file').value = '';
+          this.certificateQueue = [];
+          this.loadDashboardStats();
+        }, 1000);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('Bulk generate error:', error);
+      alert('Failed to generate certificates: ' + error.message);
+      progressDiv.style.display = 'none';
+    }
+  },
+  
   // Initialize admin portal
   init() {
     // Check for existing session
