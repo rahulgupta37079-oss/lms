@@ -2113,6 +2113,7 @@ app.get('/', (c) => {
     <script src="/static/app-zoom-integration.js?v=${v}"></script>
     <script src="/static/app-lesson-interface-enhanced.js?v=${v}"></script>
     <script src="/static/app-certificates.js?v=${v}"></script>
+    <script src="/static/app-admin-certificates.js?v=${v}"></script>
     <script>
       window.onerror = function(msg, url, line, col, error) {
         console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
@@ -3001,6 +3002,510 @@ function renderCertificateHTML(data: any) {
 </body>
 </html>`
 }
+
+// ============================================
+// ADMIN CERTIFICATE GENERATION ROUTES
+// ============================================
+
+// Admin Login
+app.post('/api/admin/login', async (c) => {
+  try {
+    const { username, password } = await c.req.json()
+    
+    // Get admin user
+    const admin = await c.env.DB.prepare(`
+      SELECT admin_id, username, email, full_name, role, permissions, status
+      FROM admin_users
+      WHERE username = ? AND password = ? AND status = 'active'
+    `).bind(username, password).first()
+    
+    if (!admin) {
+      return c.json({ success: false, error: 'Invalid credentials' }, 401)
+    }
+    
+    // Generate session token
+    const sessionToken = `admin_${Date.now()}_${Math.random().toString(36).substring(2)}`
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    
+    // Create session
+    await c.env.DB.prepare(`
+      INSERT INTO admin_sessions (admin_id, session_token, expires_at)
+      VALUES (?, ?, ?)
+    `).bind(admin.admin_id, sessionToken, expiresAt.toISOString()).run()
+    
+    // Update last login
+    await c.env.DB.prepare(`
+      UPDATE admin_users SET last_login = datetime('now') WHERE admin_id = ?
+    `).bind(admin.admin_id).run()
+    
+    return c.json({
+      success: true,
+      admin: {
+        id: admin.admin_id,
+        username: admin.username,
+        email: admin.email,
+        full_name: admin.full_name,
+        role: admin.role,
+        permissions: JSON.parse(admin.permissions || '[]')
+      },
+      session_token: sessionToken,
+      expires_at: expiresAt.toISOString()
+    })
+  } catch (error) {
+    console.error('Admin login error:', error)
+    return c.json({ success: false, error: 'Login failed' }, 500)
+  }
+})
+
+// Verify Admin Session
+async function verifyAdminSession(c: any, sessionToken: string) {
+  const session = await c.env.DB.prepare(`
+    SELECT s.*, a.admin_id, a.username, a.full_name, a.role, a.permissions
+    FROM admin_sessions s
+    JOIN admin_users a ON s.admin_id = a.admin_id
+    WHERE s.session_token = ? AND s.expires_at > datetime('now')
+  `).bind(sessionToken).first()
+  
+  return session
+}
+
+// Admin Generate Certificate (Single)
+app.post('/api/admin/certificates/generate', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const { student_id, student_name, student_email, course_id, course_name, completion_date, notes } = await c.req.json()
+    
+    // If student_id provided, get student details
+    let studentName = student_name
+    let studentEmail = student_email
+    
+    if (student_id) {
+      const student = await c.env.DB.prepare(`
+        SELECT full_name, email FROM students WHERE student_id = ?
+      `).bind(student_id).first()
+      
+      if (student) {
+        studentName = student.full_name
+        studentEmail = student.email
+      }
+    }
+    
+    if (!studentName) {
+      return c.json({ success: false, error: 'Student name is required' }, 400)
+    }
+    
+    // Generate unique certificate code
+    const certificateCode = generateCertificateCode()
+    const verificationUrl = `https://passionbots-lms.pages.dev/verify/${certificateCode}`
+    
+    // Certificate data
+    const certificateData = JSON.stringify({
+      studentName: studentName,
+      courseName: course_name || 'IoT & Robotics Course',
+      issueDate: new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      completionDate: completion_date || new Date().toISOString().split('T')[0],
+      certificateCode: certificateCode,
+      verificationUrl: verificationUrl
+    })
+    
+    // Insert certificate
+    const result = await c.env.DB.prepare(`
+      INSERT INTO certificates (
+        student_id, course_id, certificate_code, student_name, 
+        course_name, issue_date, completion_date, certificate_data, 
+        verification_url, status
+      )
+      VALUES (?, ?, ?, ?, ?, date('now'), ?, ?, ?, 'active')
+    `).bind(
+      student_id || null,
+      course_id || null,
+      certificateCode,
+      studentName,
+      course_name || 'IoT & Robotics Course',
+      completion_date || new Date().toISOString().split('T')[0],
+      certificateData,
+      verificationUrl
+    ).run()
+    
+    const certificateId = result.meta.last_row_id
+    
+    // Log certificate generation
+    await c.env.DB.prepare(`
+      INSERT INTO certificate_generation_logs (admin_id, certificate_id, student_id, course_name, action, notes)
+      VALUES (?, ?, ?, ?, 'generate', ?)
+    `).bind(
+      session.admin_id,
+      certificateId,
+      student_id || 0,
+      course_name || 'IoT & Robotics Course',
+      notes || 'Generated by admin'
+    ).run()
+    
+    return c.json({
+      success: true,
+      certificate: {
+        certificate_id: certificateId,
+        certificate_code: certificateCode,
+        student_name: studentName,
+        student_email: studentEmail,
+        course_name: course_name || 'IoT & Robotics Course',
+        issue_date: new Date().toISOString().split('T')[0],
+        verification_url: verificationUrl
+      }
+    })
+  } catch (error) {
+    console.error('Admin generate certificate error:', error)
+    return c.json({ success: false, error: 'Failed to generate certificate' }, 500)
+  }
+})
+
+// Admin Bulk Generate Certificates
+app.post('/api/admin/certificates/bulk-generate', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const { batch_name, course_name, students, completion_date } = await c.req.json()
+    
+    if (!students || students.length === 0) {
+      return c.json({ success: false, error: 'No students provided' }, 400)
+    }
+    
+    // Create batch record
+    const batchResult = await c.env.DB.prepare(`
+      INSERT INTO certificate_batches (admin_id, batch_name, course_name, total_certificates, status)
+      VALUES (?, ?, ?, ?, 'processing')
+    `).bind(
+      session.admin_id,
+      batch_name || `Batch ${new Date().toISOString()}`,
+      course_name,
+      students.length
+    ).run()
+    
+    const batchId = batchResult.meta.last_row_id
+    const certificates = []
+    let successCount = 0
+    
+    // Generate certificates for each student
+    for (const student of students) {
+      try {
+        const certificateCode = generateCertificateCode()
+        const verificationUrl = `https://passionbots-lms.pages.dev/verify/${certificateCode}`
+        
+        const certificateData = JSON.stringify({
+          studentName: student.name,
+          courseName: course_name,
+          issueDate: new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          }),
+          completionDate: completion_date || new Date().toISOString().split('T')[0],
+          certificateCode: certificateCode,
+          verificationUrl: verificationUrl
+        })
+        
+        const result = await c.env.DB.prepare(`
+          INSERT INTO certificates (
+            student_id, certificate_code, student_name, course_name, 
+            issue_date, completion_date, certificate_data, verification_url, status
+          )
+          VALUES (?, ?, ?, ?, date('now'), ?, ?, ?, 'active')
+        `).bind(
+          student.student_id || null,
+          certificateCode,
+          student.name,
+          course_name,
+          completion_date || new Date().toISOString().split('T')[0],
+          certificateData,
+          verificationUrl
+        ).run()
+        
+        certificates.push({
+          certificate_id: result.meta.last_row_id,
+          certificate_code: certificateCode,
+          student_name: student.name,
+          student_email: student.email
+        })
+        
+        successCount++
+      } catch (error) {
+        console.error(`Failed to generate certificate for ${student.name}:`, error)
+      }
+    }
+    
+    // Update batch status
+    await c.env.DB.prepare(`
+      UPDATE certificate_batches 
+      SET generated_count = ?, status = 'completed', completed_at = datetime('now')
+      WHERE batch_id = ?
+    `).bind(successCount, batchId).run()
+    
+    return c.json({
+      success: true,
+      batch: {
+        batch_id: batchId,
+        total: students.length,
+        generated: successCount,
+        failed: students.length - successCount
+      },
+      certificates: certificates
+    })
+  } catch (error) {
+    console.error('Bulk generate error:', error)
+    return c.json({ success: false, error: 'Bulk generation failed' }, 500)
+  }
+})
+
+// Get All Certificates (Admin View)
+app.get('/api/admin/certificates', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const limit = c.req.query('limit') || '50'
+    const offset = c.req.query('offset') || '0'
+    const search = c.req.query('search') || ''
+    
+    let query = `
+      SELECT 
+        certificate_id,
+        certificate_code,
+        student_name,
+        course_name,
+        issue_date,
+        completion_date,
+        verification_url,
+        status
+      FROM certificates
+    `
+    
+    if (search) {
+      query += ` WHERE student_name LIKE ? OR certificate_code LIKE ?`
+    }
+    
+    query += ` ORDER BY issue_date DESC LIMIT ? OFFSET ?`
+    
+    const certificates = search
+      ? await c.env.DB.prepare(query).bind(`%${search}%`, `%${search}%`, limit, offset).all()
+      : await c.env.DB.prepare(query).bind(limit, offset).all()
+    
+    return c.json({ success: true, certificates: certificates.results })
+  } catch (error) {
+    console.error('Get certificates error:', error)
+    return c.json({ success: false, error: 'Failed to load certificates' }, 500)
+  }
+})
+
+// Revoke Certificate
+app.post('/api/admin/certificates/:id/revoke', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const certificateId = c.req.param('id')
+    const { reason } = await c.req.json()
+    
+    // Update certificate status
+    await c.env.DB.prepare(`
+      UPDATE certificates SET status = 'revoked' WHERE certificate_id = ?
+    `).bind(certificateId).run()
+    
+    // Log revocation
+    await c.env.DB.prepare(`
+      INSERT INTO certificate_generation_logs (admin_id, certificate_id, student_id, course_name, action, notes)
+      VALUES (?, ?, 0, '', 'revoke', ?)
+    `).bind(session.admin_id, certificateId, reason || 'Revoked by admin').run()
+    
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Revoke certificate error:', error)
+    return c.json({ success: false, error: 'Failed to revoke certificate' }, 500)
+  }
+})
+
+// Get Admin Dashboard Stats
+app.get('/api/admin/certificates/stats', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    // Get total certificates
+    const total = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM certificates
+    `).first()
+    
+    // Get certificates issued today
+    const today = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM certificates WHERE date(issue_date) = date('now')
+    `).first()
+    
+    // Get active students
+    const students = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM students WHERE status = 'active'
+    `).first()
+    
+    // Get pending verifications (certificates with status pending if any)
+    const pending = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM certificates WHERE status = 'pending'
+    `).first()
+    
+    return c.json({
+      success: true,
+      stats: {
+        total: total?.count || 0,
+        today: today?.count || 0,
+        students: students?.count || 0,
+        pending: pending?.count || 0
+      }
+    })
+  } catch (error) {
+    console.error('Get stats error:', error)
+    return c.json({ success: false, error: 'Failed to load stats' }, 500)
+  }
+})
+
+// Search Students (Admin)
+app.get('/api/admin/students/search', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const query = c.req.query('q') || ''
+    
+    if (query.length < 2) {
+      return c.json({ success: true, students: [] })
+    }
+    
+    const students = await c.env.DB.prepare(`
+      SELECT student_id as user_id, full_name as name, email, enrollment_date
+      FROM students
+      WHERE full_name LIKE ? OR email LIKE ? OR CAST(student_id AS TEXT) LIKE ?
+      LIMIT 20
+    `).bind(`%${query}%`, `%${query}%`, `%${query}%`).all()
+    
+    return c.json({ success: true, students: students.results })
+  } catch (error) {
+    console.error('Search students error:', error)
+    return c.json({ success: false, error: 'Search failed' }, 500)
+  }
+})
+
+// Download CSV Template
+app.get('/api/admin/certificates/template.csv', (c) => {
+  const csv = `student_id,name,email,course_name,completion_date,grade,notes
+1,John Doe,john@example.com,IoT Robotics Program,2025-12-30,A+,Excellent performance
+2,Jane Smith,jane@example.com,AI & Machine Learning,2025-12-30,A,Outstanding work
+3,Bob Johnson,bob@example.com,Web Development,2025-12-30,B+,Good progress`
+  
+  return c.text(csv, 200, {
+    'Content-Type': 'text/csv',
+    'Content-Disposition': 'attachment; filename="certificate_template.csv"'
+  })
+})
+
+// Get Admin Dashboard Stats (legacy endpoint)
+app.get('/api/admin/stats', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    // Get total certificates
+    const total = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM certificates
+    `).first()
+    
+    // Get active certificates
+    const active = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM certificates WHERE status = 'active'
+    `).first()
+    
+    // Get revoked certificates
+    const revoked = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM certificates WHERE status = 'revoked'
+    `).first()
+    
+    // Get certificates issued today
+    const today = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM certificates WHERE date(issue_date) = date('now')
+    `).first()
+    
+    return c.json({
+      success: true,
+      stats: {
+        total: total?.count || 0,
+        active: active?.count || 0,
+        revoked: revoked?.count || 0,
+        today: today?.count || 0
+      }
+    })
+  } catch (error) {
+    console.error('Get stats error:', error)
+    return c.json({ success: false, error: 'Failed to load stats' }, 500)
+  }
+})
 
 // ============================================
 // ZOOM INTEGRATION ROUTES

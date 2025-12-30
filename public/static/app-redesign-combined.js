@@ -71,6 +71,13 @@ function renderView() {
         app.innerHTML = '<div style="padding:50px;text-align:center;"><h2>Certificates Loading...</h2></div>';
       }
       break;
+    case 'admin':
+      if (typeof AdminCertificateTool !== 'undefined') {
+        AdminCertificateTool.init();
+      } else {
+        app.innerHTML = '<div style="padding:50px;text-align:center;"><h2>Admin Portal Loading...</h2></div>';
+      }
+      break;
     case 'progress':
       app.innerHTML = renderProgress();
       loadProgress();
@@ -194,8 +201,21 @@ function renderLogin() {
               Don't have an account? <a href="#" onclick="showSubscriptionPlans(); return false;" style="color: var(--primary-purple); font-weight: 600; text-decoration: none;">Subscribe Now</a>
             </p>
           </div>
+          
         </div>
       </div>
+      
+      <!-- Admin Access Button (Floating) -->
+      <a 
+        href="javascript:navigateTo('admin')"
+        style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4); cursor: pointer; transition: all 0.3s; z-index: 1000; text-decoration: none;"
+        onmouseover="this.style.transform='translateY(-5px) scale(1.1)'; this.style.boxShadow='0 12px 35px rgba(255, 215, 0, 0.5)'"
+        onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 8px 25px rgba(255, 215, 0, 0.4)'"
+        title="Admin Portal"
+      >
+        <i class="fas fa-shield-alt" style="font-size: 24px; color: #000;"></i>
+      </a>
+      
     </div>
   `;
 }
