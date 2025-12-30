@@ -4999,6 +4999,8 @@ function generateEnhancedCertificate(data: any, certificate: any) {
 <title>Certificate - ${studentName}</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"/>
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   @page { size: 1920px 1080px; margin: 0; }
   @media print {
@@ -5030,10 +5032,10 @@ function generateEnhancedCertificate(data: any, certificate: any) {
   .footer-label { font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 0.15rem; text-transform: uppercase; color: #ffd700; margin-bottom: 15px; }
   .footer-value { font-family: 'Roboto', sans-serif; font-size: 1.35rem; font-weight: 500; color: #fff; margin-bottom: 10px; }
   .signature-section { margin-top: 15px; }
-  .signature-image { width: 180px; height: 60px; margin: 0 auto 10px; object-fit: contain; filter: brightness(1.2); }
+  .signature-image { width: 200px; height: 70px; margin: 0 auto 5px; object-fit: contain; filter: brightness(1.1); display: block; }
   .signature-line { width: 220px; height: 2px; background: rgba(255, 215, 0, 0.5); margin: 0 auto 12px; }
   .signature-name { font-family: 'Roboto', sans-serif; font-size: 1.4rem; font-weight: 600; color: #fff; margin-bottom: 5px; font-style: italic; }
-  .signature-title { font-family: 'Roboto', sans-serif; font-size: 1.05rem; font-weight: 400; color: #999; }
+  .signature-title { font-family: 'Roboto', sans-serif; font-size: 1.05rem; font-weight: 400; color: #999; text-align: center; }
   .download-btn { position: fixed; top: 30px; right: 30px; padding: 16px 32px; background: linear-gradient(135deg, #ffd700 0%, #f4c430 100%); color: #000; font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1rem; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4); transition: all 0.3s ease; z-index: 1000; }
   .download-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6); }
   .download-btn i { margin-right: 10px; }
@@ -5068,8 +5070,7 @@ function generateEnhancedCertificate(data: any, certificate: any) {
         <div class="footer-item">
           <div class="footer-label">FOUNDER SIGNATURE</div>
           <div class="signature-section">
-            <div class="signature-name">Rahul Gupta</div>
-            <div class="signature-line"></div>
+            <img src="/static/signature.svg" alt="Signature" class="signature-image" />
             <div class="signature-title">CEO, PASSIONBOTS</div>
           </div>
         </div>
@@ -5098,27 +5099,49 @@ function generateEnhancedCertificate(data: any, certificate: any) {
     adjustScale();
     window.addEventListener('resize', adjustScale);
 
-    // Direct PDF download using modern browser APIs
+    // Direct PDF download using html2canvas + jsPDF
     async function downloadAsPDF() {
       try {
         const btn = document.querySelector('.download-btn');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
         
-        // Wait a bit for render
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const container = document.querySelector('.certificate-container');
         
-        // Use browser's print to PDF
-        window.print();
+        // Generate canvas from HTML
+        const canvas = await html2canvas(container, {
+          width: 1920,
+          height: 1080,
+          scale: 2,
+          backgroundColor: '#000000',
+          logging: false,
+          useCORS: true
+        });
+        
+        // Create PDF
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'px',
+          format: [1920, 1080]
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, 1920, 1080);
+        
+        // Download
+        const fileName = '${studentName.replace(/[^a-zA-Z0-9]/g, '_')}_PassionBots_Certificate.pdf';
+        pdf.save(fileName);
         
         // Reset button
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
-        }, 1000);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
       } catch (error) {
         console.error('Download error:', error);
-        alert('Download failed. Please try using your browser\\'s print-to-PDF feature.');
+        alert('Download failed. Please try the print method (Ctrl+P or Cmd+P).');
+        const btn = document.querySelector('.download-btn');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
       }
     }
   </script>
