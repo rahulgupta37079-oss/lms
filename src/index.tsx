@@ -2068,6 +2068,186 @@ app.post('/api/subscriptions/cancel', async (c) => {
 // ============================================
 
 // Admin Portal Route
+// Certificate Verification Page
+app.get('/verify/:code', async (c) => {
+  const code = c.req.param('code')
+  
+  // Fetch certificate details
+  let certificate = null
+  let error = null
+  
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT 
+        certificate_code,
+        student_name,
+        course_name,
+        issue_date,
+        completion_date,
+        status,
+        verification_url
+      FROM certificates
+      WHERE certificate_code = ?
+    `).bind(code).first()
+    
+    certificate = result
+  } catch (e) {
+    error = 'Failed to verify certificate'
+  }
+  
+  const v = Date.now()
+  
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verification - PassionBots LMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Inter', sans-serif; }
+      .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+      .card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="card max-w-2xl w-full rounded-2xl shadow-2xl p-8">
+        ${certificate ? `
+          ${certificate.status === 'active' ? `
+            <!-- Valid Certificate -->
+            <div class="text-center">
+              <div class="bg-green-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check-circle text-green-600 text-5xl"></i>
+              </div>
+              <h1 class="text-3xl font-bold text-gray-900 mb-2">Certificate Verified ✓</h1>
+              <p class="text-gray-600 mb-8">This is a valid PassionBots certificate</p>
+              
+              <div class="bg-gray-50 rounded-xl p-6 text-left space-y-4 mb-6">
+                <div class="border-b border-gray-200 pb-3">
+                  <div class="text-sm text-gray-500 mb-1">Certificate Code</div>
+                  <div class="text-xl font-bold text-gray-900 font-mono">${certificate.certificate_code}</div>
+                </div>
+                
+                <div class="border-b border-gray-200 pb-3">
+                  <div class="text-sm text-gray-500 mb-1">Student Name</div>
+                  <div class="text-xl font-semibold text-gray-900">${certificate.student_name}</div>
+                </div>
+                
+                <div class="border-b border-gray-200 pb-3">
+                  <div class="text-sm text-gray-500 mb-1">Course</div>
+                  <div class="text-lg font-medium text-gray-900">${certificate.course_name}</div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <div class="text-sm text-gray-500 mb-1">Issue Date</div>
+                    <div class="text-base font-medium text-gray-900">${certificate.issue_date}</div>
+                  </div>
+                  ${certificate.completion_date ? `
+                    <div>
+                      <div class="text-sm text-gray-500 mb-1">Completion Date</div>
+                      <div class="text-base font-medium text-gray-900">${certificate.completion_date}</div>
+                    </div>
+                  ` : ''}
+                </div>
+                
+                <div class="pt-3">
+                  <div class="text-sm text-gray-500 mb-1">Status</div>
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <i class="fas fa-circle text-xs mr-2"></i> Active
+                  </span>
+                </div>
+              </div>
+              
+              <div class="flex gap-3 justify-center">
+                <a href="/api/certificates/${certificate.certificate_code.split('-').pop()}/view" 
+                   class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition">
+                  <i class="fas fa-eye mr-2"></i> View Certificate
+                </a>
+                <a href="/" 
+                   class="inline-flex items-center px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+                  <i class="fas fa-home mr-2"></i> Home
+                </a>
+              </div>
+            </div>
+          ` : `
+            <!-- Revoked/Inactive Certificate -->
+            <div class="text-center">
+              <div class="bg-red-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-times-circle text-red-600 text-5xl"></i>
+              </div>
+              <h1 class="text-3xl font-bold text-gray-900 mb-2">Certificate Not Valid</h1>
+              <p class="text-gray-600 mb-8">This certificate has been ${certificate.status}</p>
+              
+              <div class="bg-gray-50 rounded-xl p-6 text-left space-y-4 mb-6">
+                <div class="border-b border-gray-200 pb-3">
+                  <div class="text-sm text-gray-500 mb-1">Certificate Code</div>
+                  <div class="text-xl font-bold text-gray-900 font-mono">${certificate.certificate_code}</div>
+                </div>
+                
+                <div class="border-b border-gray-200 pb-3">
+                  <div class="text-sm text-gray-500 mb-1">Student Name</div>
+                  <div class="text-xl font-semibold text-gray-900">${certificate.student_name}</div>
+                </div>
+                
+                <div>
+                  <div class="text-sm text-gray-500 mb-1">Status</div>
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    <i class="fas fa-circle text-xs mr-2"></i> ${certificate.status}
+                  </span>
+                </div>
+              </div>
+              
+              <a href="/" 
+                 class="inline-flex items-center px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+                <i class="fas fa-home mr-2"></i> Back to Home
+              </a>
+            </div>
+          `}
+        ` : `
+          <!-- Certificate Not Found -->
+          <div class="text-center">
+            <div class="bg-yellow-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+              <i class="fas fa-exclamation-triangle text-yellow-600 text-5xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Certificate Not Found</h1>
+            <p class="text-gray-600 mb-4">The certificate code you entered could not be found in our system.</p>
+            
+            <div class="bg-gray-50 rounded-xl p-4 mb-6">
+              <div class="text-sm text-gray-500 mb-1">Certificate Code</div>
+              <div class="text-lg font-mono text-gray-900">${code}</div>
+            </div>
+            
+            <p class="text-sm text-gray-500 mb-6">
+              ${error ? error : 'Please check the code and try again, or contact support if you believe this is an error.'}
+            </p>
+            
+            <div class="flex gap-3 justify-center">
+              <a href="/" 
+                 class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition">
+                <i class="fas fa-home mr-2"></i> Back to Home
+              </a>
+              <a href="mailto:support@passionbots.in" 
+                 class="inline-flex items-center px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+                <i class="fas fa-envelope mr-2"></i> Contact Support
+              </a>
+            </div>
+          </div>
+        `}
+        
+        <div class="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+          <p>© 2025 PassionBots. All rights reserved.</p>
+          <p class="mt-1">For verification support, visit <a href="https://passionbots.co.in" class="text-purple-600 hover:text-purple-700">passionbots.co.in</a></p>
+        </div>
+    </div>
+</body>
+</html>
+  `)
+})
+
 app.get('/admin', (c) => {
   const v = Date.now(); // Cache busting version
   return c.html(`
