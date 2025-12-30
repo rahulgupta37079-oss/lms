@@ -324,6 +324,25 @@ const AdminCertificateTool = {
             </select>
           </div>
           
+          <!-- Certificate Type -->
+          <div style="margin-bottom: 25px;">
+            <label style="display: block; color: #ffd700; font-size: 14px; font-weight: 600; margin-bottom: 10px;">
+              <i class="fas fa-award" style="margin-right: 8px;"></i>Certificate Type
+            </label>
+            <select 
+              id="cert-type"
+              required
+              style="width: 100%; padding: 14px 16px; background: #0a0a0a; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 15px; cursor: pointer;"
+            >
+              <option value="completion">Completion Certificate</option>
+              <option value="participation">Participation Certificate</option>
+            </select>
+            <p style="margin: 8px 0 0; font-size: 12px; color: #999;">
+              <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
+              <strong>Completion:</strong> Full course/program | <strong>Participation:</strong> Webinar/workshop
+            </p>
+          </div>
+          
           <!-- Completion Date -->
           <div style="margin-bottom: 25px;">
             <label style="display: block; color: #ffd700; font-size: 14px; font-weight: 600; margin-bottom: 10px;">
@@ -639,6 +658,7 @@ const AdminCertificateTool = {
     const studentId = document.getElementById('cert-student-id').value;
     const studentName = document.getElementById('cert-student-search').value;
     const courseName = document.getElementById('cert-course').value;
+    const certificateType = document.getElementById('cert-type').value;
     const completionDate = document.getElementById('cert-completion-date').value;
     const grade = document.getElementById('cert-grade').value;
     const notes = document.getElementById('cert-notes').value;
@@ -648,7 +668,7 @@ const AdminCertificateTool = {
     resultDiv.innerHTML = `
       <div style="padding: 20px; background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; border-radius: 10px; text-align: center;">
         <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #ffd700; margin-bottom: 15px;"></i>
-        <p style="color: #ffd700; font-size: 16px; font-weight: 600; margin: 0;">Generating certificate...</p>
+        <p style="color: #ffd700; font-size: 16px; font-weight: 600; margin: 0;">Generating ${certificateType} certificate...</p>
       </div>
     `;
     
@@ -663,6 +683,7 @@ const AdminCertificateTool = {
           student_id: studentId,
           student_name: studentName,
           course_name: courseName,
+          certificate_type: certificateType,
           completion_date: completionDate,
           grade: grade || null,
           notes: notes || null
@@ -672,11 +693,12 @@ const AdminCertificateTool = {
       const data = await response.json();
       
       if (data.success) {
+        const certTypeLabel = certificateType === 'participation' ? 'Participation' : 'Completion';
         resultDiv.innerHTML = `
           <div style="padding: 25px; background: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; border-radius: 10px;">
             <div style="text-align: center; margin-bottom: 20px;">
               <i class="fas fa-check-circle" style="font-size: 48px; color: #4ade80; margin-bottom: 15px;"></i>
-              <h4 style="font-size: 20px; font-weight: 700; color: #4ade80; margin: 0 0 8px;">Certificate Generated Successfully!</h4>
+              <h4 style="font-size: 20px; font-weight: 700; color: #4ade80; margin: 0 0 8px;">${certTypeLabel} Certificate Generated!</h4>
               <p style="color: #999; font-size: 14px; margin: 0;">Certificate ID: <span style="color: #fff; font-weight: 600; font-family: monospace;">${data.certificate.certificate_code}</span></p>
             </div>
             
