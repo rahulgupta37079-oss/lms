@@ -4809,6 +4809,170 @@ app.get('/api/zoom/recordings', async (c) => {
   }
 })
 
+// Direct PDF Download Endpoint (using Puppeteer-like approach via external service)
+app.get('/api/certificates/:id/download', async (c) => {
+  try {
+    const certificateId = c.req.param('id')
+    
+    const certificate = await c.env.DB.prepare(`
+      SELECT * FROM certificates WHERE certificate_id = ?
+    `).bind(certificateId).first()
+    
+    if (!certificate) {
+      return c.notFound()
+    }
+    
+    const data = JSON.parse(certificate.certificate_data)
+    const htmlContent = generateEnhancedCertificate(data, certificate)
+    
+    // Return HTML with download filename
+    const studentName = certificate.student_name.replace(/[^a-zA-Z0-9]/g, '_')
+    const filename = `${studentName}_PassionBots_Certificate.pdf`
+    
+    // Set headers to trigger download
+    c.header('Content-Type', 'text/html; charset=utf-8')
+    c.header('Content-Disposition', `inline; filename="${filename}"`)
+    c.header('X-Download-Filename', filename)
+    
+    return c.html(htmlContent)
+  } catch (error) {
+    console.error('Download certificate error:', error)
+    return c.text('Failed to download certificate', 500)
+  }
+})
+
+// Bulk Generate Certificates from CSV
+app.post('/api/admin/certificates/bulk-csv', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const { students, course_name, certificate_type, completion_date } = await c.req.json()
+    
+    if (!students || students.length === 0) {
+      return c.json({ success: false, error: 'No students provided' }, 400)
+    }
+    
+    const generated = []
+    const failed = []
+    
+    for (const studentName of students) {
+      try {
+        const certificateCode = generateCertificateCode()
+        const verificationUrl = `https://passionbots-lms.pages.dev/verify/${certificateCode}`
+        const certType = certificate_type || 'participation'
+        
+        const description = certType === 'participation'
+          ? `For outstanding performance and successful participation in the ${course_name || 'IoT and Robotics'} Webinar. Demonstrating exceptional skill in systems integration, automation logic, and robotics engineering principles.`
+          : `For outstanding performance and successful completion of the ${course_name || 'IoT and Robotics'} Program. Demonstrating exceptional skill in systems integration, automation logic, and robotics engineering principles.`
+        
+        const certificateData = JSON.stringify({
+          studentName: studentName,
+          courseName: course_name || 'IOT Robotics Program',
+          issueDate: new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          }),
+          completionDate: completion_date || new Date().toISOString().split('T')[0],
+          certificateCode: certificateCode,
+          verificationUrl: verificationUrl,
+          certificateType: certType,
+          description: description
+        })
+        
+        const result = await c.env.DB.prepare(`
+          INSERT INTO certificates (
+            student_name, course_name, certificate_code, issue_date, 
+            completion_date, certificate_data, verification_url, 
+            status, certificate_type, description
+          )
+          VALUES (?, ?, ?, date('now'), ?, ?, ?, 'active', ?, ?)
+        `).bind(
+          studentName,
+          course_name || 'IOT Robotics Program',
+          certificateCode,
+          completion_date || new Date().toISOString().split('T')[0],
+          certificateData,
+          verificationUrl,
+          certType,
+          description
+        ).run()
+        
+        generated.push({
+          name: studentName,
+          certificate_code: certificateCode,
+          certificate_id: result.meta.last_row_id,
+          verification_url: verificationUrl
+        })
+        
+      } catch (error) {
+        failed.push({ name: studentName, error: error.message })
+      }
+    }
+    
+    return c.json({
+      success: true,
+      generated: generated.length,
+      failed: failed.length,
+      certificates: generated,
+      errors: failed
+    })
+    
+  } catch (error) {
+    console.error('Bulk generate error:', error)
+    return c.json({ success: false, error: 'Failed to bulk generate' }, 500)
+  }
+})
+
+// List all certificates with verification links
+app.get('/api/admin/certificates/list', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const certificates = await c.env.DB.prepare(`
+      SELECT 
+        certificate_id, 
+        certificate_code, 
+        student_name, 
+        course_name, 
+        certificate_type,
+        issue_date, 
+        verification_url,
+        status
+      FROM certificates
+      ORDER BY certificate_id DESC
+      LIMIT 100
+    `).all()
+    
+    return c.json({
+      success: true,
+      certificates: certificates.results || []
+    })
+    
+  } catch (error) {
+    console.error('List certificates error:', error)
+    return c.json({ success: false, error: 'Failed to list certificates' }, 500)
+  }
+})
+
 // Enhanced Certificate Generator (matching PDF format exactly)
 function generateEnhancedCertificate(data: any, certificate: any) {
   const studentName = data.studentName || certificate.student_name || 'Student Name'
@@ -4866,8 +5030,9 @@ function generateEnhancedCertificate(data: any, certificate: any) {
   .footer-label { font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 0.15rem; text-transform: uppercase; color: #ffd700; margin-bottom: 15px; }
   .footer-value { font-family: 'Roboto', sans-serif; font-size: 1.35rem; font-weight: 500; color: #fff; margin-bottom: 10px; }
   .signature-section { margin-top: 15px; }
+  .signature-image { width: 180px; height: 60px; margin: 0 auto 10px; object-fit: contain; filter: brightness(1.2); }
   .signature-line { width: 220px; height: 2px; background: rgba(255, 215, 0, 0.5); margin: 0 auto 12px; }
-  .signature-name { font-family: 'Roboto', sans-serif; font-size: 1.4rem; font-weight: 600; color: #fff; margin-bottom: 5px; }
+  .signature-name { font-family: 'Roboto', sans-serif; font-size: 1.4rem; font-weight: 600; color: #fff; margin-bottom: 5px; font-style: italic; }
   .signature-title { font-family: 'Roboto', sans-serif; font-size: 1.05rem; font-weight: 400; color: #999; }
   .download-btn { position: fixed; top: 30px; right: 30px; padding: 16px 32px; background: linear-gradient(135deg, #ffd700 0%, #f4c430 100%); color: #000; font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1rem; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4); transition: all 0.3s ease; z-index: 1000; }
   .download-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6); }
@@ -4875,7 +5040,7 @@ function generateEnhancedCertificate(data: any, certificate: any) {
 </style>
 </head>
 <body>
-  <button class="download-btn no-print" onclick="window.print()">
+  <button class="download-btn no-print" onclick="downloadAsPDF()">
     <i class="fas fa-download"></i> Download PDF
   </button>
   <div class="certificate-container">
@@ -4903,8 +5068,8 @@ function generateEnhancedCertificate(data: any, certificate: any) {
         <div class="footer-item">
           <div class="footer-label">FOUNDER SIGNATURE</div>
           <div class="signature-section">
-            <div class="signature-line"></div>
             <div class="signature-name">Rahul Gupta</div>
+            <div class="signature-line"></div>
             <div class="signature-title">CEO, PASSIONBOTS</div>
           </div>
         </div>
@@ -4932,6 +5097,30 @@ function generateEnhancedCertificate(data: any, certificate: any) {
     }
     adjustScale();
     window.addEventListener('resize', adjustScale);
+
+    // Direct PDF download using modern browser APIs
+    async function downloadAsPDF() {
+      try {
+        const btn = document.querySelector('.download-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+        
+        // Wait a bit for render
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Use browser's print to PDF
+        window.print();
+        
+        // Reset button
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
+        }, 1000);
+      } catch (error) {
+        console.error('Download error:', error);
+        alert('Download failed. Please try using your browser\\'s print-to-PDF feature.');
+      }
+    }
   </script>
 </body>
 </html>`
