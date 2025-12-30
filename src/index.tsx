@@ -2064,8 +2064,62 @@ app.post('/api/subscriptions/cancel', async (c) => {
 })
 
 // ============================================
-// ROOT ROUTE
+// ROOT ROUTE & ADMIN ROUTE
 // ============================================
+
+// Admin Portal Route
+app.get('/admin', (c) => {
+  const v = Date.now(); // Cache busting version
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - PassionBots LMS</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- REDESIGNED UI v7.0 - Modern & Clean -->
+    <link href="/static/styles-redesign.css?v=${v}" rel="stylesheet">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+    
+    <!-- Main App -->
+    <div id="app">
+      <div style="text-align:center;padding:50px;color:#fff;">
+        <div class="spinner"></div>
+        <p>Loading Admin Portal...</p>
+      </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app-redesign-combined.js?v=${v}"></script>
+    <script src="/static/app-admin-certificates.js?v=${v}"></script>
+    <script>
+      // Auto-navigate to admin view
+      document.addEventListener('DOMContentLoaded', () => {
+        if (typeof AdminCertificateTool !== 'undefined') {
+          AdminCertificateTool.init();
+        } else {
+          console.error('AdminCertificateTool not loaded');
+        }
+      });
+      
+      window.onerror = function(msg, url, line, col, error) {
+        console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
+        document.getElementById('app').innerHTML = '<div style="padding:50px;color:#fff;background:rgba(255,0,0,0.2);border:2px solid #ff6b6b;border-radius:12px;max-width:800px;margin:50px auto;"><h2>🚨 Error Loading Admin Portal</h2><p style="font-size:18px;margin:20px 0;"><strong>Message:</strong> ' + msg + '</p><p><strong>Location:</strong> ' + url + ':' + line + '</p><button onclick="location.reload()" style="background:#667eea;color:white;padding:12px 30px;border:none;border-radius:8px;font-size:16px;cursor:pointer;margin-top:20px;">Reload Page</button></div>';
+      };
+    </script>
+</body>
+</html>
+  `)
+})
 
 app.get('/', (c) => {
   const v = Date.now(); // Cache busting version
