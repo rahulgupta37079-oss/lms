@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Certificate - {{STUDENT_NAME}}</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+    @page { size: 1920px 1080px; margin: 0; }
+    @media print {
+        body { width: 1920px; height: 1080px; margin: 0; }
+        .no-print { display: none; }
+    }
+    
+    body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'Roboto', sans-serif; }
+    .slide-container {
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+        background-color: #0a0a0a;
+        color: white;
+        display: flex;
+        overflow: hidden;
+    }
+    
+    /* Yellow vertical bar on left */
+    .yellow-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 140px;
+        background-color: #fbbf24;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        box-shadow: 5px 0 20px rgba(0,0,0,0.5);
+    }
+    
+    .vertical-text {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        font-family: 'Oswald', sans-serif;
+        font-size: 4.5rem;
+        font-weight: 700;
+        color: #111;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    /* Diagonal background shape */
+    .diagonal-shape {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 55%;
+        height: 100%;
+        background-color: #161616;
+        clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%);
+        z-index: 0;
+    }
+    
+    .texture-overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 55%;
+        height: 100%;
+        background-image: radial-gradient(#333 1px, transparent 1px);
+        background-size: 20px 20px;
+        opacity: 0.1;
+        clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%);
+        z-index: 0;
+    }
+
+    .accent-triangle {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 250px;
+        height: 250px;
+        background-color: #fbbf24;
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        z-index: 1;
+    }
+
+    /* Serial number tag (top-right) */
+    .serial-tag {
+        position: absolute;
+        top: 50px;
+        right: 60px;
+        background-color: #fbbf24;
+        color: #111;
+        padding: 12px 30px;
+        font-family: 'Oswald', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        z-index: 20;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    /* Content area */
+    .content-wrapper {
+        flex: 1;
+        margin-left: 140px;
+        padding: 80px 120px 80px 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 10;
+        position: relative;
+    }
+
+    /* Logo */
+    .logo-area {
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    .logo-icon-box {
+        width: 60px;
+        height: 60px;
+        background-color: #fbbf24;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #000;
+        font-size: 2rem;
+        border-radius: 4px;
+    }
+    .logo-text {
+        font-family: 'Oswald', sans-serif;
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: white;
+    }
+
+    /* Certificate title */
+    .title-group {
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    .cert-title-outline {
+        font-family: 'Oswald', sans-serif;
+        font-size: 9rem;
+        font-weight: 700;
+        line-height: 0.8;
+        text-transform: uppercase;
+        color: transparent;
+        -webkit-text-stroke: 2px rgba(255, 255, 255, 0.1);
+        position: absolute;
+        top: -4rem;
+        left: -10px;
+        z-index: -1;
+    }
+    .cert-title-main {
+        font-family: 'Oswald', sans-serif;
+        font-size: 6.5rem;
+        font-weight: 700;
+        line-height: 1;
+        text-transform: uppercase;
+        color: #fbbf24;
+        margin: 0;
+        text-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+    }
+    .cert-subtitle {
+        font-family: 'Oswald', sans-serif;
+        font-size: 1.8rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: white;
+        margin-top: 0.5rem;
+        font-weight: 400;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .cert-subtitle::after {
+        content: '';
+        height: 4px;
+        width: 100px;
+        background-color: #fbbf24;
+        display: block;
+    }
+
+    /* Recipient section */
+    .recipient-container {
+        margin: 2rem 0 2.5rem 0;
+        position: relative;
+    }
+    .name-label {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #999;
+        margin-bottom: 1rem;
+    }
+    .name-box {
+        background-color: #fbbf24;
+        color: #111;
+        padding: 1.2rem 2.5rem;
+        transform: skewX(-5deg);
+        display: inline-block;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+    .name-text {
+        font-family: 'Oswald', sans-serif;
+        font-size: 3.5rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        transform: skewX(5deg);
+        display: inline-block;
+        margin: 0;
+    }
+
+    /* Description */
+    .description {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1.3rem;
+        line-height: 1.7;
+        color: #ddd;
+        max-width: 950px;
+        margin-bottom: 2.5rem;
+    }
+
+    /* Footer with 3 columns */
+    .footer-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 3rem;
+        margin-top: 3rem;
+        padding-top: 2.5rem;
+        border-top: 2px solid rgba(251, 191, 36, 0.3);
+    }
+    .footer-item {
+        text-align: center;
+    }
+    .footer-label {
+        font-family: 'Oswald', sans-serif;
+        font-size: 0.9rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #fbbf24;
+        margin-bottom: 0.8rem;
+        font-weight: 600;
+    }
+    .footer-value {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1.2rem;
+        color: white;
+        font-weight: 500;
+    }
+    .signature-line {
+        width: 200px;
+        height: 2px;
+        background-color: rgba(251, 191, 36, 0.5);
+        margin: 0.8rem auto 0.5rem;
+    }
+    .signature-name {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1.1rem;
+        color: white;
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+    }
+    .signature-title {
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.9rem;
+        color: #999;
+        font-weight: 400;
+    }
+
+    /* QR code placeholder (bottom-right, rotated) */
+    .qr-container {
+        position: absolute;
+        bottom: 80px;
+        right: 80px;
+        width: 120px;
+        height: 120px;
+        background-color: white;
+        border: 4px solid #fbbf24;
+        transform: rotate(-5deg);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        z-index: 15;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .qr-placeholder {
+        font-size: 0.7rem;
+        color: #666;
+        text-align: center;
+        transform: rotate(5deg);
+    }
+
+    /* Download button */
+    .download-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #fbbf24;
+        color: #111;
+        padding: 12px 24px;
+        font-family: 'Oswald', sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        z-index: 1000;
+        transition: all 0.3s;
+    }
+    .download-btn:hover {
+        background-color: #f59e0b;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+</style>
+</head>
+<body>
+    <!-- Download button -->
+    <button class="download-btn no-print" onclick="window.print()">
+        <i class="fas fa-download"></i> Download Certificate
+    </button>
+
+    <div class="slide-container">
+        <!-- Background elements -->
+        <div class="diagonal-shape"></div>
+        <div class="texture-overlay"></div>
+        <div class="accent-triangle"></div>
+        
+        <!-- Yellow vertical bar -->
+        <div class="yellow-bar">
+            <div class="vertical-text">PASSIONBOTS // FUTURE TECH</div>
+        </div>
+        
+        <!-- Serial number tag -->
+        <div class="serial-tag">
+            ID: {{CERTIFICATE_CODE}}
+        </div>
+        
+        <!-- Main content -->
+        <div class="content-wrapper">
+            <!-- Logo -->
+            <div class="logo-area">
+                <div class="logo-icon-box">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="logo-text">PASSIONBOTS</div>
+            </div>
+            
+            <!-- Certificate title -->
+            <div class="title-group">
+                <div class="cert-title-outline">CERTIFICATE</div>
+                <h1 class="cert-title-main">CERTIFICATE</h1>
+                <div class="cert-subtitle">
+                    OF {{CERTIFICATE_TYPE_UPPER}} // {{COURSE_NAME_SHORT}}
+                </div>
+            </div>
+            
+            <!-- Recipient -->
+            <div class="recipient-container">
+                <div class="name-label">THIS CERTIFIES THAT</div>
+                <div class="name-box">
+                    <h2 class="name-text">{{STUDENT_NAME}}</h2>
+                </div>
+            </div>
+            
+            <!-- Description -->
+            <div class="description">
+                {{CERTIFICATE_DESCRIPTION}}
+            </div>
+            
+            <!-- Footer with 3 columns -->
+            <div class="footer-grid">
+                <div class="footer-item">
+                    <div class="footer-label">DATE ISSUED</div>
+                    <div class="footer-value">{{ISSUE_DATE}}</div>
+                </div>
+                
+                <div class="footer-item">
+                    <div class="footer-label">FOUNDER SIGNATURE</div>
+                    <div class="signature-line"></div>
+                    <div class="signature-name">Rahul Gupta</div>
+                    <div class="signature-title">CEO, PASSIONBOTS</div>
+                </div>
+                
+                <div class="footer-item">
+                    <div class="footer-label">VERIFY AT</div>
+                    <div class="footer-value">passionbots.co.in</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- QR code placeholder -->
+        <div class="qr-container">
+            <div class="qr-placeholder">
+                QR CODE<br/>
+                <small>Scan to<br/>Verify</small>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

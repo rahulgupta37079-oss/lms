@@ -3978,7 +3978,10 @@ app.post('/api/admin/certificates/generate', async (c) => {
       return c.json({ success: false, error: 'Invalid or expired session' }, 401)
     }
     
-    const { student_id, student_name, student_email, course_id, course_name, completion_date, notes } = await c.req.json()
+    const { 
+      student_id, student_name, student_email, course_id, course_name, 
+      completion_date, notes, certificate_type, grade, description 
+    } = await c.req.json()
     
     // If student_id provided, get student details
     let studentName = student_name
@@ -3999,6 +4002,19 @@ app.post('/api/admin/certificates/generate', async (c) => {
       return c.json({ success: false, error: 'Student name is required' }, 400)
     }
     
+    // Certificate type: completion or participation
+    const certType = certificate_type || 'completion'
+    
+    // Default description based on certificate type
+    let certDescription = description
+    if (!certDescription) {
+      if (certType === 'participation') {
+        certDescription = `For outstanding performance and successful participation in the ${course_name || 'IoT and Robotics'} Webinar. Demonstrating exceptional skill in systems integration, automation logic, and robotics engineering principles.`
+      } else {
+        certDescription = `For outstanding performance and successful completion of the ${course_name || 'IoT and Robotics'} Program. Demonstrating exceptional skill in systems integration, automation logic, and robotics engineering principles.`
+      }
+    }
+    
     // Generate unique certificate code
     const certificateCode = generateCertificateCode()
     const verificationUrl = `https://passionbots-lms.pages.dev/verify/${certificateCode}`
@@ -4014,7 +4030,10 @@ app.post('/api/admin/certificates/generate', async (c) => {
       }),
       completionDate: completion_date || new Date().toISOString().split('T')[0],
       certificateCode: certificateCode,
-      verificationUrl: verificationUrl
+      verificationUrl: verificationUrl,
+      certificateType: certType,
+      grade: grade || null,
+      description: certDescription
     })
     
     // Insert certificate
@@ -4022,9 +4041,9 @@ app.post('/api/admin/certificates/generate', async (c) => {
       INSERT INTO certificates (
         student_id, course_id, certificate_code, student_name, 
         course_name, issue_date, completion_date, certificate_data, 
-        verification_url, status
+        verification_url, status, certificate_type, grade, description
       )
-      VALUES (?, ?, ?, ?, ?, date('now'), ?, ?, ?, 'active')
+      VALUES (?, ?, ?, ?, ?, date('now'), ?, ?, ?, 'active', ?, ?, ?)
     `).bind(
       student_id || null,
       course_id || null,
@@ -4033,7 +4052,10 @@ app.post('/api/admin/certificates/generate', async (c) => {
       course_name || 'IoT & Robotics Course',
       completion_date || new Date().toISOString().split('T')[0],
       certificateData,
-      verificationUrl
+      verificationUrl,
+      certType,
+      grade || null,
+      certDescription
     ).run()
     
     const certificateId = result.meta.last_row_id
