@@ -5070,7 +5070,7 @@ function generateEnhancedCertificate(data: any, certificate: any) {
         <div class="footer-item">
           <div class="footer-label">FOUNDER SIGNATURE</div>
           <div class="signature-section">
-            <img src="/static/signature-real.png" alt="Signature" class="signature-image" style="filter: grayscale(100%) brightness(1.5) contrast(1.2);" />
+            <img src="/static/signature-real.png" alt="Signature" class="signature-image" />
             <div class="signature-title">CEO, PASSIONBOTS</div>
           </div>
         </div>
