@@ -5032,7 +5032,7 @@ function generateEnhancedCertificate(data: any, certificate: any) {
   .footer-label { font-family: 'Oswald', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12rem; text-transform: uppercase; color: #ffd700; margin-bottom: 12px; }
   .footer-value { font-family: 'Roboto', sans-serif; font-size: 1.1rem; font-weight: 500; color: #fff; margin-bottom: 9px; }
   .signature-section { margin-top: 12px; }
-  .signature-image { width: 170px; height: 58px; margin: 0 auto 6px; object-fit: contain; filter: brightness(1.1); display: block; }
+  .signature-image { width: 180px; height: auto; max-height: 70px; margin: 0 auto 6px; object-fit: contain; display: block; }
   .signature-line { width: 180px; height: 2px; background: rgba(255, 215, 0, 0.5); margin: 0 auto 10px; }
   .signature-name { font-family: 'Roboto', sans-serif; font-size: 1.15rem; font-weight: 600; color: #fff; margin-bottom: 4px; font-style: italic; }
   .signature-title { font-family: 'Roboto', sans-serif; font-size: 0.85rem; font-weight: 400; color: #999; text-align: center; }
@@ -5070,7 +5070,7 @@ function generateEnhancedCertificate(data: any, certificate: any) {
         <div class="footer-item">
           <div class="footer-label">FOUNDER SIGNATURE</div>
           <div class="signature-section">
-            <img src="/static/signature.svg" alt="Signature" class="signature-image" />
+            <img src="/static/signature-real.png" alt="Signature" class="signature-image" style="filter: brightness(1.3) contrast(1.1);" />
             <div class="signature-title">CEO, PASSIONBOTS</div>
           </div>
         </div>
