@@ -5002,41 +5002,41 @@ function generateEnhancedCertificate(data: any, certificate: any) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  @page { size: 1920px 1080px; margin: 0; }
+  @page { size: A4 portrait; margin: 0; }
   @media print {
-    body { width: 1920px; height: 1080px; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { width: 210mm; height: 297mm; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .no-print { display: none !important; }
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Roboto', sans-serif; background: #000; overflow: hidden; }
-  .certificate-container { width: 1920px; height: 1080px; position: relative; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); color: white; overflow: hidden; }
-  .yellow-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 140px; background: linear-gradient(180deg, #ffd700 0%, #f4c430 100%); box-shadow: 5px 0 30px rgba(255, 215, 0, 0.4); z-index: 10; }
-  .vertical-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-90deg); font-family: 'Oswald', sans-serif; font-size: 3.8rem; font-weight: 700; color: #000; letter-spacing: 0.5rem; text-transform: uppercase; white-space: nowrap; }
-  .bg-pattern { position: absolute; right: 0; top: 0; width: 60%; height: 100%; background: radial-gradient(circle at center, rgba(255, 215, 0, 0.03) 0%, transparent 70%); pointer-events: none; }
-  .diagonal-accent { position: absolute; right: -100px; top: -100px; width: 800px; height: 800px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, transparent 50%); transform: rotate(45deg); pointer-events: none; }
-  .cert-id { position: absolute; top: 50px; right: 80px; font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 600; color: #000; background: #ffd700; padding: 10px 28px; letter-spacing: 0.08rem; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4); z-index: 20; }
-  .content { position: relative; margin-left: 180px; padding: 120px 100px 80px 80px; max-width: 1500px; z-index: 5; }
-  .logo-section { display: flex; align-items: center; gap: 20px; margin-bottom: 40px; }
-  .logo-icon { width: 70px; height: 70px; background: #ffd700; display: flex; align-items: center; justify-content: center; border-radius: 8px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
-  .logo-icon i { font-size: 36px; color: #000; }
-  .logo-text { font-family: 'Oswald', sans-serif; font-size: 2.5rem; font-weight: 700; letter-spacing: 0.15rem; text-transform: uppercase; color: #fff; }
-  .cert-title-group { margin-bottom: 40px; }
-  .cert-label { font-family: 'Oswald', sans-serif; font-size: 8rem; font-weight: 700; line-height: 0.9; text-transform: uppercase; color: transparent; -webkit-text-stroke: 3px #ffd700; text-stroke: 3px #ffd700; letter-spacing: 0.1rem; margin-bottom: 15px; }
-  .cert-subtitle { font-family: 'Oswald', sans-serif; font-size: 2.2rem; font-weight: 400; letter-spacing: 0.25rem; text-transform: uppercase; color: #ddd; display: flex; align-items: center; gap: 20px; }
-  .cert-subtitle::before, .cert-subtitle::after { content: ''; width: 80px; height: 3px; background: #ffd700; }
-  .certifies-label { font-family: 'Roboto', sans-serif; font-size: 1.1rem; font-weight: 500; letter-spacing: 0.3rem; text-transform: uppercase; color: #999; margin-bottom: 25px; }
-  .student-name { font-family: 'Oswald', sans-serif; font-size: 5rem; font-weight: 700; color: #ffd700; text-transform: uppercase; letter-spacing: 0.1rem; margin-bottom: 35px; text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5); }
-  .description { font-family: 'Roboto', sans-serif; font-size: 1.4rem; line-height: 1.9; color: #ccc; max-width: 1200px; margin-bottom: 60px; }
-  .footer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 80px; padding-top: 40px; border-top: 2px solid rgba(255, 215, 0, 0.3); }
+  body { font-family: 'Roboto', sans-serif; background: #f0f0f0; overflow-x: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+  .certificate-container { width: 210mm; height: 297mm; position: relative; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); color: white; box-shadow: 0 10px 50px rgba(0,0,0,0.3); }
+  .yellow-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 80px; background: linear-gradient(180deg, #ffd700 0%, #f4c430 100%); box-shadow: 5px 0 20px rgba(255, 215, 0, 0.4); z-index: 10; }
+  .vertical-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-90deg); font-family: 'Oswald', sans-serif; font-size: 2rem; font-weight: 700; color: #000; letter-spacing: 0.3rem; text-transform: uppercase; white-space: nowrap; }
+  .bg-pattern { position: absolute; right: 0; top: 0; width: 50%; height: 100%; background: radial-gradient(circle at center, rgba(255, 215, 0, 0.03) 0%, transparent 70%); pointer-events: none; }
+  .diagonal-accent { position: absolute; right: -50px; top: -50px; width: 400px; height: 400px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, transparent 50%); transform: rotate(45deg); pointer-events: none; }
+  .cert-id { position: absolute; top: 30px; right: 40px; font-family: 'Oswald', sans-serif; font-size: 0.75rem; font-weight: 600; color: #000; background: #ffd700; padding: 8px 18px; letter-spacing: 0.05rem; box-shadow: 0 3px 15px rgba(255, 215, 0, 0.4); z-index: 20; }
+  .content { position: relative; margin-left: 100px; padding: 60px 40px 40px 40px; max-width: calc(210mm - 120px); z-index: 5; }
+  .logo-section { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; }
+  .logo-icon { width: 45px; height: 45px; background: #ffd700; display: flex; align-items: center; justify-content: center; border-radius: 6px; box-shadow: 0 3px 12px rgba(255, 215, 0, 0.3); }
+  .logo-icon i { font-size: 22px; color: #000; }
+  .logo-text { font-family: 'Oswald', sans-serif; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.1rem; text-transform: uppercase; color: #fff; }
+  .cert-title-group { margin-bottom: 25px; }
+  .cert-label { font-family: 'Oswald', sans-serif; font-size: 4rem; font-weight: 700; line-height: 0.9; text-transform: uppercase; color: transparent; -webkit-text-stroke: 2px #ffd700; text-stroke: 2px #ffd700; letter-spacing: 0.08rem; margin-bottom: 10px; }
+  .cert-subtitle { font-family: 'Oswald', sans-serif; font-size: 1.3rem; font-weight: 400; letter-spacing: 0.15rem; text-transform: uppercase; color: #ddd; display: flex; align-items: center; gap: 12px; }
+  .cert-subtitle::before, .cert-subtitle::after { content: ''; width: 50px; height: 2px; background: #ffd700; }
+  .certifies-label { font-family: 'Roboto', sans-serif; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.2rem; text-transform: uppercase; color: #999; margin-bottom: 18px; }
+  .student-name { font-family: 'Oswald', sans-serif; font-size: 3rem; font-weight: 700; color: #ffd700; text-transform: uppercase; letter-spacing: 0.08rem; margin-bottom: 25px; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5); }
+  .description { font-family: 'Roboto', sans-serif; font-size: 0.95rem; line-height: 1.7; color: #ccc; max-width: 100%; margin-bottom: 40px; }
+  .footer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 40px; padding-top: 30px; border-top: 2px solid rgba(255, 215, 0, 0.3); }
   .footer-item { text-align: center; }
-  .footer-label { font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 0.15rem; text-transform: uppercase; color: #ffd700; margin-bottom: 15px; }
-  .footer-value { font-family: 'Roboto', sans-serif; font-size: 1.35rem; font-weight: 500; color: #fff; margin-bottom: 10px; }
-  .signature-section { margin-top: 15px; }
-  .signature-image { width: 200px; height: 70px; margin: 0 auto 5px; object-fit: contain; filter: brightness(1.1); display: block; }
-  .signature-line { width: 220px; height: 2px; background: rgba(255, 215, 0, 0.5); margin: 0 auto 12px; }
-  .signature-name { font-family: 'Roboto', sans-serif; font-size: 1.4rem; font-weight: 600; color: #fff; margin-bottom: 5px; font-style: italic; }
-  .signature-title { font-family: 'Roboto', sans-serif; font-size: 1.05rem; font-weight: 400; color: #999; text-align: center; }
-  .download-btn { position: fixed; top: 30px; right: 30px; padding: 16px 32px; background: linear-gradient(135deg, #ffd700 0%, #f4c430 100%); color: #000; font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1rem; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4); transition: all 0.3s ease; z-index: 1000; }
+  .footer-label { font-family: 'Oswald', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1rem; text-transform: uppercase; color: #ffd700; margin-bottom: 10px; }
+  .footer-value { font-family: 'Roboto', sans-serif; font-size: 0.95rem; font-weight: 500; color: #fff; margin-bottom: 8px; }
+  .signature-section { margin-top: 10px; }
+  .signature-image { width: 140px; height: 50px; margin: 0 auto 5px; object-fit: contain; filter: brightness(1.1); display: block; }
+  .signature-line { width: 150px; height: 2px; background: rgba(255, 215, 0, 0.5); margin: 0 auto 10px; }
+  .signature-name { font-family: 'Roboto', sans-serif; font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 3px; font-style: italic; }
+  .signature-title { font-family: 'Roboto', sans-serif; font-size: 0.75rem; font-weight: 400; color: #999; text-align: center; }
+  .download-btn { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: linear-gradient(135deg, #ffd700 0%, #f4c430 100%); color: #000; font-family: 'Oswald', sans-serif; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08rem; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4); transition: all 0.3s ease; z-index: 1000; }
   .download-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6); }
   .download-btn i { margin-right: 10px; }
 </style>
@@ -5084,22 +5084,22 @@ function generateEnhancedCertificate(data: any, certificate: any) {
   <script>
     function adjustScale() {
       const container = document.querySelector('.certificate-container');
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-      const scaleX = windowWidth / 1920;
-      const scaleY = windowHeight / 1080;
+      const windowWidth = window.innerWidth - 40;
+      const windowHeight = window.innerHeight - 40;
+      const a4Width = 210 * 3.7795275591; // 210mm to px
+      const a4Height = 297 * 3.7795275591; // 297mm to px
+      const scaleX = windowWidth / a4Width;
+      const scaleY = windowHeight / a4Height;
       const scale = Math.min(scaleX, scaleY, 1);
       if (scale < 1) {
         container.style.transform = \`scale(\${scale})\`;
-        container.style.transformOrigin = 'top left';
-        document.body.style.width = \`\${1920 * scale}px\`;
-        document.body.style.height = \`\${1080 * scale}px\`;
+        container.style.transformOrigin = 'top center';
       }
     }
     adjustScale();
     window.addEventListener('resize', adjustScale);
 
-    // Direct PDF download using html2canvas + jsPDF
+    // Direct PDF download using html2canvas + jsPDF (A4 format)
     async function downloadAsPDF() {
       try {
         const btn = document.querySelector('.download-btn');
@@ -5108,26 +5108,30 @@ function generateEnhancedCertificate(data: any, certificate: any) {
         
         const container = document.querySelector('.certificate-container');
         
+        // A4 dimensions in pixels at 96 DPI
+        const a4WidthPx = 794; // 210mm
+        const a4HeightPx = 1123; // 297mm
+        
         // Generate canvas from HTML
         const canvas = await html2canvas(container, {
-          width: 1920,
-          height: 1080,
+          width: a4WidthPx,
+          height: a4HeightPx,
           scale: 2,
           backgroundColor: '#000000',
           logging: false,
           useCORS: true
         });
         
-        // Create PDF
+        // Create PDF (A4 portrait)
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({
-          orientation: 'landscape',
-          unit: 'px',
-          format: [1920, 1080]
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
         });
         
         const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, 1920, 1080);
+        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
         
         // Download
         const fileName = '${studentName.replace(/[^a-zA-Z0-9]/g, '_')}_PassionBots_Certificate.pdf';
