@@ -2079,6 +2079,7 @@ app.get('/verify/:code', async (c) => {
   try {
     const result = await c.env.DB.prepare(`
       SELECT 
+        certificate_id,
         certificate_code,
         student_name,
         course_name,
@@ -2163,7 +2164,7 @@ app.get('/verify/:code', async (c) => {
               </div>
               
               <div class="flex gap-3 justify-center">
-                <a href="/api/certificates/${certificate.certificate_code.split('-').pop()}/view" 
+                <a href="/api/certificates/${certificate.certificate_id}/view" 
                    class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition">
                   <i class="fas fa-eye mr-2"></i> View Certificate
                 </a>
