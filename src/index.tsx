@@ -6,6 +6,7 @@ type Bindings = {
   DB: D1Database;
   OPENAI_API_KEY?: string;  // Optional: OpenAI API key
   OPENAI_BASE_URL?: string;  // Optional: Custom API base URL
+  RESEND_API_KEY?: string;  // Resend API key for email sending
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -4973,6 +4974,361 @@ app.get('/api/admin/certificates/list', async (c) => {
     return c.json({ success: false, error: 'Failed to list certificates' }, 500)
   }
 })
+
+// ============================================
+// EMAIL SENDING ENDPOINTS (Resend API)
+// ============================================
+
+// Send email to single certificate recipient
+app.post('/api/admin/certificates/:id/send-email', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const certificateId = c.req.param('id')
+    const { student_email, deployment_url } = await c.req.json()
+    
+    if (!student_email || !student_email.includes('@')) {
+      return c.json({ success: false, error: 'Valid email address required' }, 400)
+    }
+    
+    // Get certificate details
+    const certificate = await c.env.DB.prepare(`
+      SELECT * FROM certificates WHERE certificate_id = ?
+    `).bind(certificateId).first()
+    
+    if (!certificate) {
+      return c.json({ success: false, error: 'Certificate not found' }, 404)
+    }
+    
+    const baseUrl = deployment_url || 'https://passionbots-lms.pages.dev'
+    const viewUrl = `${baseUrl}/api/certificates/${certificateId}/view`
+    const verifyUrl = `${baseUrl}/verify/${certificate.certificate_code}`
+    
+    // Send email using Resend
+    const result = await sendCertificateEmail(c, {
+      to_email: student_email,
+      to_name: certificate.student_name,
+      certificate_code: certificate.certificate_code,
+      course_name: certificate.course_name,
+      view_url: viewUrl,
+      verify_url: verifyUrl
+    })
+    
+    if (result.success) {
+      // Update certificate with email status
+      await c.env.DB.prepare(`
+        UPDATE certificates 
+        SET student_email = ?, email_sent = 1, email_sent_at = datetime('now')
+        WHERE certificate_id = ?
+      `).bind(student_email, certificateId).run()
+      
+      return c.json({
+        success: true,
+        message: 'Email sent successfully',
+        email_id: result.id
+      })
+    } else {
+      return c.json({
+        success: false,
+        error: result.error
+      }, 500)
+    }
+    
+  } catch (error) {
+    console.error('Send email error:', error)
+    return c.json({ success: false, error: 'Failed to send email' }, 500)
+  }
+})
+
+// Send bulk emails to certificate batch
+app.post('/api/admin/certificates/send-bulk-email', async (c) => {
+  try {
+    const sessionToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!sessionToken) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+    
+    const session = await verifyAdminSession(c, sessionToken)
+    if (!session) {
+      return c.json({ success: false, error: 'Invalid or expired session' }, 401)
+    }
+    
+    const { certificate_ids, deployment_url } = await c.req.json()
+    
+    if (!certificate_ids || !Array.isArray(certificate_ids) || certificate_ids.length === 0) {
+      return c.json({ success: false, error: 'Certificate IDs array required' }, 400)
+    }
+    
+    const baseUrl = deployment_url || 'https://passionbots-lms.pages.dev'
+    
+    const results = {
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+      details: []
+    }
+    
+    for (const certId of certificate_ids) {
+      try {
+        // Get certificate with email
+        const certificate = await c.env.DB.prepare(`
+          SELECT * FROM certificates WHERE certificate_id = ?
+        `).bind(certId).first()
+        
+        if (!certificate) {
+          results.skipped++
+          results.details.push({
+            certificate_id: certId,
+            status: 'skipped',
+            reason: 'Certificate not found'
+          })
+          continue
+        }
+        
+        const studentEmail = certificate.student_email
+        
+        if (!studentEmail || !studentEmail.includes('@')) {
+          results.skipped++
+          results.details.push({
+            certificate_id: certId,
+            student_name: certificate.student_name,
+            status: 'skipped',
+            reason: 'No valid email'
+          })
+          continue
+        }
+        
+        const viewUrl = `${baseUrl}/api/certificates/${certId}/view`
+        const verifyUrl = `${baseUrl}/verify/${certificate.certificate_code}`
+        
+        // Send email
+        const result = await sendCertificateEmail(c, {
+          to_email: studentEmail,
+          to_name: certificate.student_name,
+          certificate_code: certificate.certificate_code,
+          course_name: certificate.course_name,
+          view_url: viewUrl,
+          verify_url: verifyUrl
+        })
+        
+        if (result.success) {
+          results.sent++
+          
+          // Update certificate
+          await c.env.DB.prepare(`
+            UPDATE certificates 
+            SET email_sent = 1, email_sent_at = datetime('now')
+            WHERE certificate_id = ?
+          `).bind(certId).run()
+          
+          results.details.push({
+            certificate_id: certId,
+            student_name: certificate.student_name,
+            email: studentEmail,
+            status: 'sent',
+            email_id: result.id
+          })
+        } else {
+          results.failed++
+          results.details.push({
+            certificate_id: certId,
+            student_name: certificate.student_name,
+            email: studentEmail,
+            status: 'failed',
+            error: result.error
+          })
+        }
+        
+      } catch (error) {
+        results.failed++
+        results.details.push({
+          certificate_id: certId,
+          status: 'failed',
+          error: error.message
+        })
+      }
+    }
+    
+    return c.json({
+      success: true,
+      results
+    })
+    
+  } catch (error) {
+    console.error('Bulk email error:', error)
+    return c.json({ success: false, error: 'Failed to send bulk emails' }, 500)
+  }
+})
+
+// Helper function to send certificate email via Resend
+async function sendCertificateEmail(c: any, params: {
+  to_email: string,
+  to_name: string,
+  certificate_code: string,
+  course_name: string,
+  view_url: string,
+  verify_url: string
+}) {
+  const RESEND_API_KEY = c.env.RESEND_API_KEY
+  
+  if (!RESEND_API_KEY) {
+    return { success: false, error: 'Resend API key not configured' }
+  }
+  
+  const { to_email, to_name, certificate_code, course_name, view_url, verify_url } = params
+  
+  const subject = `🎓 Your ${course_name} Certificate is Ready - ${to_name}`
+  
+  const html = createCertificateEmailHTML(to_name, course_name, certificate_code, view_url, verify_url)
+  
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'PassionBots LMS <certificates@passionbots.co.in>',
+        to: [to_email],
+        subject: subject,
+        html: html
+      })
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      return { success: true, id: data.id }
+    } else {
+      const error = await response.text()
+      return { success: false, error: error }
+    }
+    
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
+
+// Create email HTML template
+function createCertificateEmailHTML(studentName: string, courseName: string, certificateCode: string, viewUrl: string, verifyUrl: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Certificate is Ready</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffd700; font-size: 28px; font-weight: bold;">🎓 Congratulations!</h1>
+                            <p style="margin: 10px 0 0; color: #ffffff; font-size: 16px;">Your certificate is ready</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Dear <strong>${studentName}</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Congratulations on successfully completing the <strong>${courseName}</strong>! 🎉
+                            </p>
+                            <p style="margin: 0 0 30px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Your certificate is now available for download. This certificate validates your participation and achievement in our program.
+                            </p>
+                            <table role="presentation" style="width: 100%; background-color: #f8f9fa; border-left: 4px solid #ffd700; border-radius: 4px; margin-bottom: 30px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <p style="margin: 0 0 10px; color: #666666; font-size: 14px;">
+                                            <strong>Certificate Code:</strong><br>
+                                            <span style="font-family: monospace; color: #333333; font-size: 16px;">${certificateCode}</span>
+                                        </p>
+                                        <p style="margin: 0; color: #666666; font-size: 14px;">
+                                            <strong>Course:</strong> ${courseName}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table role="presentation" style="width: 100%; margin-bottom: 30px;">
+                                <tr>
+                                    <td style="padding: 10px 0;">
+                                        <a href="${viewUrl}" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #1a1a1a; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(255, 215, 0, 0.3);">
+                                            📄 View & Download Certificate
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px 0;">
+                                        <a href="${verifyUrl}" style="display: inline-block; padding: 12px 24px; background-color: #ffffff; color: #333333; text-decoration: none; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                                            🔍 Verify Certificate Authenticity
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="background-color: #e8f4f8; border-left: 4px solid #0066cc; padding: 15px; border-radius: 4px; margin-bottom: 30px;">
+                                <p style="margin: 0 0 10px; color: #0066cc; font-weight: bold; font-size: 14px;">📌 How to Use Your Certificate:</p>
+                                <ul style="margin: 0; padding-left: 20px; color: #333333; font-size: 14px; line-height: 1.6;">
+                                    <li>Click "View & Download Certificate" to open your certificate</li>
+                                    <li>Click the yellow "Download PDF" button on the certificate page</li>
+                                    <li>Share the verification link with employers or institutions</li>
+                                    <li>Keep your certificate code safe for future verification</li>
+                                </ul>
+                            </div>
+                            <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                                We're proud of your achievement and wish you continued success in your IoT and Robotics journey!
+                            </p>
+                            <p style="margin: 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Best regards,<br>
+                                <strong>The PassionBots Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0 0 10px; color: #666666; font-size: 14px;">
+                                PassionBots - Empowering Tomorrow's Tech Leaders
+                            </p>
+                            <p style="margin: 0 0 10px; color: #999999; font-size: 12px;">
+                                IoT, Robotics & Embedded Systems Training
+                            </p>
+                            <p style="margin: 0; color: #999999; font-size: 12px;">
+                                <a href="https://passionbots.co.in" style="color: #0066cc; text-decoration: none;">www.passionbots.co.in</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                <table role="presentation" style="width: 600px; margin: 20px auto;">
+                    <tr>
+                        <td style="text-align: center; color: #999999; font-size: 12px; line-height: 1.6;">
+                            <p style="margin: 0;">
+                                This is an automated email. Please do not reply to this message.
+                            </p>
+                            <p style="margin: 10px 0 0;">
+                                If you have questions, contact us at support@passionbots.co.in
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`
+}
 
 // Enhanced Certificate Generator (matching PDF format exactly)
 function generateEnhancedCertificate(data: any, certificate: any) {
