@@ -7403,4 +7403,778 @@ app.delete('/api/admin/delete-class/:id', async (c) => {
 
 
 
+// ============================================================================
+// ADMIN ACCESS CONTROL PAGE
+// ============================================================================
+
+// Admin Access Control Page
+app.get('/admin-access-control', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Control - Admin | PassionBots</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .btn-yellow {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            color: #000000;
+            transition: all 0.3s ease;
+        }
+        .btn-yellow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+        .status-active { background: #10b981; }
+        .status-inactive { background: #6b7280; }
+        .status-suspended { background: #ef4444; }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Header -->
+    <nav class="bg-black bg-opacity-80 backdrop-blur-md border-b border-yellow-500 border-opacity-30 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-shield-alt text-yellow-400 text-3xl"></i>
+                    <span class="text-2xl font-bold gradient-text">Admin Access Control</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/admin-dashboard-iot" class="text-gray-300 hover:text-yellow-400 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                    <button onclick="logout()" class="text-red-400 hover:text-red-300 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Students</p>
+                        <p class="text-3xl font-bold text-white mt-1" id="total-students">0</p>
+                    </div>
+                    <div class="p-3 bg-blue-500 bg-opacity-20 rounded-lg">
+                        <i class="fas fa-users text-blue-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Active Access</p>
+                        <p class="text-3xl font-bold text-green-400 mt-1" id="active-students">0</p>
+                    </div>
+                    <div class="p-3 bg-green-500 bg-opacity-20 rounded-lg">
+                        <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Inactive</p>
+                        <p class="text-3xl font-bold text-gray-400 mt-1" id="inactive-students">0</p>
+                    </div>
+                    <div class="p-3 bg-gray-500 bg-opacity-20 rounded-lg">
+                        <i class="fas fa-times-circle text-gray-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Suspended</p>
+                        <p class="text-3xl font-bold text-red-400 mt-1" id="suspended-students">0</p>
+                    </div>
+                    <div class="p-3 bg-red-500 bg-opacity-20 rounded-lg">
+                        <i class="fas fa-ban text-red-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Actions -->
+        <div class="card rounded-xl p-6 mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex-1">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Search students by name or email..."
+                            class="w-full pl-10 pr-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500"
+                            oninput="filterStudents()"
+                        >
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <select id="statusFilter" onchange="filterStudents()" class="px-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500">
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                    </select>
+                    <button onclick="bulkAction()" class="btn-yellow px-6 py-3 rounded-lg font-bold">
+                        <i class="fas fa-tasks mr-2"></i>Bulk Action
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="card rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-black bg-opacity-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" class="w-4 h-4">
+                            </th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-300">ID</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-300">Student Name</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-300">Email</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-300">College</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-300">Status</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-300">Payment</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-300">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody" class="divide-y divide-gray-700">
+                        <!-- Students will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+        <div class="card rounded-2xl p-8 max-w-2xl w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold gradient-text">Edit Student</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <form id="editForm" onsubmit="saveStudent(event)">
+                <input type="hidden" id="edit-registration-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                        <input type="text" id="edit-full-name" required class="w-full px-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                        <input type="email" id="edit-email" required class="w-full px-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Mobile</label>
+                        <input type="text" id="edit-mobile" required class="w-full px-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Year of Study</label>
+                        <select id="edit-year" required class="w-full px-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500">
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                            <option value="Graduate">Graduate</option>
+                            <option value="Working Professional">Working Professional</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">College Name</label>
+                    <input type="text" id="edit-college" required class="w-full px-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Access Status</label>
+                        <select id="edit-status" required class="w-full px-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Payment Status</label>
+                        <select id="edit-payment" required class="w-full px-4 py-3 bg-black bg-opacity-50 border border-yellow-500 border-opacity-30 rounded-lg text-white focus:outline-none focus:border-yellow-500">
+                            <option value="free">Free</option>
+                            <option value="paid">Paid</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="btn-yellow flex-1 px-6 py-3 rounded-lg font-bold">
+                        <i class="fas fa-save mr-2"></i>Save Changes
+                    </button>
+                    <button type="button" onclick="closeEditModal()" class="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg font-bold transition">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allStudents = [];
+        let selectedStudents = [];
+
+        // Check authentication
+        const adminToken = localStorage.getItem('admin_token');
+        if (!adminToken) {
+            window.location.href = '/admin-portal';
+        }
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadStudents();
+        });
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/access-stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('total-students').textContent = data.stats.total_students || 0;
+                    document.getElementById('active-students').textContent = data.stats.active_students || 0;
+                    document.getElementById('inactive-students').textContent = data.stats.inactive_students || 0;
+                    document.getElementById('suspended-students').textContent = data.stats.suspended_students || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadStudents() {
+            try {
+                const response = await fetch('/api/admin/students-list');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allStudents = data.students;
+                    renderStudents(allStudents);
+                }
+            } catch (error) {
+                console.error('Error loading students:', error);
+                alert('Failed to load students');
+            }
+        }
+
+        function renderStudents(students) {
+            const tbody = document.getElementById('studentsTableBody');
+            
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-gray-400">No students found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = students.map(student => \`
+                <tr class="hover:bg-white hover:bg-opacity-5 transition">
+                    <td class="px-6 py-4">
+                        <input type="checkbox" value="\${student.registration_id}" onchange="toggleStudentSelection(this)" class="w-4 h-4">
+                    </td>
+                    <td class="px-6 py-4 text-sm">\${student.registration_id}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-black font-bold mr-3">
+                                \${student.full_name.charAt(0)}
+                            </div>
+                            <span class="font-medium">\${student.full_name}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-300">\${student.email}</td>
+                    <td class="px-6 py-4 text-sm text-gray-300">\${student.college_name || 'N/A'}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold status-\${student.status}">
+                            \${student.status.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-600">
+                            \${student.payment_status.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            <button onclick="editStudent(\${student.registration_id})" class="text-blue-400 hover:text-blue-300" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="toggleAccess(\${student.registration_id}, '\${student.status}')" class="text-yellow-400 hover:text-yellow-300" title="Toggle Access">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button onclick="deleteStudent(\${student.registration_id})" class="text-red-400 hover:text-red-300" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            \`).join('');
+        }
+
+        function filterStudents() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            let filtered = allStudents;
+
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(s => 
+                    s.full_name.toLowerCase().includes(searchTerm) ||
+                    s.email.toLowerCase().includes(searchTerm) ||
+                    (s.college_name && s.college_name.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            // Filter by status
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(s => s.status === statusFilter);
+            }
+
+            renderStudents(filtered);
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll').checked;
+            const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+            updateSelectedStudents();
+        }
+
+        function toggleStudentSelection(checkbox) {
+            updateSelectedStudents();
+        }
+
+        function updateSelectedStudents() {
+            const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]:checked');
+            selectedStudents = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        }
+
+        async function toggleAccess(registrationId, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            
+            if (!confirm(\`Change student status to \${newStatus.toUpperCase()}?\`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/toggle-student-access', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ registration_id: registrationId, status: newStatus })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    loadStats();
+                    loadStudents();
+                } else {
+                    alert(data.error || 'Failed to update access');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to update access');
+            }
+        }
+
+        async function editStudent(registrationId) {
+            try {
+                const response = await fetch(\`/api/admin/student/\${registrationId}\`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const student = data.student;
+                    document.getElementById('edit-registration-id').value = student.registration_id;
+                    document.getElementById('edit-full-name').value = student.full_name;
+                    document.getElementById('edit-email').value = student.email;
+                    document.getElementById('edit-mobile').value = student.mobile;
+                    document.getElementById('edit-college').value = student.college_name || '';
+                    document.getElementById('edit-year').value = student.year_of_study;
+                    document.getElementById('edit-status').value = student.status;
+                    document.getElementById('edit-payment').value = student.payment_status;
+                    
+                    document.getElementById('editModal').classList.remove('hidden');
+                    document.getElementById('editModal').classList.add('flex');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load student details');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            document.getElementById('editModal').classList.remove('flex');
+        }
+
+        async function saveStudent(event) {
+            event.preventDefault();
+            
+            const studentData = {
+                registration_id: document.getElementById('edit-registration-id').value,
+                full_name: document.getElementById('edit-full-name').value,
+                email: document.getElementById('edit-email').value,
+                mobile: document.getElementById('edit-mobile').value,
+                college_name: document.getElementById('edit-college').value,
+                year_of_study: document.getElementById('edit-year').value
+            };
+
+            const status = document.getElementById('edit-status').value;
+            const payment_status = document.getElementById('edit-payment').value;
+
+            try {
+                // Update student details
+                const response1 = await fetch('/api/admin/update-student', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(studentData)
+                });
+
+                // Update status
+                const response2 = await fetch('/api/admin/toggle-student-access', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ registration_id: studentData.registration_id, status })
+                });
+
+                // Update payment status
+                const response3 = await fetch('/api/admin/update-payment-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        registration_id: studentData.registration_id, 
+                        payment_status,
+                        payment_amount: payment_status === 'paid' ? 0 : 0
+                    })
+                });
+
+                if (response1.ok && response2.ok && response3.ok) {
+                    alert('Student updated successfully!');
+                    closeEditModal();
+                    loadStats();
+                    loadStudents();
+                } else {
+                    alert('Failed to update student');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to update student');
+            }
+        }
+
+        async function deleteStudent(registrationId) {
+            if (!confirm('Are you sure you want to DELETE this student? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(\`/api/admin/delete-student/\${registrationId}\`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    loadStats();
+                    loadStudents();
+                } else {
+                    alert(data.error || 'Failed to delete student');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete student');
+            }
+        }
+
+        async function bulkAction() {
+            updateSelectedStudents();
+            
+            if (selectedStudents.length === 0) {
+                alert('Please select students first');
+                return;
+            }
+
+            const action = prompt(\`Select action for \${selectedStudents.length} students:\\n\\n1. Activate\\n2. Deactivate\\n3. Suspend\\n\\nEnter 1, 2, or 3:\`);
+            
+            let status;
+            if (action === '1') status = 'active';
+            else if (action === '2') status = 'inactive';
+            else if (action === '3') status = 'suspended';
+            else return;
+
+            try {
+                const response = await fetch('/api/admin/bulk-update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ registration_ids: selectedStudents, status })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('selectAll').checked = false;
+                    loadStats();
+                    loadStudents();
+                } else {
+                    alert(data.error || 'Bulk update failed');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Bulk update failed');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/admin-portal';
+        }
+    </script>
+</body>
+</html>
+  `)
+})
+
+// ============================================================================
+// ADMIN ACCESS CONTROL API ROUTES
+// ============================================================================
+
+// API: Toggle Student Access (Activate/Deactivate)
+app.post('/api/admin/toggle-student-access', async (c) => {
+  try {
+    const { env } = c
+    const { registration_id, status } = await c.req.json()
+
+    if (!registration_id || !status) {
+      return c.json({ error: 'Registration ID and status are required' }, 400)
+    }
+
+    if (!['active', 'inactive', 'suspended'].includes(status)) {
+      return c.json({ error: 'Invalid status. Use: active, inactive, or suspended' }, 400)
+    }
+
+    await env.DB.prepare(`
+      UPDATE course_registrations 
+      SET status = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE registration_id = ?
+    `).bind(status, registration_id).run()
+
+    return c.json({
+      success: true,
+      message: `Student access updated to: ${status}`
+    })
+  } catch (error) {
+    console.error('Error toggling student access:', error)
+    return c.json({ error: 'Failed to update student access' }, 500)
+  }
+})
+
+// API: Update Student Payment Status
+app.post('/api/admin/update-payment-status', async (c) => {
+  try {
+    const { env } = c
+    const { registration_id, payment_status, payment_amount } = await c.req.json()
+
+    if (!registration_id || !payment_status) {
+      return c.json({ error: 'Registration ID and payment status are required' }, 400)
+    }
+
+    await env.DB.prepare(`
+      UPDATE course_registrations 
+      SET payment_status = ?, 
+          payment_amount = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE registration_id = ?
+    `).bind(payment_status, payment_amount || 0, registration_id).run()
+
+    return c.json({
+      success: true,
+      message: 'Payment status updated successfully'
+    })
+  } catch (error) {
+    console.error('Error updating payment status:', error)
+    return c.json({ error: 'Failed to update payment status' }, 500)
+  }
+})
+
+// API: Update Student Details
+app.post('/api/admin/update-student', async (c) => {
+  try {
+    const { env } = c
+    const { registration_id, full_name, email, mobile, college_name, year_of_study } = await c.req.json()
+
+    if (!registration_id) {
+      return c.json({ error: 'Registration ID is required' }, 400)
+    }
+
+    await env.DB.prepare(`
+      UPDATE course_registrations 
+      SET full_name = ?,
+          email = ?,
+          mobile = ?,
+          college_name = ?,
+          year_of_study = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE registration_id = ?
+    `).bind(full_name, email, mobile, college_name, year_of_study, registration_id).run()
+
+    return c.json({
+      success: true,
+      message: 'Student details updated successfully'
+    })
+  } catch (error) {
+    console.error('Error updating student:', error)
+    return c.json({ error: 'Failed to update student details' }, 500)
+  }
+})
+
+// API: Delete Student
+app.delete('/api/admin/delete-student/:id', async (c) => {
+  try {
+    const { env } = c
+    const registration_id = c.req.param('id')
+
+    if (!registration_id) {
+      return c.json({ error: 'Registration ID is required' }, 400)
+    }
+
+    await env.DB.prepare(`
+      DELETE FROM course_registrations WHERE registration_id = ?
+    `).bind(registration_id).run()
+
+    return c.json({
+      success: true,
+      message: 'Student deleted successfully'
+    })
+  } catch (error) {
+    console.error('Error deleting student:', error)
+    return c.json({ error: 'Failed to delete student' }, 500)
+  }
+})
+
+// API: Get Student Details
+app.get('/api/admin/student/:id', async (c) => {
+  try {
+    const { env } = c
+    const registration_id = c.req.param('id')
+
+    const student = await env.DB.prepare(`
+      SELECT * FROM course_registrations WHERE registration_id = ?
+    `).bind(registration_id).first()
+
+    if (!student) {
+      return c.json({ error: 'Student not found' }, 404)
+    }
+
+    return c.json({
+      success: true,
+      student
+    })
+  } catch (error) {
+    console.error('Error fetching student:', error)
+    return c.json({ error: 'Failed to fetch student details' }, 500)
+  }
+})
+
+// API: Bulk Update Student Status
+app.post('/api/admin/bulk-update-status', async (c) => {
+  try {
+    const { env } = c
+    const { registration_ids, status } = await c.req.json()
+
+    if (!registration_ids || !Array.isArray(registration_ids) || registration_ids.length === 0) {
+      return c.json({ error: 'Registration IDs array is required' }, 400)
+    }
+
+    if (!['active', 'inactive', 'suspended'].includes(status)) {
+      return c.json({ error: 'Invalid status' }, 400)
+    }
+
+    const placeholders = registration_ids.map(() => '?').join(',')
+    
+    await env.DB.prepare(`
+      UPDATE course_registrations 
+      SET status = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE registration_id IN (${placeholders})
+    `).bind(status, ...registration_ids).run()
+
+    return c.json({
+      success: true,
+      message: `Updated ${registration_ids.length} students to ${status}`
+    })
+  } catch (error) {
+    console.error('Error bulk updating status:', error)
+    return c.json({ error: 'Failed to bulk update status' }, 500)
+  }
+})
+
+// API: Get Access Statistics
+app.get('/api/admin/access-stats', async (c) => {
+  try {
+    const { env } = c
+    
+    const stats = await env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total_students,
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_students,
+        SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive_students,
+        SUM(CASE WHEN status = 'suspended' THEN 1 ELSE 0 END) as suspended_students,
+        SUM(CASE WHEN payment_status = 'paid' THEN 1 ELSE 0 END) as paid_students,
+        SUM(CASE WHEN payment_status = 'free' THEN 1 ELSE 0 END) as free_students
+      FROM course_registrations
+    `).first()
+
+    return c.json({
+      success: true,
+      stats
+    })
+  } catch (error) {
+    console.error('Error fetching stats:', error)
+    return c.json({ error: 'Failed to fetch statistics' }, 500)
+  }
+})
+
 export default app
