@@ -1,0 +1,91 @@
+{
+  "success": 14,
+  "failed": 0,
+  "skipped": 0,
+  "details": [
+    {
+      "name": "Diya Patel",
+      "email": "diya.patel@example.com",
+      "status": "success",
+      "registration_id": 2
+    },
+    {
+      "name": "Rohan Kumar",
+      "email": "rohan.kumar@example.com",
+      "status": "success",
+      "registration_id": 3
+    },
+    {
+      "name": "Ananya Singh",
+      "email": "ananya.singh@example.com",
+      "status": "success",
+      "registration_id": 4
+    },
+    {
+      "name": "Arjun Reddy",
+      "email": "arjun.reddy@example.com",
+      "status": "success",
+      "registration_id": 5
+    },
+    {
+      "name": "Ishita Gupta",
+      "email": "ishita.gupta@example.com",
+      "status": "success",
+      "registration_id": 6
+    },
+    {
+      "name": "Kabir Mehta",
+      "email": "kabir.mehta@example.com",
+      "status": "success",
+      "registration_id": 7
+    },
+    {
+      "name": "Saanvi Verma",
+      "email": "saanvi.verma@example.com",
+      "status": "success",
+      "registration_id": 8
+    },
+    {
+      "name": "Vivaan Joshi",
+      "email": "vivaan.joshi@example.com",
+      "status": "success",
+      "registration_id": 9
+    },
+    {
+      "name": "Anika Desai",
+      "email": "anika.desai@example.com",
+      "status": "success",
+      "registration_id": 10
+    },
+    {
+      "name": "Reyansh Kapoor",
+      "email": "reyansh.kapoor@example.com",
+      "status": "success",
+      "registration_id": 11
+    },
+    {
+      "name": "Myra Bansal",
+      "email": "myra.bansal@example.com",
+      "status": "success",
+      "registration_id": 12
+    },
+    {
+      "name": "Ayaan Shah",
+      "email": "ayaan.shah@example.com",
+      "status": "success",
+      "registration_id": 13
+    },
+    {
+      "name": "Kiara Malhotra",
+      "email": "kiara.malhotra@example.com",
+      "status": "success",
+      "registration_id": 14
+    },
+    {
+      "name": "Advait Nair",
+      "email": "advait.nair@example.com",
+      "status": "success",
+      "registration_id": 15
+    }
+  ]
+}
