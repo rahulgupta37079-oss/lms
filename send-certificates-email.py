@@ -8,6 +8,7 @@ import json
 import requests
 import sys
 import os
+import time
 from datetime import datetime
 
 # Configuration
@@ -37,7 +38,10 @@ def login():
         sys.exit(1)
     
     data = response.json()
-    token = data.get('token')
+    token = data.get('session_token') or data.get('token')
+    if not token:
+        print(f"❌ No token in response: {data}")
+        sys.exit(1)
     print(f"✅ Login successful! Token: {token[:20]}...")
     return token
 
@@ -299,6 +303,8 @@ def main():
                 "status": "sent",
                 "resend_id": result.get('id')
             })
+            # Rate limit: 2 requests per second = 0.5s delay
+            time.sleep(0.6)
         else:
             print(f"❌ Failed: {result.get('error', 'Unknown error')}")
             results['failed'] += 1

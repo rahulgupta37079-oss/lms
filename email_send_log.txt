@@ -1,0 +1,104 @@
+============================================================
+📧 Certificate Email Sender - Resend API
+============================================================
+🔐 Logging in to admin API...
+✅ Login successful! Token: admin_1768149284244_...
+
+📋 Fetching certificates (ID >= 68)...
+✅ Found 82 certificates to send (total in DB: 100)
+
+📧 Sending 82 emails...
+============================================================
+1. ⚠️  Nishanth Kumar R - No valid email, skipping
+2. ⚠️  Yoganandh - No valid email, skipping
+3. ⚠️  Rahul Kumar - No valid email, skipping
+4. ⚠️  Priyanka Prashant Desale - No valid email, skipping
+5. ⚠️  Siddardha Addepalli - No valid email, skipping
+6. ⚠️  Suryadevara Likhitha - No valid email, skipping
+7. ⚠️  DIVYASHREE S - No valid email, skipping
+8. ⚠️  RAGAVAN V - No valid email, skipping
+9. ⚠️  Neev Dinkar - No valid email, skipping
+10. ⚠️  Rishit Mathur - No valid email, skipping
+11. ⚠️  Tejal Shivaji Bandgar - No valid email, skipping
+12. ⚠️  DARSI RAVI CHAND - No valid email, skipping
+13. ⚠️  Dijo Giftson J - No valid email, skipping
+14. ⚠️  SOHAM GHOSH - No valid email, skipping
+15. ⚠️  Dhvanit - No valid email, skipping
+16. ⚠️  Veerkant Bhaskar - No valid email, skipping
+17. ⚠️  N Hariharan - No valid email, skipping
+18. ⚠️  Rahul Kapse - No valid email, skipping
+19. ⚠️  M NIKHIL VARSHAN - No valid email, skipping
+20. ⚠️  Rudresh karjigi - No valid email, skipping
+21. ⚠️  Rohit Gangawane - No valid email, skipping
+22. ⚠️  M MADHAV KUMAR - No valid email, skipping
+23. ⚠️  Kaviyaa.N.S - No valid email, skipping
+24. ⚠️  R.Sangeetha - No valid email, skipping
+25. ⚠️  KRISHNAMOORTHY K - No valid email, skipping
+26. ⚠️  GIDUTURI NARI AMRUTA VALLI - No valid email, skipping
+27. ⚠️  Sujay S - No valid email, skipping
+28. ⚠️  jayanthpurushottm .s - No valid email, skipping
+29. ⚠️  Raghavi - No valid email, skipping
+30. ⚠️  Pawar Omkar Manohar - No valid email, skipping
+31. ⚠️  Abinaya M - No valid email, skipping
+32. ⚠️  SHANAVAS - No valid email, skipping
+33. ⚠️  Maninderjeet Singh - No valid email, skipping
+34. ⚠️  MAATHES THILAK K - No valid email, skipping
+35. ⚠️  MAHESH THILAK K - No valid email, skipping
+36. ⚠️  Vraj Alpeshbhai Patel - No valid email, skipping
+37. ⚠️  Akash kumar - No valid email, skipping
+38. ⚠️  KANISHKA.P - No valid email, skipping
+39. ⚠️  Deivanai D - No valid email, skipping
+40. ⚠️  Roshini M - No valid email, skipping
+41. ⚠️  Mathiyarasan M - No valid email, skipping
+42. ⚠️  VAGHELA MAITRI PARESHBHAI - No valid email, skipping
+43. ⚠️  SHARAVESH - No valid email, skipping
+44. ⚠️  Soumya Ranjan Jena - No valid email, skipping
+45. ⚠️  sumit Kumar - No valid email, skipping
+46. ⚠️  SASI K - No valid email, skipping
+47. ⚠️  Prakash S - No valid email, skipping
+48. ⚠️  Sagar Mohanty - No valid email, skipping
+49. ⚠️  Divya.I - No valid email, skipping
+50. ⚠️  Sanket vijay gaikwad - No valid email, skipping
+51. ⚠️  JAYASRI R - No valid email, skipping
+52. ⚠️  K.Kaviyashree - No valid email, skipping
+53. ⚠️  Pothamsetti Hema Sri Lakshmi - No valid email, skipping
+54. ⚠️  Kavyashree.K - No valid email, skipping
+55. ⚠️  Amar Vijay Kamthe - No valid email, skipping
+56. ⚠️  J.Magimai John Jose - No valid email, skipping
+57. ⚠️  Shaikh Mohammed Arif - No valid email, skipping
+58. ⚠️  Fouzia Khatoon - No valid email, skipping
+59. ⚠️  MEIARASU S M - No valid email, skipping
+60. ⚠️  PEDDISETTI VAMSI KRISHNA - No valid email, skipping
+61. ⚠️  Priyadharshini N - No valid email, skipping
+62. ⚠️  Ashit Lal Nag - No valid email, skipping
+63. ⚠️  KEERTHANA N - No valid email, skipping
+64. ⚠️  AARTHI S - No valid email, skipping
+65. ⚠️  AFREEN ABDUL RASHID SHAIKH - No valid email, skipping
+66. ⚠️  Vasanthi G - No valid email, skipping
+67. ⚠️  SUDEEP SUBHASH ITI - No valid email, skipping
+68. ⚠️  Sri Mathi C - No valid email, skipping
+69. ⚠️  Yashwant Singh - No valid email, skipping
+70. ⚠️  Salam Usman - No valid email, skipping
+71. ⚠️  Gokani Abhinaya goud - No valid email, skipping
+72. ⚠️  Velicheti Divya - No valid email, skipping
+73. ⚠️  Akash Dubey - No valid email, skipping
+74. ⚠️  Akash Dubey - No valid email, skipping
+75. ⚠️  Keerthana. R. G - No valid email, skipping
+76. ⚠️  NANDHINI M K - No valid email, skipping
+77. ⚠️  Maheshwaram Mukesh Kumar - No valid email, skipping
+78. ⚠️  Maninderjeet Singh - No valid email, skipping
+79. ⚠️  Shaik.Alim - No valid email, skipping
+80. ⚠️  Rahul Gupta - No valid email, skipping
+81. ⚠️  Rahul Sunil Gupta - No valid email, skipping
+82. ⚠️  Abinaya M - No valid email, skipping
+
+============================================================
+📊 Email Sending Summary
+============================================================
+✅ Sent:    0
+❌ Failed:  0
+⚠️  Skipped: 82
+📋 Total:   82
+============================================================
+
+💾 Results saved to: email_results_20260111_163444.json

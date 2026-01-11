@@ -27,7 +27,7 @@ def test_email():
         print(f"❌ Login failed: {response.status_code}")
         return
     
-    token = response.json().get('token')
+    token = response.json().get('session_token')
     print(f"✅ Login successful!")
     
     # Get first certificate

@@ -5025,7 +5025,8 @@ app.get('/api/admin/certificates/list', async (c) => {
       SELECT 
         certificate_id, 
         certificate_code, 
-        student_name, 
+        student_name,
+        student_email,
         course_name, 
         certificate_type,
         issue_date, 

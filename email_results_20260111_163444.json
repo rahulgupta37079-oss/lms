@@ -1,0 +1,417 @@
+{
+  "sent": 0,
+  "failed": 0,
+  "skipped": 82,
+  "details": [
+    {
+      "name": "Nishanth Kumar R",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Yoganandh",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Rahul Kumar",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Priyanka Prashant Desale",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Siddardha Addepalli",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Suryadevara Likhitha",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "DIVYASHREE S",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "RAGAVAN V",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Neev Dinkar",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Rishit Mathur",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Tejal Shivaji Bandgar",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "DARSI RAVI CHAND",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Dijo Giftson J",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "SOHAM GHOSH",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Dhvanit",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Veerkant Bhaskar",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "N Hariharan",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Rahul Kapse",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "M NIKHIL VARSHAN",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Rudresh karjigi",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Rohit Gangawane",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "M MADHAV KUMAR",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Kaviyaa.N.S",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "R.Sangeetha",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "KRISHNAMOORTHY K",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "GIDUTURI NARI AMRUTA VALLI",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Sujay S",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "jayanthpurushottm .s",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Raghavi",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Pawar Omkar Manohar",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Abinaya M",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "SHANAVAS",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Maninderjeet Singh",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "MAATHES THILAK K",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "MAHESH THILAK K",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Vraj Alpeshbhai Patel",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Akash kumar",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "KANISHKA.P",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Deivanai D",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Roshini M",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Mathiyarasan M",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "VAGHELA MAITRI PARESHBHAI",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "SHARAVESH",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Soumya Ranjan Jena",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "sumit Kumar",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "SASI K",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Prakash S",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Sagar Mohanty",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Divya.I",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Sanket vijay gaikwad",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "JAYASRI R",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "K.Kaviyashree",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Pothamsetti Hema Sri Lakshmi",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Kavyashree.K",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Amar Vijay Kamthe",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "J.Magimai John Jose",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Shaikh Mohammed Arif",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Fouzia Khatoon",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "MEIARASU S M",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "PEDDISETTI VAMSI KRISHNA",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Priyadharshini N",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Ashit Lal Nag",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "KEERTHANA N",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "AARTHI S",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "AFREEN ABDUL RASHID SHAIKH",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Vasanthi G",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "SUDEEP SUBHASH ITI",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Sri Mathi C",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Yashwant Singh",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Salam Usman",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Gokani Abhinaya goud",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Velicheti Divya",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Akash Dubey",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Akash Dubey",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Keerthana. R. G",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "NANDHINI M K",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Maheshwaram Mukesh Kumar",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Maninderjeet Singh",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Shaik.Alim",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Rahul Gupta",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Rahul Sunil Gupta",
+      "status": "skipped",
+      "reason": "No valid email"
+    },
+    {
+      "name": "Abinaya M",
+      "status": "skipped",
+      "reason": "No valid email"
+    }
+  ]
+}

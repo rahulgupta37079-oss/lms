@@ -1,0 +1,499 @@
+{
+  "sent": 18,
+  "failed": 64,
+  "skipped": 0,
+  "details": [
+    {
+      "name": "Nishanth Kumar R",
+      "email": "nishanthkumarcharirnicchi@gmail.com",
+      "status": "sent",
+      "resend_id": "96c54fed-aaec-431e-9fad-5e3df42996bc"
+    },
+    {
+      "name": "Yoganandh",
+      "email": "yoganandh05@gmail.com",
+      "status": "sent",
+      "resend_id": "49e2324e-f74f-46a9-b77d-213451eeee1f"
+    },
+    {
+      "name": "Rahul Kumar",
+      "email": "r4584013@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Priyanka Prashant Desale",
+      "email": "desalepriyanka707@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Siddardha Addepalli",
+      "email": "addepallisiddardha85@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Suryadevara Likhitha",
+      "email": "likhithasuryadevara5894@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "DIVYASHREE S",
+      "email": "shreedivya677@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "RAGAVAN V",
+      "email": "ragavanvgrk@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Neev Dinkar",
+      "email": "mr.neevdinkar19@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Rishit Mathur",
+      "email": "rishit.mathur055@gmail.com",
+      "status": "sent",
+      "resend_id": "8b7b4310-1c7d-43bc-9c88-57c6cb4b2e6a"
+    },
+    {
+      "name": "Tejal Shivaji Bandgar",
+      "email": "tejalbandgar.111@gmail.com",
+      "status": "sent",
+      "resend_id": "0aba2442-beaa-40f1-a852-40b4d164d5c6"
+    },
+    {
+      "name": "DARSI RAVI CHAND",
+      "email": "ravichanddarsi18@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Dijo Giftson J",
+      "email": "dijogiftson27@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "SOHAM GHOSH",
+      "email": "sohamghosh1762@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Dhvanit",
+      "email": "dhvanitkanabar@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Veerkant Bhaskar",
+      "email": "vbhaskar2013@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "N Hariharan",
+      "email": "hariharannagarathinam2004@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Rahul Kapse",
+      "email": "rahulrk52002@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "M NIKHIL VARSHAN",
+      "email": "varshannikhil30@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Rudresh karjigi",
+      "email": "rudreshkarjigi7@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Rohit Gangawane",
+      "email": "rohitgangawane2002@gmail.com",
+      "status": "sent",
+      "resend_id": "166b2d11-acbe-4c5d-a422-ed607ee06d00"
+    },
+    {
+      "name": "M MADHAV KUMAR",
+      "email": "m37461346@gmail.com",
+      "status": "sent",
+      "resend_id": "4bc3467c-94cf-4f07-8bc2-b02050c81f94"
+    },
+    {
+      "name": "Kaviyaa.N.S",
+      "email": "kkaviyaa49@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "R.Sangeetha",
+      "email": "sangeethakalavathi23@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "KRISHNAMOORTHY K",
+      "email": "kridhna80457@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "GIDUTURI NARI AMRUTA VALLI",
+      "email": "nariamruthavalli@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Sujay S",
+      "email": "sujay200731@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "jayanthpurushottm .s",
+      "email": "bshankararcot@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Raghavi",
+      "email": "raghavish2006@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Pawar Omkar Manohar",
+      "email": "pawaromkar1568@gmail.com",
+      "status": "sent",
+      "resend_id": "08c7207f-60c5-4daf-a9f0-785af6de5ec6"
+    },
+    {
+      "name": "Abinaya M",
+      "email": "abianu51115@gmail.com",
+      "status": "sent",
+      "resend_id": "1f820a12-4006-44ee-b1b9-0fb36bcf921e"
+    },
+    {
+      "name": "SHANAVAS",
+      "email": "shandace18@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Maninderjeet Singh",
+      "email": "maninderjeetsingh963@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "MAATHES THILAK K",
+      "email": "kmtthediscoverer96@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "MAHESH THILAK K",
+      "email": "majesticmaheshthilak@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Vraj Alpeshbhai Patel",
+      "email": "vraj082007@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Akash kumar",
+      "email": "akash1243aka@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "KANISHKA.P",
+      "email": "janakiperumal48@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Deivanai D",
+      "email": "deivanaideivanai043@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Roshini M",
+      "email": "roshinimadesh34@gmail.com",
+      "status": "sent",
+      "resend_id": "c1257481-bdc9-48db-94c2-fee98b165fbe"
+    },
+    {
+      "name": "Mathiyarasan M",
+      "email": "mathiyarasanvfc59@gmail.com",
+      "status": "sent",
+      "resend_id": "bf9a3578-2d9a-4ac6-9482-55716c61c66d"
+    },
+    {
+      "name": "VAGHELA MAITRI PARESHBHAI",
+      "email": "vaghelamaitri04@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "SHARAVESH",
+      "email": "SHARVAESHYUVARAJ.EI25@BITSATHY.AC.IN",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Soumya Ranjan Jena",
+      "email": "soumyabls2134@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "sumit Kumar",
+      "email": "sk681172112209@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "SASI K",
+      "email": "sasikumaran383@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Prakash S",
+      "email": "vv8574401@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Sagar Mohanty",
+      "email": "shagermohanty@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Divya.I",
+      "email": "divyaanusuya5@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Sanket vijay gaikwad",
+      "email": "gsanket176@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "JAYASRI R",
+      "email": "ritikasri92@gmail.com",
+      "status": "sent",
+      "resend_id": "bfa88b56-0da9-47b7-9546-d120be9ee769"
+    },
+    {
+      "name": "K.Kaviyashree",
+      "email": "kavikaviya664@gmail.com",
+      "status": "sent",
+      "resend_id": "5d24ac9a-3fac-497d-a7eb-255dc8bff42d"
+    },
+    {
+      "name": "Pothamsetti Hema Sri Lakshmi",
+      "email": "hemasrilakshmi21@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Kavyashree.K",
+      "email": "kkavyasri296@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Amar Vijay Kamthe",
+      "email": "amarkamthe22@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "J.Magimai John Jose",
+      "email": "magimaimadha003@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Shaikh Mohammed Arif",
+      "email": "shaikharif69102@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Fouzia Khatoon",
+      "email": "fouziashaik108@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "MEIARASU S M",
+      "email": "smmeiarasu@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "PEDDISETTI VAMSI KRISHNA",
+      "email": "vamsikp39@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Priyadharshini N",
+      "email": "priyadharshininagendren1@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Ashit Lal Nag",
+      "email": "ashitnag1010@gmail.com",
+      "status": "sent",
+      "resend_id": "aa91d0de-53f2-4cc8-87ff-2fa739f38ddf"
+    },
+    {
+      "name": "KEERTHANA N",
+      "email": "keerthunandhiyappan@gmail.com",
+      "status": "sent",
+      "resend_id": "622bf9b1-9177-4a51-9235-eb9034c8c9a3"
+    },
+    {
+      "name": "AARTHI S",
+      "email": "aarthiganesh525@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "AFREEN ABDUL RASHID SHAIKH",
+      "email": "afreenshaikh052007@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Vasanthi G",
+      "email": "kavi345dot@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "SUDEEP SUBHASH ITI",
+      "email": "sudeepiti9@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Sri Mathi C",
+      "email": "srimathichandrasekaran2006@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Yashwant Singh",
+      "email": "ishusingh01306@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Salam Usman",
+      "email": "osmanpunjab@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Gokani Abhinaya goud",
+      "email": "gokani.abhinaya799@gmail.com",
+      "status": "sent",
+      "resend_id": "a3f62643-a6e3-4c85-abab-950ec6b25234"
+    },
+    {
+      "name": "Velicheti Divya",
+      "email": "velichetidivya1433@gmail.com",
+      "status": "sent",
+      "resend_id": "fef89b2a-881d-4c0e-8b72-196875f1168f"
+    },
+    {
+      "name": "Akash Dubey",
+      "email": "2411ec010064@mallareddyuniversity.ac.in",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Akash Dubey",
+      "email": "2411ec010064@mallareddyuniversity.ac.in",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Keerthana. R. G",
+      "email": "keerthanarg2k6@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "NANDHINI M K",
+      "email": "nandy4122007@gmail.com",
+      "status": "sent",
+      "resend_id": "e65d50ad-d31b-4c1a-8616-a7ecc30dfbba"
+    },
+    {
+      "name": "Maheshwaram Mukesh Kumar",
+      "email": "muke7752@gmail.com",
+      "status": "sent",
+      "resend_id": "55707eaf-23c4-46e3-ad6c-3e151c45871b"
+    },
+    {
+      "name": "Maninderjeet Singh",
+      "email": "maninderjeetsingh963@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Shaik.Alim",
+      "email": "alimeceengg@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Rahul Gupta",
+      "email": "rahulgupta37079@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Rahul Sunil Gupta",
+      "email": "professorhulk00@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    },
+    {
+      "name": "Abinaya M",
+      "email": "abianu51115@gmail.com",
+      "status": "failed",
+      "error": "{\"statusCode\":429,\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests. You can only make 2 requests per second. See rate limit response headers for more information. Or contact support to increase rate limit.\"}"
+    }
+  ]
+}
