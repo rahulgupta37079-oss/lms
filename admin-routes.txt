@@ -1,0 +1,884 @@
+// ============================================================================
+// ADMIN DASHBOARD ROUTES - IoT & Robotics Portal
+// ============================================================================
+
+// Admin Login Page
+app.get('/admin-portal', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - IoT & Robotics | PassionBots</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .btn-yellow {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-yellow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .input-field {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: white;
+        }
+        .input-field:focus {
+            border-color: #FFD700;
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Header -->
+    <nav class="bg-black bg-opacity-80 backdrop-blur-md border-b border-yellow-500 border-opacity-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-robot text-yellow-400 text-3xl"></i>
+                    <span class="text-2xl font-bold gradient-text">PassionBots Admin</span>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="/" class="text-gray-300 hover:text-yellow-400 transition"><i class="fas fa-home mr-2"></i>Home</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Form -->
+    <div class="max-w-md mx-auto px-4 py-12">
+        <div class="card rounded-2xl p-8">
+            <div class="text-center mb-8">
+                <div class="inline-block p-4 bg-yellow-400 bg-opacity-10 rounded-full mb-4">
+                    <i class="fas fa-shield-alt text-yellow-400 text-5xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold gradient-text mb-2">Admin Portal</h1>
+                <p class="text-gray-400">Manage IoT & Robotics Course</p>
+            </div>
+
+            <form id="adminLoginForm" class="space-y-6">
+                <div>
+                    <label class="block text-yellow-400 font-semibold mb-2">
+                        <i class="fas fa-user mr-2"></i>Username
+                    </label>
+                    <input type="text" name="username" required 
+                           class="input-field w-full px-4 py-3 rounded-lg"
+                           placeholder="Enter admin username">
+                </div>
+
+                <div>
+                    <label class="block text-yellow-400 font-semibold mb-2">
+                        <i class="fas fa-lock mr-2"></i>Password
+                    </label>
+                    <input type="password" name="password" required 
+                           class="input-field w-full px-4 py-3 rounded-lg"
+                           placeholder="Enter admin password">
+                </div>
+
+                <button type="submit" class="btn-yellow w-full text-black font-bold py-3 px-6 rounded-lg">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login to Admin Dashboard
+                </button>
+            </form>
+
+            <div id="message" class="mt-6 p-4 rounded-lg hidden"></div>
+
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p>Default credentials: admin / admin123</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            const messageDiv = document.getElementById('message');
+            messageDiv.classList.remove('hidden', 'bg-green-500', 'bg-red-500');
+            messageDiv.textContent = 'Logging in...';
+            messageDiv.classList.add('bg-blue-500');
+            
+            try {
+                const response = await fetch('/api/admin-login-iot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('admin_token', result.token);
+                    localStorage.setItem('admin_data', JSON.stringify(result.admin));
+                    window.location.href = '/admin-dashboard-iot';
+                } else {
+                    throw new Error(result.error || 'Login failed');
+                }
+            } catch (error) {
+                messageDiv.classList.remove('bg-blue-500');
+                messageDiv.classList.add('bg-red-500');
+                messageDiv.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i>' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
+  `)
+})
+
+// API: Admin Login (IoT Portal)
+app.post('/api/admin-login-iot', async (c) => {
+  try {
+    const { username, password } = await c.req.json()
+
+    // Simple admin check (in production, use proper authentication)
+    if (username === 'admin' && password === 'admin123') {
+      const token = 'admin_' + Date.now() + '_' + Math.random().toString(36).substring(7)
+      
+      return c.json({
+        success: true,
+        message: 'Login successful',
+        token,
+        admin: {
+          username: 'admin',
+          role: 'super_admin',
+          name: 'Admin User'
+        }
+      })
+    } else {
+      return c.json({ error: 'Invalid credentials' }, 401)
+    }
+  } catch (error) {
+    console.error('Admin login error:', error)
+    return c.json({ error: 'Login failed' }, 500)
+  }
+})
+
+// Admin Dashboard - Main Page
+app.get('/admin-dashboard-iot', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - IoT & Robotics | PassionBots</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .btn-yellow {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-yellow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .sidebar-link {
+            transition: all 0.3s ease;
+        }
+        .sidebar-link:hover, .sidebar-link.active {
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 4px solid #FFD700;
+            padding-left: 1.5rem;
+        }
+        .modal {
+            display: none;
+        }
+        .modal.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Header -->
+    <nav class="bg-black bg-opacity-80 backdrop-blur-md border-b border-yellow-500 border-opacity-30 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-robot text-yellow-400 text-3xl"></i>
+                    <span class="text-2xl font-bold gradient-text">PassionBots Admin</span>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <span class="text-gray-300" id="adminName"></span>
+                    <button onclick="logout()" class="text-gray-300 hover:text-yellow-400 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <div class="w-64 min-h-screen bg-black bg-opacity-50 border-r border-yellow-500 border-opacity-20 p-4">
+            <div class="space-y-2">
+                <button onclick="switchSection('overview')" id="nav-overview"
+                        class="sidebar-link active w-full text-left px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-chart-line mr-3 text-yellow-400"></i>Overview
+                </button>
+                <button onclick="switchSection('students')" id="nav-students"
+                        class="sidebar-link w-full text-left px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-users mr-3 text-yellow-400"></i>Students
+                </button>
+                <button onclick="switchSection('classes')" id="nav-classes"
+                        class="sidebar-link w-full text-left px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-video mr-3 text-yellow-400"></i>Live Classes
+                </button>
+                <button onclick="switchSection('modules')" id="nav-modules"
+                        class="sidebar-link w-full text-left px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-book mr-3 text-yellow-400"></i>Modules
+                </button>
+                <button onclick="switchSection('analytics')" id="nav-analytics"
+                        class="sidebar-link w-full text-left px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-chart-bar mr-3 text-yellow-400"></i>Analytics
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-8">
+            <!-- Overview Section -->
+            <div id="section-overview" class="section-content">
+                <h1 class="text-4xl font-bold gradient-text mb-8">Dashboard Overview</h1>
+                
+                <!-- Stats Cards -->
+                <div class="grid md:grid-cols-4 gap-6 mb-8">
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Total Students</p>
+                                <p class="text-3xl font-bold text-yellow-400" id="totalStudents">0</p>
+                            </div>
+                            <i class="fas fa-users text-yellow-400 text-3xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Live Classes</p>
+                                <p class="text-3xl font-bold text-green-400" id="totalClasses">0</p>
+                            </div>
+                            <i class="fas fa-video text-green-400 text-3xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Upcoming</p>
+                                <p class="text-3xl font-bold text-blue-400" id="upcomingClasses">0</p>
+                            </div>
+                            <i class="fas fa-calendar text-blue-400 text-3xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Avg Attendance</p>
+                                <p class="text-3xl font-bold text-purple-400" id="avgAttendance">0%</p>
+                            </div>
+                            <i class="fas fa-chart-pie text-purple-400 text-3xl opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card p-6 rounded-xl">
+                    <h2 class="text-2xl font-bold gradient-text mb-6">Recent Activity</h2>
+                    <div id="recentActivity" class="space-y-3">
+                        <!-- Activity items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Section -->
+            <div id="section-students" class="section-content hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-4xl font-bold gradient-text">Student Management</h1>
+                    <button onclick="exportStudents()" class="btn-yellow text-black font-bold py-2 px-6 rounded-lg">
+                        <i class="fas fa-download mr-2"></i>Export CSV
+                    </button>
+                </div>
+
+                <!-- Students Table -->
+                <div class="card p-6 rounded-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full" id="studentsTable">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left py-3 px-4 text-yellow-400">ID</th>
+                                    <th class="text-left py-3 px-4 text-yellow-400">Name</th>
+                                    <th class="text-left py-3 px-4 text-yellow-400">Email</th>
+                                    <th class="text-left py-3 px-4 text-yellow-400">Mobile</th>
+                                    <th class="text-left py-3 px-4 text-yellow-400">College</th>
+                                    <th class="text-left py-3 px-4 text-yellow-400">Status</th>
+                                    <th class="text-left py-3 px-4 text-yellow-400">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody">
+                                <!-- Students will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classes Section -->
+            <div id="section-classes" class="section-content hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-4xl font-bold gradient-text">Live Classes Management</h1>
+                    <button onclick="openAddClassModal()" class="btn-yellow text-black font-bold py-2 px-6 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>Add New Class
+                    </button>
+                </div>
+
+                <div class="space-y-6" id="classesList">
+                    <!-- Classes will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Modules Section -->
+            <div id="section-modules" class="section-content hidden">
+                <h1 class="text-4xl font-bold gradient-text mb-8">Course Modules</h1>
+                
+                <div class="grid md:grid-cols-2 gap-6" id="modulesList">
+                    <!-- Modules will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="section-analytics" class="section-content hidden">
+                <h1 class="text-4xl font-bold gradient-text mb-8">Analytics & Reports</h1>
+                
+                <div class="card p-6 rounded-xl">
+                    <h2 class="text-2xl font-bold text-gray-300 mb-6">Registration Trends</h2>
+                    <p class="text-gray-400 text-center py-12">
+                        <i class="fas fa-chart-line text-5xl mb-4 block opacity-50"></i>
+                        Analytics dashboard coming soon
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Class Modal -->
+    <div id="addClassModal" class="modal fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50">
+        <div class="card max-w-2xl w-full m-4 p-8 rounded-xl max-h-screen overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold gradient-text">Add New Live Class</h2>
+                <button onclick="closeAddClassModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="addClassForm" class="space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-yellow-400 font-semibold mb-2">Class Title *</label>
+                        <input type="text" name="class_title" required 
+                               class="input-field w-full px-4 py-2 rounded-lg"
+                               placeholder="e.g., Introduction to IoT">
+                    </div>
+                    <div>
+                        <label class="block text-yellow-400 font-semibold mb-2">Instructor Name *</label>
+                        <input type="text" name="instructor_name" required 
+                               class="input-field w-full px-4 py-2 rounded-lg"
+                               placeholder="e.g., Dr. Rajesh Kumar">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-yellow-400 font-semibold mb-2">Description</label>
+                    <textarea name="class_description" rows="3"
+                              class="input-field w-full px-4 py-2 rounded-lg"
+                              placeholder="Brief description of the class"></textarea>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-yellow-400 font-semibold mb-2">Date *</label>
+                        <input type="date" name="class_date" required 
+                               class="input-field w-full px-4 py-2 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-yellow-400 font-semibold mb-2">Time *</label>
+                        <input type="time" name="class_time" required 
+                               class="input-field w-full px-4 py-2 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-yellow-400 font-semibold mb-2">Duration (mins) *</label>
+                        <input type="number" name="duration_minutes" required 
+                               class="input-field w-full px-4 py-2 rounded-lg"
+                               placeholder="60" value="60">
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-yellow-400 font-semibold mb-2">Zoom Meeting ID *</label>
+                        <input type="text" name="zoom_meeting_id" required 
+                               class="input-field w-full px-4 py-2 rounded-lg"
+                               placeholder="123456789">
+                    </div>
+                    <div>
+                        <label class="block text-yellow-400 font-semibold mb-2">Zoom Password</label>
+                        <input type="text" name="zoom_meeting_password"
+                               class="input-field w-full px-4 py-2 rounded-lg"
+                               placeholder="pass123">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-yellow-400 font-semibold mb-2">Zoom Join URL *</label>
+                    <input type="url" name="zoom_join_url" required 
+                           class="input-field w-full px-4 py-2 rounded-lg"
+                           placeholder="https://zoom.us/j/123456789">
+                </div>
+
+                <div class="flex items-center space-x-4 pt-4">
+                    <button type="submit" class="btn-yellow flex-1 text-black font-bold py-3 px-6 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>Add Class
+                    </button>
+                    <button type="button" onclick="closeAddClassModal()" 
+                            class="flex-1 bg-gray-700 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let adminData = null;
+
+        // Check admin login
+        function checkAdmin() {
+            const token = localStorage.getItem('admin_token');
+            const data = localStorage.getItem('admin_data');
+            if (!token || !data) {
+                window.location.href = '/admin-portal';
+                return null;
+            }
+            return JSON.parse(data);
+        }
+
+        function logout() {
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_data');
+            window.location.href = '/admin-portal';
+        }
+
+        function switchSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.section-content').forEach(el => el.classList.add('hidden'));
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+            
+            // Show selected section
+            document.getElementById('section-' + section).classList.remove('hidden');
+            document.getElementById('nav-' + section).classList.add('active');
+            
+            // Load data for that section
+            if (section === 'students') loadStudents();
+            if (section === 'classes') loadClasses();
+            if (section === 'modules') loadModules();
+        }
+
+        async function loadDashboard() {
+            adminData = checkAdmin();
+            if (!adminData) return;
+
+            document.getElementById('adminName').textContent = adminData.name;
+
+            // Load overview stats
+            await loadOverviewStats();
+        }
+
+        async function loadOverviewStats() {
+            try {
+                // Load students count
+                const studentsRes = await fetch('/api/admin/students-list');
+                const studentsData = await studentsRes.json();
+                document.getElementById('totalStudents').textContent = studentsData.students?.length || 0;
+
+                // Load classes count
+                const classesRes = await fetch('/api/live-classes');
+                const classesData = await classesRes.json();
+                document.getElementById('totalClasses').textContent = classesData.classes?.length || 0;
+                
+                const now = new Date();
+                const upcoming = classesData.classes?.filter(c => new Date(c.class_date + ' ' + c.class_time) > now) || [];
+                document.getElementById('upcomingClasses').textContent = upcoming.length;
+
+                // Recent activity
+                const activity = [
+                    { icon: 'user-plus', text: \`\${studentsData.students?.length || 0} students registered\`, time: 'Today' },
+                    { icon: 'video', text: \`\${upcoming.length} upcoming classes scheduled\`, time: 'This week' },
+                    { icon: 'book', text: '8 course modules active', time: 'Current' }
+                ];
+
+                document.getElementById('recentActivity').innerHTML = activity.map(a => \`
+                    <div class="flex items-center justify-between p-3 bg-black bg-opacity-30 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-\${a.icon} text-yellow-400 mr-3"></i>
+                            <span class="text-gray-300">\${a.text}</span>
+                        </div>
+                        <span class="text-sm text-gray-500">\${a.time}</span>
+                    </div>
+                \`).join('');
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadStudents() {
+            try {
+                const response = await fetch('/api/admin/students-list');
+                const data = await response.json();
+                
+                const html = data.students.map(s => \`
+                    <tr class="border-b border-gray-800 hover:bg-gray-800">
+                        <td class="py-3 px-4">\${s.registration_id}</td>
+                        <td class="py-3 px-4">\${s.full_name}</td>
+                        <td class="py-3 px-4">\${s.email}</td>
+                        <td class="py-3 px-4">\${s.mobile || '-'}</td>
+                        <td class="py-3 px-4">\${s.college_name || '-'}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-1 text-xs rounded-full \${s.status === 'active' ? 'bg-green-500' : 'bg-red-500'} bg-opacity-20 \${s.status === 'active' ? 'text-green-400' : 'text-red-400'}">
+                                \${s.status}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <button onclick="editStudent(\${s.registration_id})" class="text-yellow-400 hover:text-yellow-300 mr-3">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteStudent(\${s.registration_id}, '\${s.full_name}')" class="text-red-400 hover:text-red-300">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                \`).join('');
+                
+                document.getElementById('studentsTableBody').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading students:', error);
+            }
+        }
+
+        async function loadClasses() {
+            try {
+                const response = await fetch('/api/live-classes');
+                const data = await response.json();
+                
+                const html = data.classes.map(cls => \`
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-yellow-400 mb-2">\${cls.class_title}</h3>
+                                <p class="text-gray-400 mb-3">\${cls.class_description || 'No description'}</p>
+                                <div class="flex flex-wrap gap-4 text-sm mb-4">
+                                    <span class="text-gray-300">
+                                        <i class="fas fa-calendar mr-2 text-yellow-400"></i>
+                                        \${new Date(cls.class_date).toLocaleDateString()}
+                                    </span>
+                                    <span class="text-gray-300">
+                                        <i class="fas fa-clock mr-2 text-yellow-400"></i>
+                                        \${cls.class_time} (\${cls.duration_minutes} mins)
+                                    </span>
+                                    <span class="text-gray-300">
+                                        <i class="fas fa-user mr-2 text-yellow-400"></i>
+                                        \${cls.instructor_name}
+                                    </span>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <a href="\${cls.zoom_join_url}" target="_blank" 
+                                       class="text-yellow-400 hover:text-yellow-300 text-sm">
+                                        <i class="fas fa-external-link-alt mr-1"></i>Zoom Link
+                                    </a>
+                                    <span class="text-gray-500">|</span>
+                                    <button onclick="editClass(\${cls.class_id})" class="text-blue-400 hover:text-blue-300 text-sm">
+                                        <i class="fas fa-edit mr-1"></i>Edit
+                                    </button>
+                                    <button onclick="deleteClass(\${cls.class_id}, '\${cls.class_title}')" class="text-red-400 hover:text-red-300 text-sm">
+                                        <i class="fas fa-trash mr-1"></i>Delete
+                                    </button>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-green-500 bg-opacity-20 text-green-400 rounded-full text-sm">
+                                \${cls.status}
+                            </span>
+                        </div>
+                    </div>
+                \`).join('');
+                
+                document.getElementById('classesList').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        async function loadModules() {
+            try {
+                const response = await fetch('/api/course-modules');
+                const data = await response.json();
+                
+                const html = data.modules.map(mod => \`
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-yellow-400 bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                                <span class="text-xl font-bold text-yellow-400">\${mod.module_number}</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-yellow-400">\${mod.module_title}</h3>
+                                <p class="text-sm text-gray-400">\${mod.duration_weeks} week\${mod.duration_weeks > 1 ? 's' : ''}</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 mb-4">\${mod.module_description}</p>
+                        <div class="space-y-2">
+                            \${JSON.parse(mod.topics).map(topic => \`
+                                <div class="flex items-center text-sm text-gray-300">
+                                    <i class="fas fa-check-circle text-yellow-400 mr-2"></i>
+                                    \${topic}
+                                </div>
+                            \`).join('')}
+                        </div>
+                    </div>
+                \`).join('');
+                
+                document.getElementById('modulesList').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading modules:', error);
+            }
+        }
+
+        function openAddClassModal() {
+            document.getElementById('addClassModal').classList.add('active');
+        }
+
+        function closeAddClassModal() {
+            document.getElementById('addClassModal').classList.remove('active');
+            document.getElementById('addClassForm').reset();
+        }
+
+        document.getElementById('addClassForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            data.course_type = 'iot_robotics';
+            
+            try {
+                const response = await fetch('/api/admin/add-class', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('admin_token')
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Class added successfully!');
+                    closeAddClassModal();
+                    loadClasses();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error adding class:', error);
+                alert('Failed to add class');
+            }
+        });
+
+        function deleteStudent(id, name) {
+            if (!confirm(\`Are you sure you want to delete student "\${name}"?\`)) return;
+            
+            fetch('/api/admin/delete-student/' + id, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('admin_token')
+                }
+            }).then(res => {
+                if (res.ok) {
+                    alert('Student deleted successfully');
+                    loadStudents();
+                } else {
+                    alert('Failed to delete student');
+                }
+            });
+        }
+
+        function deleteClass(id, title) {
+            if (!confirm(\`Are you sure you want to delete class "\${title}"?\`)) return;
+            
+            fetch('/api/admin/delete-class/' + id, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('admin_token')
+                }
+            }).then(res => {
+                if (res.ok) {
+                    alert('Class deleted successfully');
+                    loadClasses();
+                } else {
+                    alert('Failed to delete class');
+                }
+            });
+        }
+
+        function editStudent(id) {
+            alert('Edit functionality coming soon!');
+        }
+
+        function editClass(id) {
+            alert('Edit functionality coming soon!');
+        }
+
+        function exportStudents() {
+            alert('Export to CSV functionality coming soon!');
+        }
+
+        // Initialize
+        loadDashboard();
+    </script>
+</body>
+</html>
+  `)
+})
+
+// API: Get All Students (Admin)
+app.get('/api/admin/students-list', async (c) => {
+  try {
+    const { env } = c
+    
+    const students = await env.DB.prepare(`
+      SELECT * FROM course_registrations 
+      ORDER BY registration_date DESC
+    `).all()
+
+    return c.json({
+      success: true,
+      students: students.results || []
+    })
+  } catch (error) {
+    console.error('Error fetching students:', error)
+    return c.json({ error: 'Failed to fetch students' }, 500)
+  }
+})
+
+// API: Add New Class (Admin)
+app.post('/api/admin/add-class', async (c) => {
+  try {
+    const { env } = c
+    const data = await c.req.json()
+
+    const result = await env.DB.prepare(`
+      INSERT INTO live_classes 
+      (class_title, class_description, instructor_name, class_date, class_time, 
+       duration_minutes, zoom_meeting_id, zoom_meeting_password, zoom_join_url, 
+       course_type, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled')
+    `).bind(
+      data.class_title,
+      data.class_description || null,
+      data.instructor_name,
+      data.class_date,
+      data.class_time,
+      data.duration_minutes,
+      data.zoom_meeting_id,
+      data.zoom_meeting_password || null,
+      data.zoom_join_url,
+      data.course_type || 'iot_robotics'
+    ).run()
+
+    return c.json({
+      success: true,
+      message: 'Class added successfully',
+      class_id: result.meta.last_row_id
+    })
+  } catch (error) {
+    console.error('Error adding class:', error)
+    return c.json({ error: 'Failed to add class' }, 500)
+  }
+})
+
+// API: Delete Student (Admin)
+app.delete('/api/admin/delete-student/:id', async (c) => {
+  try {
+    const { env } = c
+    const id = c.req.param('id')
+
+    await env.DB.prepare(`
+      DELETE FROM course_registrations WHERE registration_id = ?
+    `).bind(id).run()
+
+    return c.json({
+      success: true,
+      message: 'Student deleted successfully'
+    })
+  } catch (error) {
+    console.error('Error deleting student:', error)
+    return c.json({ error: 'Failed to delete student' }, 500)
+  }
+})
+
+// API: Delete Class (Admin)
+app.delete('/api/admin/delete-class/:id', async (c) => {
+  try {
+    const { env } = c
+    const id = c.req.param('id')
+
+    await env.DB.prepare(`
+      DELETE FROM live_classes WHERE class_id = ?
+    `).bind(id).run()
+
+    return c.json({
+      success: true,
+      message: 'Class deleted successfully'
+    })
+  } catch (error) {
+    console.error('Error deleting class:', error)
+    return c.json({ error: 'Failed to delete class' }, 500)
+  }
+})
+
+export default app
