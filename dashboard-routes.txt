@@ -1,0 +1,410 @@
+// Student Dashboard Route - Comprehensive with Live Classes
+app.get('/dashboard', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - IoT & Robotics | PassionBots</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .btn-yellow {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-yellow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .class-card {
+            transition: all 0.3s ease;
+        }
+        .class-card:hover {
+            transform: translateY(-5px);
+            border-color: #FFD700;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Header -->
+    <nav class="bg-black bg-opacity-80 backdrop-filter backdrop-blur-md border-b border-yellow-500 border-opacity-30 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-robot text-yellow-400 text-3xl"></i>
+                    <span class="text-2xl font-bold gradient-text">PassionBots</span>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <span class="text-gray-300" id="studentName"></span>
+                    <button onclick="logout()" class="text-gray-300 hover:text-yellow-400 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Welcome Section -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold gradient-text mb-2">Welcome to Your Dashboard</h1>
+            <p class="text-gray-400" id="welcomeMessage">Loading your course information...</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid md:grid-cols-4 gap-6 mb-8">
+            <div class="card p-6 rounded-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm mb-1">Total Classes</p>
+                        <p class="text-3xl font-bold text-yellow-400" id="totalClasses">0</p>
+                    </div>
+                    <i class="fas fa-video text-yellow-400 text-3xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="card p-6 rounded-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm mb-1">Attended</p>
+                        <p class="text-3xl font-bold text-green-400" id="attendedClasses">0</p>
+                    </div>
+                    <i class="fas fa-check-circle text-green-400 text-3xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="card p-6 rounded-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm mb-1">Upcoming</p>
+                        <p class="text-3xl font-bold text-blue-400" id="upcomingClasses">0</p>
+                    </div>
+                    <i class="fas fa-calendar text-blue-400 text-3xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="card p-6 rounded-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm mb-1">Progress</p>
+                        <p class="text-3xl font-bold text-purple-400" id="progressPercent">0%</p>
+                    </div>
+                    <i class="fas fa-chart-line text-purple-400 text-3xl opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6">
+            <div class="flex space-x-4 border-b border-gray-700">
+                <button onclick="switchTab('schedule')" id="tab-schedule" 
+                        class="px-6 py-3 font-semibold border-b-2 border-yellow-400 text-yellow-400">
+                    <i class="fas fa-calendar-alt mr-2"></i>Live Classes
+                </button>
+                <button onclick="switchTab('modules')" id="tab-modules" 
+                        class="px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-yellow-400">
+                    <i class="fas fa-book mr-2"></i>Course Modules
+                </button>
+                <button onclick="switchTab('progress')" id="tab-progress" 
+                        class="px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-yellow-400">
+                    <i class="fas fa-chart-bar mr-2"></i>My Progress
+                </button>
+            </div>
+        </div>
+
+        <!-- Schedule Tab -->
+        <div id="content-schedule" class="space-y-6">
+            <div class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold gradient-text mb-6">
+                    <i class="fas fa-video mr-3"></i>Upcoming Live Classes
+                </h2>
+                <div id="upcomingClassesList" class="space-y-4">
+                    <!-- Classes will be loaded here -->
+                </div>
+            </div>
+
+            <div class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold text-gray-300 mb-6">
+                    <i class="fas fa-history mr-3"></i>Past Classes
+                </h2>
+                <div id="pastClassesList" class="space-y-4">
+                    <!-- Past classes will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modules Tab -->
+        <div id="content-modules" class="hidden">
+            <div class="grid md:grid-cols-2 gap-6" id="modulesList">
+                <!-- Modules will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Progress Tab -->
+        <div id="content-progress" class="hidden">
+            <div class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold gradient-text mb-6">
+                    <i class="fas fa-trophy mr-3"></i>Your Learning Journey
+                </h2>
+                <div id="progressContent">
+                    <!-- Progress will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let studentData = null;
+
+        // Check login
+        function checkLogin() {
+            const data = localStorage.getItem('student_data');
+            if (!data) {
+                window.location.href = '/student-portal';
+                return null;
+            }
+            return JSON.parse(data);
+        }
+
+        function logout() {
+            localStorage.removeItem('student_data');
+            window.location.href = '/student-portal';
+        }
+
+        function switchTab(tab) {
+            // Hide all tabs
+            document.getElementById('content-schedule').classList.add('hidden');
+            document.getElementById('content-modules').classList.add('hidden');
+            document.getElementById('content-progress').classList.add('hidden');
+            
+            // Show selected tab
+            document.getElementById('content-' + tab).classList.remove('hidden');
+            
+            // Update tab buttons
+            document.getElementById('tab-schedule').classList.remove('border-yellow-400', 'text-yellow-400');
+            document.getElementById('tab-modules').classList.remove('border-yellow-400', 'text-yellow-400');
+            document.getElementById('tab-progress').classList.remove('border-yellow-400', 'text-yellow-400');
+            
+            document.getElementById('tab-schedule').classList.add('border-transparent', 'text-gray-400');
+            document.getElementById('tab-modules').classList.add('border-transparent', 'text-gray-400');
+            document.getElementById('tab-progress').classList.add('border-transparent', 'text-gray-400');
+            
+            document.getElementById('tab-' + tab).classList.remove('border-transparent', 'text-gray-400');
+            document.getElementById('tab-' + tab).classList.add('border-yellow-400', 'text-yellow-400');
+        }
+
+        // Load dashboard data
+        async function loadDashboard() {
+            studentData = checkLogin();
+            if (!studentData) return;
+
+            document.getElementById('studentName').textContent = studentData.full_name;
+            document.getElementById('welcomeMessage').textContent = 
+                \`Registered on \${new Date(studentData.registration_date).toLocaleDateString()}\`;
+
+            // Load classes
+            await loadClasses();
+            
+            // Load modules
+            await loadModules();
+            
+            // Load progress
+            await loadProgress();
+        }
+
+        async function loadClasses() {
+            try {
+                const response = await fetch('/api/live-classes');
+                const data = await response.json();
+                
+                const now = new Date();
+                const upcoming = data.classes.filter(c => new Date(c.class_date + ' ' + c.class_time) > now);
+                const past = data.classes.filter(c => new Date(c.class_date + ' ' + c.class_time) <= now);
+                
+                document.getElementById('totalClasses').textContent = data.classes.length;
+                document.getElementById('upcomingClasses').textContent = upcoming.length;
+                
+                // Render upcoming classes
+                const upcomingHTML = upcoming.length > 0 ? upcoming.map(cls => \`
+                    <div class="class-card card p-6 rounded-lg">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-yellow-400 mb-2">\${cls.class_title}</h3>
+                                <p class="text-gray-400 mb-3">\${cls.class_description || 'Live interactive session'}</p>
+                                <div class="flex flex-wrap gap-4 text-sm mb-4">
+                                    <span class="text-gray-300">
+                                        <i class="fas fa-calendar mr-2 text-yellow-400"></i>
+                                        \${new Date(cls.class_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </span>
+                                    <span class="text-gray-300">
+                                        <i class="fas fa-clock mr-2 text-yellow-400"></i>
+                                        \${cls.class_time} (\${cls.duration_minutes} mins)
+                                    </span>
+                                    <span class="text-gray-300">
+                                        <i class="fas fa-user mr-2 text-yellow-400"></i>
+                                        \${cls.instructor_name}
+                                    </span>
+                                </div>
+                                <a href="\${cls.zoom_join_url}" target="_blank" 
+                                   class="btn-yellow inline-block text-black font-bold py-2 px-6 rounded-lg">
+                                    <i class="fas fa-video mr-2"></i>Join on Zoom
+                                </a>
+                            </div>
+                            <div class="ml-4">
+                                <span class="inline-block px-3 py-1 bg-green-500 bg-opacity-20 text-green-400 rounded-full text-sm">
+                                    Scheduled
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                \`).join('') : '<p class="text-gray-400 text-center py-8">No upcoming classes scheduled yet</p>';
+                
+                document.getElementById('upcomingClassesList').innerHTML = upcomingHTML;
+                
+                // Render past classes
+                const pastHTML = past.length > 0 ? past.slice(0, 5).map(cls => \`
+                    <div class="class-card card p-4 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-300">\${cls.class_title}</h4>
+                                <p class="text-sm text-gray-500">\${new Date(cls.class_date).toLocaleDateString()} - \${cls.instructor_name}</p>
+                            </div>
+                            \${cls.recording_url ? \`
+                            <a href="\${cls.recording_url}" target="_blank" 
+                               class="text-yellow-400 hover:text-yellow-300">
+                                <i class="fas fa-play-circle mr-2"></i>Recording
+                            </a>
+                            \` : '<span class="text-gray-500 text-sm">No recording</span>'}
+                        </div>
+                    </div>
+                \`).join('') : '<p class="text-gray-400 text-center py-8">No past classes yet</p>';
+                
+                document.getElementById('pastClassesList').innerHTML = pastHTML;
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        async function loadModules() {
+            try {
+                const response = await fetch('/api/course-modules');
+                const data = await response.json();
+                
+                const modulesHTML = data.modules.map((mod, index) => \`
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-yellow-400 bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                                    <span class="text-xl font-bold text-yellow-400">\${mod.module_number}</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-yellow-400">\${mod.module_title}</h3>
+                                    <p class="text-sm text-gray-400">\${mod.duration_weeks} week\${mod.duration_weeks > 1 ? 's' : ''}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 mb-4">\${mod.module_description}</p>
+                        <div class="space-y-2">
+                            \${JSON.parse(mod.topics).map(topic => \`
+                                <div class="flex items-center text-sm text-gray-300">
+                                    <i class="fas fa-check-circle text-yellow-400 mr-2"></i>
+                                    \${topic}
+                                </div>
+                            \`).join('')}
+                        </div>
+                    </div>
+                \`).join('');
+                
+                document.getElementById('modulesList').innerHTML = modulesHTML;
+            } catch (error) {
+                console.error('Error loading modules:', error);
+            }
+        }
+
+        async function loadProgress() {
+            const progressHTML = \`
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-gray-300 font-semibold">Overall Progress</span>
+                            <span class="text-yellow-400 font-bold">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-4 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 text-center py-8">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Your progress will be updated as you attend classes and complete modules
+                    </p>
+                </div>
+            \`;
+            
+            document.getElementById('progressContent').innerHTML = progressHTML;
+        }
+
+        // Initialize
+        loadDashboard();
+    </script>
+</body>
+</html>
+  `)
+})
+
+// API: Get Live Classes
+app.get('/api/live-classes', async (c) => {
+  try {
+    const { env } = c
+    
+    const classes = await env.DB.prepare(`
+      SELECT * FROM live_classes 
+      WHERE course_type = 'iot_robotics' 
+      ORDER BY class_date DESC, class_time DESC
+    `).all()
+
+    return c.json({
+      success: true,
+      classes: classes.results || []
+    })
+  } catch (error) {
+    console.error('Error fetching classes:', error)
+    return c.json({ error: 'Failed to fetch classes' }, 500)
+  }
+})
+
+// API: Get Course Modules
+app.get('/api/course-modules', async (c) => {
+  try {
+    const { env } = c
+    
+    const modules = await env.DB.prepare(`
+      SELECT * FROM course_modules 
+      WHERE course_type = 'iot_robotics' AND status = 'active'
+      ORDER BY module_number ASC
+    `).all()
+
+    return c.json({
+      success: true,
+      modules: modules.results || []
+    })
+  } catch (error) {
+    console.error('Error fetching modules:', error)
+    return c.json({ error: 'Failed to fetch modules' }, 500)
+  }
+})
+
+export default app
