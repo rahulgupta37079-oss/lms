@@ -63,11 +63,11 @@ def bulk_register(csv_file):
                 
                 # Prepare student data
                 student_data = {
-                    "fullName": row.get('fullName', ''),
+                    "full_name": row.get('fullName', ''),
                     "email": row.get('email', ''),
                     "mobile": row.get('mobile', ''),
-                    "collegeName": row.get('collegeName', ''),
-                    "yearOfStudy": row.get('yearOfStudy', '')
+                    "college_name": row.get('collegeName', ''),
+                    "year_of_study": row.get('yearOfStudy', '')
                 }
                 
                 # Validate required fields

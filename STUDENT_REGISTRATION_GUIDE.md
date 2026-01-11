@@ -73,11 +73,11 @@ Content-Type: application/json
 #### **Request Body:**
 ```json
 {
-  "fullName": "Rahul Kumar",
+  "full_name": "Rahul Kumar",
   "email": "rahul.kumar@gmail.com",
   "mobile": "+91 9876543210",
-  "collegeName": "MIT College of Engineering",
-  "yearOfStudy": "2nd Year"
+  "college_name": "MIT College of Engineering",
+  "year_of_study": "2nd Year"
 }
 ```
 
@@ -86,11 +86,11 @@ Content-Type: application/json
 curl -X POST https://passionbots-lms.pages.dev/api/register \
   -H "Content-Type: application/json" \
   -d '{
-    "fullName": "Rahul Kumar",
+    "full_name": "Rahul Kumar",
     "email": "rahul.kumar@gmail.com",
     "mobile": "+91 9876543210",
-    "collegeName": "MIT College of Engineering",
-    "yearOfStudy": "2nd Year"
+    "college_name": "MIT College of Engineering",
+    "year_of_study": "2nd Year"
   }'
 ```
 
