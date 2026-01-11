@@ -2174,6 +2174,33 @@ app.get('/verify/:code', async (c) => {
                   <i class="fas fa-home mr-2"></i> Home
                 </a>
               </div>
+              
+              <!-- Social Sharing Buttons -->
+              <div class="mt-8 pt-6 border-t border-gray-200">
+                <p class="text-sm text-gray-600 mb-4 font-semibold">🎉 Share Your Achievement:</p>
+                <div class="flex gap-3 justify-center flex-wrap">
+                  <button onclick="shareLinkedIn('${certificate.certificate_code}', '${certificate.student_name}', '${certificate.course_name}')"
+                          class="inline-flex items-center px-5 py-2.5 bg-[#0077b5] hover:bg-[#006399] text-white font-medium rounded-lg transition shadow-sm hover:shadow-md">
+                    <i class="fab fa-linkedin-in mr-2"></i> LinkedIn
+                  </button>
+                  <button onclick="shareWhatsApp('${certificate.certificate_code}', '${certificate.student_name}', '${certificate.course_name}')"
+                          class="inline-flex items-center px-5 py-2.5 bg-[#25D366] hover:bg-[#20BA5A] text-white font-medium rounded-lg transition shadow-sm hover:shadow-md">
+                    <i class="fab fa-whatsapp mr-2"></i> WhatsApp
+                  </button>
+                  <button onclick="shareFacebook('${certificate.certificate_code}', '${certificate.student_name}', '${certificate.course_name}')"
+                          class="inline-flex items-center px-5 py-2.5 bg-[#1877f2] hover:bg-[#0d66d0] text-white font-medium rounded-lg transition shadow-sm hover:shadow-md">
+                    <i class="fab fa-facebook-f mr-2"></i> Facebook
+                  </button>
+                  <button onclick="shareTwitter('${certificate.certificate_code}', '${certificate.student_name}', '${certificate.course_name}')"
+                          class="inline-flex items-center px-5 py-2.5 bg-[#1DA1F2] hover:bg-[#0d8bd9] text-white font-medium rounded-lg transition shadow-sm hover:shadow-md">
+                    <i class="fab fa-twitter mr-2"></i> Twitter
+                  </button>
+                  <button onclick="shareInstagram('${certificate.certificate_code}', '${certificate.student_name}', '${certificate.course_name}')"
+                          class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] hover:opacity-90 text-white font-medium rounded-lg transition shadow-sm hover:shadow-md">
+                    <i class="fab fa-instagram mr-2"></i> Instagram
+                  </button>
+                </div>
+              </div>
             </div>
           ` : `
             <!-- Revoked/Inactive Certificate -->
@@ -2245,6 +2272,51 @@ app.get('/verify/:code', async (c) => {
           <p class="mt-1">For verification support, visit <a href="https://passionbots.co.in" class="text-purple-600 hover:text-purple-700">passionbots.co.in</a></p>
         </div>
     </div>
+    
+    <script>
+      // Social Sharing Functions for Verify Page
+      function shareLinkedIn(certCode, studentName, courseName) {
+        const verifyUrl = window.location.origin + '/verify/' + certCode;
+        const url = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(verifyUrl);
+        window.open(url, '_blank', 'width=600,height=600');
+      }
+      
+      function shareWhatsApp(certCode, studentName, courseName) {
+        const verifyUrl = window.location.origin + '/verify/' + certCode;
+        const message = '🎓 I\\'m excited to share that I\\'ve completed the ' + courseName + ' from PassionBots! 🤖\\n\\nVerify my certificate: ' + verifyUrl + '\\n\\n#PassionBots #IoT #Robotics #Certificate';
+        const url = 'https://wa.me/?text=' + encodeURIComponent(message);
+        window.open(url, '_blank');
+      }
+      
+      function shareFacebook(certCode, studentName, courseName) {
+        const verifyUrl = window.location.origin + '/verify/' + certCode;
+        const message = '🎓 I completed the ' + courseName + ' from PassionBots! 🤖\\n\\nVerify my certificate!\\n\\n#PassionBots #IoT #Robotics';
+        const url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(verifyUrl) + '&quote=' + encodeURIComponent(message);
+        window.open(url, '_blank', 'width=600,height=600');
+      }
+      
+      function shareTwitter(certCode, studentName, courseName) {
+        const verifyUrl = window.location.origin + '/verify/' + certCode;
+        const text = '🎓 Just completed ' + courseName + ' from @PassionBots! 🤖\\n\\nVerify: ' + verifyUrl + '\\n\\n#PassionBots #IoT #Robotics #Certificate';
+        const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+        window.open(url, '_blank', 'width=600,height=600');
+      }
+      
+      function shareInstagram(certCode, studentName, courseName) {
+        const verifyUrl = window.location.origin + '/verify/' + certCode;
+        const message = '🎓 I completed the ' + courseName + ' from PassionBots! 🤖\\n\\nVerify my certificate at: ' + verifyUrl + '\\n\\n#PassionBots #IoT #Robotics #Certificate #Achievement';
+        
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(message).then(() => {
+            alert('📋 Caption copied to clipboard!\\n\\nOpen Instagram and paste this caption with your certificate screenshot.\\n\\nTip: Download your certificate PDF and share it as an image on Instagram.');
+          }).catch(() => {
+            prompt('Copy this message for Instagram:', message);
+          });
+        } else {
+          prompt('Copy this message for Instagram:', message);
+        }
+      }
+    </script>
 </body>
 </html>
   `)
@@ -5396,12 +5468,44 @@ function generateEnhancedCertificate(data: any, certificate: any) {
   .download-btn { position: fixed; top: 25px; right: 25px; padding: 14px 28px; background: linear-gradient(135deg, #ffd700 0%, #f4c430 100%); color: #000; font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09rem; border: none; border-radius: 7px; cursor: pointer; box-shadow: 0 5px 22px rgba(255, 215, 0, 0.4); transition: all 0.3s ease; z-index: 1000; }
   .download-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6); }
   .download-btn i { margin-right: 10px; }
+  .share-buttons { position: fixed; top: 90px; right: 25px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+  .share-btn { width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.3s ease; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3); }
+  .share-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); }
+  .share-btn.linkedin { background: #0077b5; color: white; }
+  .share-btn.whatsapp { background: #25D366; color: white; }
+  .share-btn.facebook { background: #1877f2; color: white; }
+  .share-btn.instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; }
+  .share-btn.twitter { background: #1DA1F2; color: white; }
+  .share-tooltip { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-family: 'Roboto', sans-serif; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .share-btn:hover .share-tooltip { opacity: 1; }
 </style>
 </head>
 <body>
   <button class="download-btn no-print" onclick="downloadAsPDF()">
     <i class="fas fa-download"></i> Download PDF
   </button>
+  <div class="share-buttons no-print">
+    <button class="share-btn linkedin" onclick="shareOnLinkedIn()" title="Share on LinkedIn">
+      <i class="fab fa-linkedin-in"></i>
+      <span class="share-tooltip">Share on LinkedIn</span>
+    </button>
+    <button class="share-btn whatsapp" onclick="shareOnWhatsApp()" title="Share on WhatsApp">
+      <i class="fab fa-whatsapp"></i>
+      <span class="share-tooltip">Share on WhatsApp</span>
+    </button>
+    <button class="share-btn facebook" onclick="shareOnFacebook()" title="Share on Facebook">
+      <i class="fab fa-facebook-f"></i>
+      <span class="share-tooltip">Share on Facebook</span>
+    </button>
+    <button class="share-btn twitter" onclick="shareOnTwitter()" title="Share on Twitter">
+      <i class="fab fa-twitter"></i>
+      <span class="share-tooltip">Share on Twitter</span>
+    </button>
+    <button class="share-btn instagram" onclick="shareOnInstagram()" title="Share on Instagram">
+      <i class="fab fa-instagram"></i>
+      <span class="share-tooltip">Share on Instagram</span>
+    </button>
+  </div>
   <div class="certificate-container">
     <div class="yellow-bar"><div class="vertical-text">PASSIONBOTS // FUTURE TECH</div></div>
     <div class="bg-pattern"></div>
@@ -5503,6 +5607,49 @@ function generateEnhancedCertificate(data: any, certificate: any) {
         const btn = document.querySelector('.download-btn');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
+      }
+    }
+
+    // Social Sharing Functions
+    const certificateUrl = window.location.href;
+    const verifyUrl = certificateUrl.replace('/api/certificates/', '/verify/').replace('/view', '/${certificateCode}');
+    const shareMessage = '🎓 I\'m excited to share that I\'ve completed the ${courseName} from PassionBots! 🤖\\n\\nVerify my certificate: ' + verifyUrl + '\\n\\n#PassionBots #IoT #Robotics #Certificate #Achievement';
+    const shareTitle = 'Certificate of ${certTypeUpper} - ${courseName}';
+    
+    function shareOnLinkedIn() {
+      const url = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(verifyUrl);
+      window.open(url, '_blank', 'width=600,height=600');
+    }
+    
+    function shareOnWhatsApp() {
+      const message = encodeURIComponent(shareMessage);
+      const url = 'https://wa.me/?text=' + message;
+      window.open(url, '_blank');
+    }
+    
+    function shareOnFacebook() {
+      const url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(verifyUrl) + '&quote=' + encodeURIComponent(shareMessage);
+      window.open(url, '_blank', 'width=600,height=600');
+    }
+    
+    function shareOnTwitter() {
+      const text = encodeURIComponent('🎓 Just completed ${courseName} from @PassionBots! 🤖\\n\\nVerify: ' + verifyUrl + '\\n\\n#PassionBots #IoT #Robotics');
+      const url = 'https://twitter.com/intent/tweet?text=' + text;
+      window.open(url, '_blank', 'width=600,height=600');
+    }
+    
+    function shareOnInstagram() {
+      // Instagram doesn't support direct web sharing, so we'll copy the message
+      const message = '🎓 I completed the ${courseName} from PassionBots! 🤖\\n\\nVerify my certificate at: ' + verifyUrl + '\\n\\n#PassionBots #IoT #Robotics #Certificate';
+      
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(message).then(() => {
+          alert('📋 Caption copied to clipboard!\\n\\nOpen Instagram and paste this caption with your certificate screenshot.\\n\\nTip: Take a screenshot of this certificate to post on Instagram.');
+        }).catch(() => {
+          prompt('Copy this message for Instagram:', message);
+        });
+      } else {
+        prompt('Copy this message for Instagram:', message);
       }
     }
   </script>
