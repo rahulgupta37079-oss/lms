@@ -6970,26 +6970,49 @@ app.get('/admin-dashboard-iot', (c) => {
                     </div>
                 </div>
 
-                <div class="grid md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-yellow-400 font-semibold mb-2">Zoom Meeting ID *</label>
-                        <input type="text" name="zoom_meeting_id" required 
-                               class="input-field w-full px-4 py-2 rounded-lg"
-                               placeholder="123456789">
+                <!-- Zoom Integration Section -->
+                <div class="bg-gradient-to-r from-blue-900/30 to-purple-900/30 p-4 rounded-lg border border-blue-500/30">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-blue-400 flex items-center">
+                                <i class="fas fa-video mr-2"></i>Zoom Meeting Details
+                            </h3>
+                            <p class="text-sm text-gray-400 mt-1">
+                                Click "Create with Zoom" to auto-generate meeting or enter manually
+                            </p>
+                        </div>
+                        <button type="button" onclick="createZoomMeeting()" 
+                                id="createZoomBtn"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-magic mr-2"></i>Create with Zoom
+                        </button>
                     </div>
-                    <div>
-                        <label class="block text-yellow-400 font-semibold mb-2">Zoom Password</label>
-                        <input type="text" name="zoom_meeting_password"
-                               class="input-field w-full px-4 py-2 rounded-lg"
-                               placeholder="pass123">
-                    </div>
-                </div>
 
-                <div>
-                    <label class="block text-yellow-400 font-semibold mb-2">Zoom Join URL *</label>
-                    <input type="url" name="zoom_join_url" required 
-                           class="input-field w-full px-4 py-2 rounded-lg"
-                           placeholder="https://zoom.us/j/123456789">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-yellow-400 font-semibold mb-2">Zoom Meeting ID *</label>
+                            <input type="text" name="zoom_meeting_id" id="zoom_meeting_id" required 
+                                   class="input-field w-full px-4 py-2 rounded-lg"
+                                   placeholder="Auto-filled or enter manually">
+                        </div>
+                        <div>
+                            <label class="block text-yellow-400 font-semibold mb-2">Zoom Password</label>
+                            <input type="text" name="zoom_meeting_password" id="zoom_meeting_password"
+                                   class="input-field w-full px-4 py-2 rounded-lg"
+                                   placeholder="Auto-filled or enter manually">
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-yellow-400 font-semibold mb-2">Zoom Join URL *</label>
+                        <input type="url" name="zoom_join_url" id="zoom_join_url" required 
+                               class="input-field w-full px-4 py-2 rounded-lg"
+                               placeholder="Auto-filled or enter manually">
+                    </div>
+
+                    <div id="zoomStatus" class="mt-3 text-sm hidden">
+                        <!-- Status messages will appear here -->
+                    </div>
                 </div>
 
                 <div class="flex items-center space-x-4 pt-4">
@@ -7216,6 +7239,86 @@ app.get('/admin-dashboard-iot', (c) => {
         function closeAddClassModal() {
             document.getElementById('addClassModal').classList.remove('active');
             document.getElementById('addClassForm').reset();
+            document.getElementById('zoomStatus').classList.add('hidden');
+        }
+
+        // Create Zoom Meeting with API
+        async function createZoomMeeting() {
+            const btn = document.getElementById('createZoomBtn');
+            const statusDiv = document.getElementById('zoomStatus');
+            
+            // Get form values
+            const title = document.querySelector('input[name="class_title"]').value;
+            const date = document.querySelector('input[name="class_date"]').value;
+            const time = document.querySelector('input[name="class_time"]').value;
+            const duration = document.querySelector('input[name="duration_minutes"]').value;
+
+            if (!title || !date || !time || !duration) {
+                statusDiv.innerHTML = '<div class="text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>Please fill in Title, Date, Time, and Duration first</div>';
+                statusDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Meeting...';
+            statusDiv.innerHTML = '<div class="text-blue-400"><i class="fas fa-hourglass-half mr-2"></i>Creating Zoom meeting...</div>';
+            statusDiv.classList.remove('hidden');
+
+            try {
+                // Format start_time for Zoom API (ISO 8601 format)
+                const startTime = \`\${date}T\${time}:00\`;
+                
+                const response = await fetch('/api/zoom/create-meeting', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('admin_token')
+                    },
+                    body: JSON.stringify({
+                        topic: title,
+                        start_time: startTime,
+                        duration: parseInt(duration),
+                        timezone: 'Asia/Kolkata'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Auto-fill the form fields
+                    document.getElementById('zoom_meeting_id').value = result.meeting.id;
+                    document.getElementById('zoom_meeting_password').value = result.meeting.password || '';
+                    document.getElementById('zoom_join_url').value = result.meeting.join_url;
+
+                    statusDiv.innerHTML = \`
+                        <div class="text-green-400">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <strong>Success!</strong> Meeting created and details auto-filled.
+                            <div class="mt-2 text-xs">
+                                Meeting ID: \${result.meeting.id} | Password: \${result.meeting.password || 'None'}
+                            </div>
+                        </div>
+                    \`;
+
+                    btn.innerHTML = '<i class="fas fa-check mr-2"></i>Created Successfully';
+                    btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    btn.classList.add('bg-green-600', 'cursor-not-allowed');
+                } else {
+                    throw new Error(result.error || 'Failed to create meeting');
+                }
+            } catch (error) {
+                console.error('Error creating Zoom meeting:', error);
+                statusDiv.innerHTML = \`
+                    <div class="text-red-400">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <strong>Error:</strong> \${error.message}
+                        <div class="mt-1 text-xs">Please enter Zoom details manually</div>
+                    </div>
+                \`;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic mr-2"></i>Retry';
+            }
         }
 
         document.getElementById('addClassForm').addEventListener('submit', async (e) => {
@@ -8174,6 +8277,265 @@ app.get('/api/admin/access-stats', async (c) => {
   } catch (error) {
     console.error('Error fetching stats:', error)
     return c.json({ error: 'Failed to fetch statistics' }, 500)
+  }
+})
+
+// ============================================================================
+// ZOOM API INTEGRATION
+// ============================================================================
+
+// Helper function to get Zoom access token
+async function getZoomAccessToken(env: any): Promise<string> {
+  const accountId = env.ZOOM_ACCOUNT_ID
+  const clientId = env.ZOOM_CLIENT_ID
+  const clientSecret = env.ZOOM_CLIENT_SECRET
+
+  if (!accountId || !clientId || !clientSecret) {
+    throw new Error('Zoom credentials not configured')
+  }
+
+  // Create Basic Auth header
+  const authString = `${clientId}:${clientSecret}`
+  const authB64 = btoa(authString)
+
+  const response = await fetch('https://zoom.us/oauth/token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${authB64}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      grant_type: 'account_credentials',
+      account_id: accountId
+    })
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    throw new Error(`Failed to get Zoom token: ${error}`)
+  }
+
+  const data = await response.json()
+  return data.access_token
+}
+
+// API: Create Zoom Meeting
+app.post('/api/zoom/create-meeting', async (c) => {
+  try {
+    const { env } = c
+    const body = await c.req.json()
+    
+    const {
+      topic,
+      start_time,
+      duration,
+      timezone = 'Asia/Kolkata'
+    } = body
+
+    if (!topic || !start_time || !duration) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: topic, start_time, duration' 
+      }, 400)
+    }
+
+    // Get Zoom access token
+    const accessToken = await getZoomAccessToken(env)
+
+    // Create meeting
+    const meetingResponse = await fetch('https://api.zoom.us/v2/users/me/meetings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        topic,
+        type: 2, // Scheduled meeting
+        start_time,
+        duration,
+        timezone,
+        settings: {
+          host_video: true,
+          participant_video: true,
+          join_before_host: false,
+          mute_upon_entry: true,
+          waiting_room: true,
+          audio: 'both',
+          auto_recording: 'cloud'
+        }
+      })
+    })
+
+    if (!meetingResponse.ok) {
+      const error = await meetingResponse.text()
+      throw new Error(`Zoom API error: ${error}`)
+    }
+
+    const meeting = await meetingResponse.json()
+
+    return c.json({
+      success: true,
+      meeting: {
+        id: meeting.id,
+        password: meeting.password,
+        join_url: meeting.join_url,
+        start_url: meeting.start_url,
+        topic: meeting.topic,
+        start_time: meeting.start_time,
+        duration: meeting.duration
+      }
+    })
+
+  } catch (error: any) {
+    console.error('Error creating Zoom meeting:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to create Zoom meeting' 
+    }, 500)
+  }
+})
+
+// API: Update Zoom Meeting
+app.put('/api/zoom/update-meeting/:meetingId', async (c) => {
+  try {
+    const { env } = c
+    const meetingId = c.req.param('meetingId')
+    const body = await c.req.json()
+    
+    const {
+      topic,
+      start_time,
+      duration,
+      timezone = 'Asia/Kolkata'
+    } = body
+
+    // Get Zoom access token
+    const accessToken = await getZoomAccessToken(env)
+
+    // Update meeting
+    const updateResponse = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        topic,
+        start_time,
+        duration,
+        timezone,
+        settings: {
+          host_video: true,
+          participant_video: true,
+          join_before_host: false,
+          mute_upon_entry: true,
+          waiting_room: true,
+          audio: 'both',
+          auto_recording: 'cloud'
+        }
+      })
+    })
+
+    if (!updateResponse.ok) {
+      const error = await updateResponse.text()
+      throw new Error(`Zoom API error: ${error}`)
+    }
+
+    return c.json({
+      success: true,
+      message: 'Meeting updated successfully'
+    })
+
+  } catch (error: any) {
+    console.error('Error updating Zoom meeting:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to update Zoom meeting' 
+    }, 500)
+  }
+})
+
+// API: Delete Zoom Meeting
+app.delete('/api/zoom/delete-meeting/:meetingId', async (c) => {
+  try {
+    const { env } = c
+    const meetingId = c.req.param('meetingId')
+
+    // Get Zoom access token
+    const accessToken = await getZoomAccessToken(env)
+
+    // Delete meeting
+    const deleteResponse = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+
+    if (!deleteResponse.ok && deleteResponse.status !== 204) {
+      const error = await deleteResponse.text()
+      throw new Error(`Zoom API error: ${error}`)
+    }
+
+    return c.json({
+      success: true,
+      message: 'Meeting deleted successfully'
+    })
+
+  } catch (error: any) {
+    console.error('Error deleting Zoom meeting:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to delete Zoom meeting' 
+    }, 500)
+  }
+})
+
+// API: Get Zoom Meeting Details
+app.get('/api/zoom/meeting/:meetingId', async (c) => {
+  try {
+    const { env } = c
+    const meetingId = c.req.param('meetingId')
+
+    // Get Zoom access token
+    const accessToken = await getZoomAccessToken(env)
+
+    // Get meeting details
+    const meetingResponse = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+
+    if (!meetingResponse.ok) {
+      const error = await meetingResponse.text()
+      throw new Error(`Zoom API error: ${error}`)
+    }
+
+    const meeting = await meetingResponse.json()
+
+    return c.json({
+      success: true,
+      meeting: {
+        id: meeting.id,
+        password: meeting.password,
+        join_url: meeting.join_url,
+        start_url: meeting.start_url,
+        topic: meeting.topic,
+        start_time: meeting.start_time,
+        duration: meeting.duration,
+        status: meeting.status
+      }
+    })
+
+  } catch (error: any) {
+    console.error('Error fetching Zoom meeting:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to fetch Zoom meeting' 
+    }, 500)
   }
 })
 
