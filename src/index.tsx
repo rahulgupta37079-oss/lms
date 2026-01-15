@@ -6220,6 +6220,39 @@ app.get('/dashboard', (c) => {
             </div>
         </div>
 
+        <!-- Payment Status Card -->
+        <div class="card p-6 rounded-xl mb-8" id="paymentCard">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <h2 class="text-2xl font-bold gradient-text mb-2">
+                        <i class="fas fa-credit-card mr-2"></i>Course Fee Payment
+                    </h2>
+                    <p class="text-gray-400 mb-4">Complete your payment to access all course features</p>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-3xl font-bold text-yellow-400">
+                            ₹2,999
+                        </div>
+                        <div id="paymentStatusBadge" class="hidden">
+                            <!-- Payment status badge will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button onclick="initiatePayment()" id="paymentButton"
+                            class="btn-yellow text-black font-bold py-3 px-8 rounded-lg text-lg">
+                        <i class="fas fa-lock mr-2"></i>Pay Now
+                    </button>
+                    <button onclick="viewPaymentHistory()" 
+                            class="ml-3 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
+                        <i class="fas fa-history mr-2"></i>Payment History
+                    </button>
+                </div>
+            </div>
+            <div id="paymentHistory" class="mt-6 hidden">
+                <!-- Payment history will be loaded here -->
+            </div>
+        </div>
+
         <!-- Tabs -->
         <div class="mb-6">
             <div class="flex space-x-4 border-b border-gray-700">
@@ -6469,8 +6502,140 @@ app.get('/dashboard', (c) => {
             document.getElementById('progressContent').innerHTML = progressHTML;
         }
 
+        // Payment Functions
+        async function checkPaymentStatus() {
+            try {
+                const response = await fetch('/api/payment/student/' + studentData.registration_id);
+                const data = await response.json();
+                
+                if (data.success && data.payments.length > 0) {
+                    const latestPayment = data.payments[0];
+                    const statusBadge = document.getElementById('paymentStatusBadge');
+                    const paymentButton = document.getElementById('paymentButton');
+                    
+                    if (latestPayment.payment_status === 'SUCCESS') {
+                        statusBadge.innerHTML = '<span class="px-4 py-2 bg-green-500 bg-opacity-20 text-green-400 rounded-full font-semibold">' +
+                            '<i class="fas fa-check-circle mr-2"></i>PAID</span>';
+                        statusBadge.classList.remove('hidden');
+                        paymentButton.innerHTML = '<i class="fas fa-check mr-2"></i>Payment Complete';
+                        paymentButton.disabled = true;
+                        paymentButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    } else if (latestPayment.payment_status === 'PENDING') {
+                        statusBadge.innerHTML = '<span class="px-4 py-2 bg-yellow-500 bg-opacity-20 text-yellow-400 rounded-full font-semibold">' +
+                            '<i class="fas fa-clock mr-2"></i>PENDING</span>';
+                        statusBadge.classList.remove('hidden');
+                    } else if (latestPayment.payment_status === 'FAILED') {
+                        statusBadge.innerHTML = '<span class="px-4 py-2 bg-red-500 bg-opacity-20 text-red-400 rounded-full font-semibold">' +
+                            '<i class="fas fa-times-circle mr-2"></i>FAILED</span>';
+                        statusBadge.classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking payment status:', error);
+            }
+        }
+
+        async function initiatePayment() {
+            try {
+                const button = document.getElementById('paymentButton');
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+                
+                const response = await fetch('/api/payment/initiate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        registration_id: studentData.registration_id,
+                        amount: 2999,
+                        student_email: studentData.email,
+                        student_name: studentData.full_name
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Create form and submit to Paytm
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = data.paymentUrl;
+                    
+                    for (const key in data.paytmParams) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = data.paytmParams[key];
+                        form.appendChild(input);
+                    }
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                } else {
+                    alert('Failed to initiate payment: ' + data.error);
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay Now';
+                }
+            } catch (error) {
+                console.error('Error initiating payment:', error);
+                alert('Failed to initiate payment. Please try again.');
+                const button = document.getElementById('paymentButton');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-lock mr-2"></i>Pay Now';
+            }
+        }
+
+        async function viewPaymentHistory() {
+            try {
+                const historyDiv = document.getElementById('paymentHistory');
+                const isHidden = historyDiv.classList.contains('hidden');
+                
+                if (isHidden) {
+                    historyDiv.innerHTML = '<p class="text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
+                    historyDiv.classList.remove('hidden');
+                    
+                    const response = await fetch('/api/payment/student/' + studentData.registration_id);
+                    const data = await response.json();
+                    
+                    if (data.success && data.payments.length > 0) {
+                        let historyHTML = '<h3 class=\\"text-xl font-bold text-gray-300 mb-4\\">Payment History</h3><div class=\\"space-y-3\\">';
+                        
+                        data.payments.forEach(function(payment) {
+                            let statusHTML = '';
+                            if (payment.payment_status === 'SUCCESS') {
+                                statusHTML = '<span class=\\"px-3 py-1 bg-green-500 bg-opacity-20 text-green-400 rounded-full text-sm font-semibold\\">SUCCESS</span>';
+                            } else if (payment.payment_status === 'PENDING') {
+                                statusHTML = '<span class=\\"px-3 py-1 bg-yellow-500 bg-opacity-20 text-yellow-400 rounded-full text-sm font-semibold\\">PENDING</span>';
+                            } else {
+                                statusHTML = '<span class=\\"px-3 py-1 bg-red-500 bg-opacity-20 text-red-400 rounded-full text-sm font-semibold\\">FAILED</span>';
+                            }
+                            
+                            historyHTML += '<div class=\\"bg-gray-800 bg-opacity-50 p-4 rounded-lg flex items-center justify-between\\">' +
+                                '<div>' +
+                                    '<p class=\\"font-semibold text-white\\">Order ID: ' + payment.order_id + '</p>' +
+                                    '<p class=\\"text-sm text-gray-400\\">Amount: ₹' + payment.amount + '</p>' +
+                                    '<p class=\\"text-sm text-gray-400\\">Date: ' + new Date(payment.created_at).toLocaleString() + '</p>' +
+                                '</div>' +
+                                '<div>' + statusHTML + '</div>' +
+                            '</div>';
+                        });
+                        
+                        historyHTML += '</div>';
+                        historyDiv.innerHTML = historyHTML;
+                    } else {
+                        historyDiv.innerHTML = '<p class=\\"text-gray-400\\">No payment history found.</p>';
+                    }
+                } else {
+                    historyDiv.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading payment history:', error);
+                document.getElementById('paymentHistory').innerHTML = '<p class="text-red-400">Failed to load payment history.</p>';
+            }
+        }
+
         // Initialize
         loadDashboard();
+        checkPaymentStatus();
     </script>
 </body>
 </html>
@@ -6790,6 +6955,10 @@ app.get('/admin-dashboard-iot', (c) => {
                         class="sidebar-link w-full text-left px-4 py-3 rounded-lg text-gray-300">
                     <i class="fas fa-chart-bar mr-3 text-yellow-400"></i>Analytics
                 </button>
+                <button onclick="switchSection('payments')" id="nav-payments"
+                        class="sidebar-link w-full text-left px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-rupee-sign mr-3 text-yellow-400"></i>Payments
+                </button>
             </div>
         </div>
 
@@ -6913,6 +7082,85 @@ app.get('/admin-dashboard-iot', (c) => {
                         <i class="fas fa-chart-line text-5xl mb-4 block opacity-50"></i>
                         Analytics dashboard coming soon
                     </p>
+                </div>
+            </div>
+
+            <!-- Payments Section -->
+            <div id="section-payments" class="section-content hidden">
+                <h1 class="text-4xl font-bold gradient-text mb-8">Payment Management</h1>
+                
+                <!-- Payment Statistics Cards -->
+                <div class="grid md:grid-cols-4 gap-6 mb-8">
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Total Revenue</p>
+                                <p class="text-3xl font-bold text-green-400" id="totalRevenue">₹0</p>
+                            </div>
+                            <i class="fas fa-rupee-sign text-green-400 text-3xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Successful</p>
+                                <p class="text-3xl font-bold text-green-400" id="successfulPayments">0</p>
+                            </div>
+                            <i class="fas fa-check-circle text-green-400 text-3xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Pending</p>
+                                <p class="text-3xl font-bold text-yellow-400" id="pendingPayments">0</p>
+                            </div>
+                            <i class="fas fa-clock text-yellow-400 text-3xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="card p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Failed</p>
+                                <p class="text-3xl font-bold text-red-400" id="failedPayments">0</p>
+                            </div>
+                            <i class="fas fa-times-circle text-red-400 text-3xl opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payments Table -->
+                <div class="card p-6 rounded-xl">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-300">All Payments</h2>
+                        <div class="flex space-x-3">
+                            <input type="text" id="paymentSearch" placeholder="Search by student name or order ID..."
+                                   class="px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-yellow-400 outline-none"
+                                   onkeyup="filterPayments()">
+                            <button onclick="exportPayments()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                                <i class="fas fa-file-excel mr-2"></i>Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full" id="paymentsTable">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left py-3 px-4 text-gray-400 font-semibold">Order ID</th>
+                                    <th class="text-left py-3 px-4 text-gray-400 font-semibold">Student</th>
+                                    <th class="text-left py-3 px-4 text-gray-400 font-semibold">Email</th>
+                                    <th class="text-left py-3 px-4 text-gray-400 font-semibold">Amount</th>
+                                    <th class="text-left py-3 px-4 text-gray-400 font-semibold">Status</th>
+                                    <th class="text-left py-3 px-4 text-gray-400 font-semibold">Date</th>
+                                    <th class="text-left py-3 px-4 text-gray-400 font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentsTableBody">
+                                <!-- Payments will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -7063,6 +7311,7 @@ app.get('/admin-dashboard-iot', (c) => {
             if (section === 'students') loadStudents();
             if (section === 'classes') loadClasses();
             if (section === 'modules') loadModules();
+            if (section === 'payments') loadPayments();
         }
 
         async function loadDashboard() {
@@ -7398,6 +7647,158 @@ app.get('/admin-dashboard-iot', (c) => {
 
         function exportStudents() {
             alert('Export to CSV functionality coming soon!');
+        }
+
+        // Payment Management Functions
+        let allPayments = [];
+        
+        async function loadPayments() {
+            try {
+                // Load payment statistics
+                const statsResponse = await fetch('/api/admin/payment-stats');
+                const statsData = await statsResponse.json();
+                
+                if (statsData.success) {
+                    document.getElementById('totalRevenue').textContent = 
+                        '₹' + (statsData.stats.total_revenue || 0);
+                    document.getElementById('successfulPayments').textContent = 
+                        statsData.stats.successful_payments || 0;
+                    document.getElementById('pendingPayments').textContent = 
+                        statsData.stats.pending_payments || 0;
+                    document.getElementById('failedPayments').textContent = 
+                        statsData.stats.failed_payments || 0;
+                }
+                
+                // Load all payments
+                const paymentsResponse = await fetch('/api/admin/payments');
+                const paymentsData = await paymentsResponse.json();
+                
+                if (paymentsData.success) {
+                    allPayments = paymentsData.payments;
+                    renderPayments(allPayments);
+                }
+            } catch (error) {
+                console.error('Error loading payments:', error);
+                alert('Failed to load payments');
+            }
+        }
+        
+        function renderPayments(payments) {
+            const tbody = document.getElementById('paymentsTableBody');
+            
+            if (payments.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-400">
+                            No payments found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = payments.map(payment => \`
+                <tr class="border-b border-gray-700 hover:bg-gray-800 hover:bg-opacity-30">
+                    <td class="py-3 px-4 text-gray-300">\${payment.order_id}</td>
+                    <td class="py-3 px-4 text-gray-300">\${payment.full_name || 'N/A'}</td>
+                    <td class="py-3 px-4 text-gray-400 text-sm">\${payment.email || 'N/A'}</td>
+                    <td class="py-3 px-4 text-green-400 font-semibold">₹\${payment.amount}</td>
+                    <td class="py-3 px-4">
+                        \${payment.payment_status === 'SUCCESS' 
+                            ? '<span class="px-3 py-1 bg-green-500 bg-opacity-20 text-green-400 rounded-full text-xs font-semibold">SUCCESS</span>'
+                            : payment.payment_status === 'PENDING'
+                            ? '<span class="px-3 py-1 bg-yellow-500 bg-opacity-20 text-yellow-400 rounded-full text-xs font-semibold">PENDING</span>'
+                            : '<span class="px-3 py-1 bg-red-500 bg-opacity-20 text-red-400 rounded-full text-xs font-semibold">FAILED</span>'
+                        }
+                    </td>
+                    <td class="py-3 px-4 text-gray-400 text-sm">
+                        \${new Date(payment.created_at).toLocaleDateString('en-IN', { 
+                            day: '2-digit', 
+                            month: 'short', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </td>
+                    <td class="py-3 px-4">
+                        <button onclick="viewPaymentDetails('\${payment.order_id}')" 
+                                class="text-yellow-400 hover:text-yellow-300">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            \`).join('');
+        }
+        
+        function filterPayments() {
+            const searchTerm = document.getElementById('paymentSearch').value.toLowerCase();
+            const filtered = allPayments.filter(payment => 
+                payment.order_id.toLowerCase().includes(searchTerm) ||
+                (payment.full_name && payment.full_name.toLowerCase().includes(searchTerm)) ||
+                (payment.email && payment.email.toLowerCase().includes(searchTerm))
+            );
+            renderPayments(filtered);
+        }
+        
+        async function viewPaymentDetails(orderId) {
+            try {
+                const response = await fetch('/api/payment/status/' + orderId);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const p = data.payment;
+                    alert(\`Payment Details:\\n\\n\` +
+                        \`Order ID: \${p.orderId}\\n\` +
+                        \`Transaction ID: \${p.txnId || 'N/A'}\\n\` +
+                        \`Student: \${p.studentName}\\n\` +
+                        \`Email: \${p.studentEmail}\\n\` +
+                        \`Amount: ₹\${p.amount}\\n\` +
+                        \`Status: \${p.status}\\n\` +
+                        \`Payment Method: \${p.paymentMethod || 'N/A'}\\n\` +
+                        \`Gateway: \${p.gatewayName}\\n\` +
+                        \`Date: \${new Date(p.createdAt).toLocaleString()}\`
+                    );
+                } else {
+                    alert('Failed to load payment details');
+                }
+            } catch (error) {
+                console.error('Error loading payment details:', error);
+                alert('Failed to load payment details');
+            }
+        }
+        
+        function exportPayments() {
+            if (allPayments.length === 0) {
+                alert('No payments to export');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['Order ID', 'Student Name', 'Email', 'Mobile', 'College', 'Amount', 'Status', 'Payment Method', 'Transaction Date', 'Created At'];
+            const csvContent = [
+                headers.join(','),
+                ...allPayments.map(p => [
+                    p.order_id,
+                    p.full_name || '',
+                    p.email || '',
+                    p.mobile || '',
+                    p.college_name || '',
+                    p.amount,
+                    p.payment_status,
+                    p.payment_method || '',
+                    p.txn_date || '',
+                    p.created_at
+                ].join(','))
+            ].join('\\n');
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = \`payments_\${new Date().toISOString().split('T')[0]}.csv\`;
+            a.click();
+            window.URL.revokeObjectURL(url);
         }
 
         // Initialize
