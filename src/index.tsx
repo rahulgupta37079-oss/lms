@@ -21,6 +21,7 @@ app.use('/static/*', serveStatic({ root: './' }))
 app.use('/landing.html', serveStatic({ path: 'landing.html' }))
 app.use('/features.html', serveStatic({ path: 'features.html' }))
 app.use('/curriculum-browser.html', serveStatic({ path: 'curriculum-browser.html' }))
+app.use('/marketing-landing.html', serveStatic({ path: 'marketing-landing.html' }))
 app.use('/manifest.json', serveStatic({ path: 'manifest.json' }))
 app.use('/test.html', serveStatic({ path: 'test.html' }))
 
@@ -2377,9 +2378,10 @@ app.get('/admin', (c) => {
   `)
 })
 
-app.get('/', (c) => {
-  // Redirect to marketing landing page
-  return c.redirect('/marketing-landing.html')
+app.get('/', async (c) => {
+  // Serve marketing landing page
+  // Since we're using serveStatic for marketing-landing.html, redirect to it
+  return c.redirect('/marketing-landing.html', 301)
 })
 
 // ============================================
@@ -5850,8 +5852,8 @@ app.post('/api/register', async (c) => {
     // Insert registration
     const result = await env.DB.prepare(`
       INSERT INTO course_registrations 
-      (full_name, email, mobile, college_name, year_of_study, course_type, payment_status, status, registration_email_sent)
-      VALUES (?, ?, ?, ?, ?, 'iot_robotics', 'free', 'active', 0)
+      (full_name, email, mobile, college_name, year_of_study, course_type, payment_status, status)
+      VALUES (?, ?, ?, ?, ?, 'iot_robotics', 'free', 'active')
     `).bind(full_name, email, mobile, college_name || null, year_of_study || null).run()
 
     const registrationId = result.meta.last_row_id
@@ -5872,19 +5874,16 @@ app.post('/api/register', async (c) => {
           'PassionBots IoT & Robotics Course'
         )
 
+        // Log email if successful (ignore if email_logs table doesn't exist)
         if (emailResult.success) {
-          // Update registration_email_sent flag
-          await env.DB.prepare(`
-            UPDATE course_registrations 
-            SET registration_email_sent = 1 
-            WHERE registration_id = ?
-          `).bind(registrationId).run()
-
-          // Log email
-          await env.DB.prepare(`
-            INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status, message_id)
-            VALUES (?, 'registration', ?, 'Welcome to PassionBots - Registration Confirmed!', 'sent', ?)
-          `).bind(registrationId, email, emailResult.messageId || '').run()
+          try {
+            await env.DB.prepare(`
+              INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status, message_id)
+              VALUES (?, 'registration', ?, 'Welcome to PassionBots - Registration Confirmed!', 'sent', ?)
+            `).bind(registrationId, email, emailResult.messageId || '').run()
+          } catch (dbError) {
+            console.log('Email log insert skipped (table may not exist yet)')
+          }
         }
       } catch (emailError) {
         console.error('Registration email error:', emailError)
@@ -9142,13 +9141,13 @@ app.post('/api/payment/callback/success', async (c) => {
 
         // Get student details
         const student = await env.DB.prepare(`
-          SELECT full_name, email, payment_email_sent 
+          SELECT full_name, email 
           FROM course_registrations 
           WHERE registration_id = ?
         `).bind(payment.registration_id).first()
 
         // Send payment success email (async)
-        if (env.RESEND_API_KEY && student && !student.payment_email_sent) {
+        if (env.RESEND_API_KEY && student) {
           try {
             const emailService = new EmailService({
               resendApiKey: env.RESEND_API_KEY
@@ -9163,24 +9162,6 @@ app.post('/api/payment/callback/success', async (c) => {
               'PassionBots IoT & Robotics Course'
             )
 
-            if (emailResult.success) {
-              await env.DB.prepare(`
-                UPDATE course_registrations 
-                SET payment_email_sent = 1 
-                WHERE registration_id = ?
-              `).bind(payment.registration_id).run()
-
-              await env.DB.prepare(`
-                INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status, message_id)
-                VALUES (?, 'payment_success', ?, ?, 'sent', ?)
-              `).bind(
-                payment.registration_id, 
-                student.email, 
-                `Payment Successful - ₹${amount} | PassionBots IoT & Robotics Course`,
-                emailResult.messageId || ''
-              ).run()
-            }
-
             // Send course access email
             await emailService.sendCourseAccess(
               student.email as string,
@@ -9189,11 +9170,22 @@ app.post('/api/payment/callback/success', async (c) => {
               'https://passionbots-lms.pages.dev/dashboard'
             )
 
-            await env.DB.prepare(`
-              UPDATE course_registrations 
-              SET course_access_email_sent = 1 
-              WHERE registration_id = ?
-            `).bind(payment.registration_id).run()
+            // Log emails if tables exist
+            if (emailResult.success) {
+              try {
+                await env.DB.prepare(`
+                  INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status, message_id)
+                  VALUES (?, 'payment_success', ?, ?, 'sent', ?)
+                `).bind(
+                  payment.registration_id, 
+                  student.email, 
+                  `Payment Successful - ₹${amount} | PassionBots IoT & Robotics Course`,
+                  emailResult.messageId || ''
+                ).run()
+              } catch (dbError) {
+                console.log('Email log insert skipped (table may not exist yet)')
+              }
+            }
 
           } catch (emailError) {
             console.error('Payment success email error:', emailError)
