@@ -9026,19 +9026,16 @@ app.post('/api/payment/initiate', async (c) => {
     ).run()
 
     // Generate PayU hash
-    // Hash format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
-    const hashParams = [
-      merchantKey,
-      txnid,
-      amount.toString(),
-      productinfo,
-      firstname,
-      email,
-      '', '', '', '', '', // udf1-5
-      '', '', '', '', ''  // empty fields
-    ]
+    // Hash format: key|txnid|amount|productinfo|firstname|email|||||||||||salt
+    // Note: UDF fields and extra pipes must match PayU's exact format
+    const hashString = `${merchantKey}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|||||||||||${salt}`
     
-    const hash = await generatePayUHash(hashParams, salt)
+    // Generate SHA512 hash
+    const encoder = new TextEncoder()
+    const data = encoder.encode(hashString)
+    const hashBuffer = await crypto.subtle.digest('SHA-512', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
     // Prepare PayU parameters
     const payuParams = {
