@@ -7687,47 +7687,45 @@ app.get('/admin-dashboard-iot', (c) => {
             const tbody = document.getElementById('paymentsTableBody');
             
             if (payments.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="text-center py-8 text-gray-400">
-                            No payments found
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML = '<tr><td colspan=\\"7\\" class=\\"text-center py-8 text-gray-400\\">No payments found</td></tr>';
                 return;
             }
             
-            tbody.innerHTML = payments.map(payment => \`
-                <tr class="border-b border-gray-700 hover:bg-gray-800 hover:bg-opacity-30">
-                    <td class="py-3 px-4 text-gray-300">\${payment.order_id}</td>
-                    <td class="py-3 px-4 text-gray-300">\${payment.full_name || 'N/A'}</td>
-                    <td class="py-3 px-4 text-gray-400 text-sm">\${payment.email || 'N/A'}</td>
-                    <td class="py-3 px-4 text-green-400 font-semibold">₹\${payment.amount}</td>
-                    <td class="py-3 px-4">
-                        \${payment.payment_status === 'SUCCESS' 
-                            ? '<span class="px-3 py-1 bg-green-500 bg-opacity-20 text-green-400 rounded-full text-xs font-semibold">SUCCESS</span>'
-                            : payment.payment_status === 'PENDING'
-                            ? '<span class="px-3 py-1 bg-yellow-500 bg-opacity-20 text-yellow-400 rounded-full text-xs font-semibold">PENDING</span>'
-                            : '<span class="px-3 py-1 bg-red-500 bg-opacity-20 text-red-400 rounded-full text-xs font-semibold">FAILED</span>'
-                        }
-                    </td>
-                    <td class="py-3 px-4 text-gray-400 text-sm">
-                        \${new Date(payment.created_at).toLocaleDateString('en-IN', { 
-                            day: '2-digit', 
-                            month: 'short', 
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}
-                    </td>
-                    <td class="py-3 px-4">
-                        <button onclick="viewPaymentDetails('\${payment.order_id}')" 
-                                class="text-yellow-400 hover:text-yellow-300">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                </tr>
-            \`).join('');
+            let html = '';
+            payments.forEach(function(payment) {
+                let statusHTML = '';
+                if (payment.payment_status === 'SUCCESS') {
+                    statusHTML = '<span class=\\"px-3 py-1 bg-green-500 bg-opacity-20 text-green-400 rounded-full text-xs font-semibold\\">SUCCESS</span>';
+                } else if (payment.payment_status === 'PENDING') {
+                    statusHTML = '<span class=\\"px-3 py-1 bg-yellow-500 bg-opacity-20 text-yellow-400 rounded-full text-xs font-semibold\\">PENDING</span>';
+                } else {
+                    statusHTML = '<span class=\\"px-3 py-1 bg-red-500 bg-opacity-20 text-red-400 rounded-full text-xs font-semibold\\">FAILED</span>';
+                }
+                
+                const dateStr = new Date(payment.created_at).toLocaleDateString('en-IN', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                html += '<tr class=\\"border-b border-gray-700 hover:bg-gray-800 hover:bg-opacity-30\\">' +
+                    '<td class=\\"py-3 px-4 text-gray-300\\">' + payment.order_id + '</td>' +
+                    '<td class=\\"py-3 px-4 text-gray-300\\">' + (payment.full_name || 'N/A') + '</td>' +
+                    '<td class=\\"py-3 px-4 text-gray-400 text-sm\\">' + (payment.email || 'N/A') + '</td>' +
+                    '<td class=\\"py-3 px-4 text-green-400 font-semibold\\">₹' + payment.amount + '</td>' +
+                    '<td class=\\"py-3 px-4\\">' + statusHTML + '</td>' +
+                    '<td class=\\"py-3 px-4 text-gray-400 text-sm\\">' + dateStr + '</td>' +
+                    '<td class=\\"py-3 px-4\\">' +
+                        '<button onclick=\\"viewPaymentDetails(\\'' + payment.order_id + '\\'\)\\" class=\\"text-yellow-400 hover:text-yellow-300\\">' +
+                            '<i class=\\"fas fa-eye\\"></i>' +
+                        '</button>' +
+                    '</td>' +
+                '</tr>';
+            });
+            
+            tbody.innerHTML = html;
         }
         
         function filterPayments() {
@@ -7747,16 +7745,16 @@ app.get('/admin-dashboard-iot', (c) => {
                 
                 if (data.success) {
                     const p = data.payment;
-                    alert(\`Payment Details:\\n\\n\` +
-                        \`Order ID: \${p.orderId}\\n\` +
-                        \`Transaction ID: \${p.txnId || 'N/A'}\\n\` +
-                        \`Student: \${p.studentName}\\n\` +
-                        \`Email: \${p.studentEmail}\\n\` +
-                        \`Amount: ₹\${p.amount}\\n\` +
-                        \`Status: \${p.status}\\n\` +
-                        \`Payment Method: \${p.paymentMethod || 'N/A'}\\n\` +
-                        \`Gateway: \${p.gatewayName}\\n\` +
-                        \`Date: \${new Date(p.createdAt).toLocaleString()}\`
+                    alert('Payment Details:\\n\\n' +
+                        'Order ID: ' + p.orderId + '\\n' +
+                        'Transaction ID: ' + (p.txnId || 'N/A') + '\\n' +
+                        'Student: ' + p.studentName + '\\n' +
+                        'Email: ' + p.studentEmail + '\\n' +
+                        'Amount: ₹' + p.amount + '\\n' +
+                        'Status: ' + p.status + '\\n' +
+                        'Payment Method: ' + (p.paymentMethod || 'N/A') + '\\n' +
+                        'Gateway: ' + p.gatewayName + '\\n' +
+                        'Date: ' + new Date(p.createdAt).toLocaleString()
                     );
                 } else {
                     alert('Failed to load payment details');
@@ -7796,7 +7794,7 @@ app.get('/admin-dashboard-iot', (c) => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = \`payments_\${new Date().toISOString().split('T')[0]}.csv\`;
+            a.download = 'payments_' + new Date().toISOString().split('T')[0] + '.csv';
             a.click();
             window.URL.revokeObjectURL(url);
         }
