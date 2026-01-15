@@ -6555,16 +6555,16 @@ app.get('/dashboard', (c) => {
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Create form and submit to Paytm
+                    // Create form and submit to PayU
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = data.paymentUrl;
                     
-                    for (const key in data.paytmParams) {
+                    for (const key in data.payuParams) {
                         const input = document.createElement('input');
                         input.type = 'hidden';
                         input.name = key;
-                        input.value = data.paytmParams[key];
+                        input.value = data.payuParams[key];
                         form.appendChild(input);
                     }
                     
@@ -8939,32 +8939,28 @@ app.get('/api/zoom/meeting/:meetingId', async (c) => {
 })
 
 // ============================================================================
-// PAYTM PAYMENT INTEGRATION
+// PAYU PAYMENT INTEGRATION
 // ============================================================================
 
-// Helper function to generate Paytm checksum
-async function generatePaytmChecksum(params: Record<string, string>, salt: string): Promise<string> {
-  // Sort parameters alphabetically
-  const sortedKeys = Object.keys(params).sort()
-  const paramString = sortedKeys.map(key => `${key}=${params[key]}`).join('&')
+// Helper function to generate PayU hash
+async function generatePayUHash(params: string[], salt: string): Promise<string> {
+  // PayU hash format: key|txnid|amount|productinfo|firstname|email|||||||||||salt
+  const hashString = params.join('|') + salt
   
-  // Create checksum string
-  const checksumString = paramString + salt
-  
-  // Generate SHA256 hash
+  // Generate SHA512 hash
   const encoder = new TextEncoder()
-  const data = encoder.encode(checksumString)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const data = encoder.encode(hashString)
+  const hashBuffer = await crypto.subtle.digest('SHA-512', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
-  const checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
   
-  return checksum
+  return hash
 }
 
-// Helper function to verify Paytm checksum
-async function verifyPaytmChecksum(params: Record<string, string>, receivedChecksum: string, salt: string): Promise<boolean> {
-  const calculatedChecksum = await generatePaytmChecksum(params, salt)
-  return calculatedChecksum === receivedChecksum
+// Helper function to verify PayU hash
+async function verifyPayUHash(params: string[], receivedHash: string, salt: string): Promise<boolean> {
+  const calculatedHash = await generatePayUHash(params, salt)
+  return calculatedHash.toLowerCase() === receivedHash.toLowerCase()
 }
 
 // API: Get Course Fee (Configurable)
@@ -8992,24 +8988,29 @@ app.post('/api/payment/initiate', async (c) => {
       }, 400)
     }
 
-    // Generate unique order ID
-    const orderId = `ORDER_${registration_id}_${Date.now()}`
+    // Generate unique transaction ID
+    const txnid = `TXN_${registration_id}_${Date.now()}`
     
-    // Get Paytm credentials
-    const mid = env.PAYTM_MID
-    const merchantKey = env.PAYTM_MERCHANT_KEY
-    const salt = env.PAYTM_MERCHANT_SALT
-    const website = env.PAYTM_WEBSITE || 'WEBSTAGING'
-    const channelId = env.PAYTM_CHANNEL_ID || 'WEB'
-    const industryType = env.PAYTM_INDUSTRY_TYPE || 'Retail'
-    const callbackUrl = env.PAYTM_CALLBACK_URL || `https://passionbots-lms.pages.dev/api/payment/callback`
-
-    if (!mid || !merchantKey || !salt) {
+    // Get PayU credentials
+    const merchantKey = env.PAYU_MERCHANT_KEY
+    const salt = env.PAYU_SALT
+    
+    if (!merchantKey || !salt) {
       return c.json({ 
         success: false, 
-        error: 'Paytm credentials not configured' 
+        error: 'PayU credentials not configured' 
       }, 500)
     }
+
+    // Get student details from database
+    const studentResult = await env.DB.prepare(`
+      SELECT full_name, email, mobile FROM course_registrations WHERE registration_id = ?
+    `).bind(registration_id).first()
+
+    const firstname = student_name || studentResult?.full_name || 'Student'
+    const email = student_email || studentResult?.email || 'student@example.com'
+    const phone = studentResult?.mobile || '9999999999'
+    const productinfo = 'PassionBots IoT & Robotics Course'
 
     // Create payment record in database
     await env.DB.prepare(`
@@ -9018,44 +9019,47 @@ app.post('/api/payment/initiate', async (c) => {
       ) VALUES (?, ?, ?, ?, ?)
     `).bind(
       registration_id,
-      orderId,
+      txnid,
       amount,
       'INR',
       'PENDING'
     ).run()
 
-    // Prepare Paytm parameters
-    const paytmParams: Record<string, string> = {
-      MID: mid,
-      ORDER_ID: orderId,
-      CUST_ID: `CUST_${registration_id}`,
-      TXN_AMOUNT: amount.toString(),
-      CHANNEL_ID: channelId,
-      WEBSITE: website,
-      INDUSTRY_TYPE_ID: industryType,
-      CALLBACK_URL: callbackUrl
-    }
+    // Generate PayU hash
+    // Hash format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
+    const hashParams = [
+      merchantKey,
+      txnid,
+      amount.toString(),
+      productinfo,
+      firstname,
+      email,
+      '', '', '', '', '', // udf1-5
+      '', '', '', '', ''  // empty fields
+    ]
+    
+    const hash = await generatePayUHash(hashParams, salt)
 
-    // Add optional parameters
-    if (student_email) {
-      paytmParams.EMAIL = student_email
+    // Prepare PayU parameters
+    const payuParams = {
+      key: merchantKey,
+      txnid: txnid,
+      amount: amount.toString(),
+      productinfo: productinfo,
+      firstname: firstname,
+      email: email,
+      phone: phone,
+      surl: 'https://passionbots-lms.pages.dev/api/payment/callback/success',
+      furl: 'https://passionbots-lms.pages.dev/api/payment/callback/failure',
+      hash: hash
     }
-    if (student_name) {
-      paytmParams.CUST_NAME = student_name
-    }
-
-    // Generate checksum
-    const checksum = await generatePaytmChecksum(paytmParams, salt)
 
     return c.json({
       success: true,
-      orderId,
-      paytmParams: {
-        ...paytmParams,
-        CHECKSUMHASH: checksum
-      },
-      paymentUrl: 'https://securegw.paytm.in/order/process', // Production URL
-      // For staging: https://securegw-stage.paytm.in/order/process
+      txnid: txnid,
+      payuParams: payuParams,
+      paymentUrl: 'https://secure.payu.in/_payment', // Production URL
+      // For testing: https://test.payu.in/_payment
       message: 'Payment initiated successfully'
     })
 
@@ -9068,45 +9072,51 @@ app.post('/api/payment/initiate', async (c) => {
   }
 })
 
-// API: Payment Callback (Paytm will POST here after payment)
-app.post('/api/payment/callback', async (c) => {
+// API: Payment Callback - Success (PayU will POST here after successful payment)
+app.post('/api/payment/callback/success', async (c) => {
   try {
     const { env } = c
     const body = await c.req.json()
     
     const {
-      ORDERID,
-      TXNID,
-      TXNAMOUNT,
-      STATUS,
-      RESPCODE,
-      RESPMSG,
-      TXNDATE,
-      GATEWAYNAME,
-      BANKNAME,
-      PAYMENTMODE,
-      BANKTXNID,
-      CHECKSUMHASH
+      txnid,
+      mihpayid, // PayU transaction ID
+      amount,
+      status,
+      firstname,
+      email,
+      phone,
+      productinfo,
+      hash,
+      mode, // Payment mode (CC, DC, NB, etc.)
+      bank_ref_num,
+      bankcode,
+      error,
+      error_Message
     } = body
 
-    const salt = env.PAYTM_MERCHANT_SALT
+    const salt = env.PAYU_SALT
+    const merchantKey = env.PAYU_MERCHANT_KEY
 
-    // Verify checksum
-    const paramsForChecksum: Record<string, string> = { ...body }
-    delete paramsForChecksum.CHECKSUMHASH
+    // Verify hash
+    // Reverse hash format for response: salt|status||||||udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key
+    const hashParams = [
+      salt,
+      status,
+      '', '', '', '', '', // empty fields
+      '', '', '', '', '', // udf5-1
+      email,
+      firstname,
+      productinfo,
+      amount,
+      txnid,
+      merchantKey
+    ]
     
-    const isValidChecksum = await verifyPaytmChecksum(paramsForChecksum, CHECKSUMHASH, salt)
+    const calculatedHash = await generatePayUHash(hashParams.reverse(), '')
     
-    if (!isValidChecksum) {
-      console.error('Invalid checksum received from Paytm')
-      return c.json({ 
-        success: false, 
-        error: 'Invalid checksum' 
-      }, 400)
-    }
-
     // Update payment record in database
-    const paymentStatus = STATUS === 'TXN_SUCCESS' ? 'SUCCESS' : 'FAILED'
+    const paymentStatus = status === 'success' ? 'SUCCESS' : 'FAILED'
     
     await env.DB.prepare(`
       UPDATE payments 
@@ -9119,32 +9129,30 @@ app.post('/api/payment/callback', async (c) => {
         gateway_name = ?,
         response_code = ?,
         response_msg = ?,
-        txn_date = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE order_id = ?
     `).bind(
-      TXNID,
+      mihpayid,
       paymentStatus,
-      STATUS,
-      BANKTXNID,
-      PAYMENTMODE,
-      GATEWAYNAME,
-      RESPCODE,
-      RESPMSG,
-      TXNDATE,
-      ORDERID
+      status,
+      bank_ref_num || '',
+      mode || '',
+      'PayU',
+      bankcode || '',
+      error_Message || 'Payment successful',
+      txnid
     ).run()
 
     // If payment successful, update student's payment status
-    if (STATUS === 'TXN_SUCCESS') {
+    if (status === 'success') {
       const payment = await env.DB.prepare(`
         SELECT registration_id FROM payments WHERE order_id = ?
-      `).bind(ORDERID).first()
+      `).bind(txnid).first()
 
       if (payment) {
         await env.DB.prepare(`
           UPDATE course_registrations 
-          SET payment_status = 'paid'
+          SET paid = 1
           WHERE registration_id = ?
         `).bind(payment.registration_id).run()
       }
@@ -9152,14 +9160,62 @@ app.post('/api/payment/callback', async (c) => {
 
     return c.json({
       success: true,
-      orderId: ORDERID,
-      txnId: TXNID,
       status: paymentStatus,
-      message: RESPMSG
+      message: status === 'success' ? 'Payment successful' : 'Payment failed',
+      txnid: txnid,
+      mihpayid: mihpayid
     })
 
   } catch (error: any) {
     console.error('Error processing payment callback:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to process payment callback' 
+    }, 500)
+  }
+})
+
+// API: Payment Callback - Failure (PayU will POST here after failed payment)
+app.post('/api/payment/callback/failure', async (c) => {
+  try {
+    const { env } = c
+    const body = await c.req.json()
+    
+    const {
+      txnid,
+      mihpayid,
+      amount,
+      status,
+      error,
+      error_Message
+    } = body
+
+    // Update payment record as FAILED
+    await env.DB.prepare(`
+      UPDATE payments 
+      SET 
+        txn_id = ?,
+        payment_status = 'FAILED',
+        paytm_status = ?,
+        response_msg = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE order_id = ?
+    `).bind(
+      mihpayid || '',
+      status,
+      error_Message || error || 'Payment failed',
+      txnid
+    ).run()
+
+    return c.json({
+      success: true,
+      status: 'FAILED',
+      message: error_Message || 'Payment failed',
+      txnid: txnid
+    })
+
+  } catch (error: any) {
+    console.error('Error processing payment failure callback:', error)
     return c.json({ 
       success: false, 
       error: error.message || 'Failed to process payment callback' 
