@@ -9054,8 +9054,8 @@ app.post('/api/payment/initiate', async (c) => {
         ...paytmParams,
         CHECKSUMHASH: checksum
       },
-      paymentUrl: 'https://securegw-stage.paytm.in/order/process', // Staging URL
-      // For production: https://securegw.paytm.in/order/process
+      paymentUrl: 'https://securegw.paytm.in/order/process', // Production URL
+      // For staging: https://securegw-stage.paytm.in/order/process
       message: 'Payment initiated successfully'
     })
 
