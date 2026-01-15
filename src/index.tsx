@@ -8539,4 +8539,371 @@ app.get('/api/zoom/meeting/:meetingId', async (c) => {
   }
 })
 
+// ============================================================================
+// PAYTM PAYMENT INTEGRATION
+// ============================================================================
+
+// Helper function to generate Paytm checksum
+async function generatePaytmChecksum(params: Record<string, string>, salt: string): Promise<string> {
+  // Sort parameters alphabetically
+  const sortedKeys = Object.keys(params).sort()
+  const paramString = sortedKeys.map(key => `${key}=${params[key]}`).join('&')
+  
+  // Create checksum string
+  const checksumString = paramString + salt
+  
+  // Generate SHA256 hash
+  const encoder = new TextEncoder()
+  const data = encoder.encode(checksumString)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  return checksum
+}
+
+// Helper function to verify Paytm checksum
+async function verifyPaytmChecksum(params: Record<string, string>, receivedChecksum: string, salt: string): Promise<boolean> {
+  const calculatedChecksum = await generatePaytmChecksum(params, salt)
+  return calculatedChecksum === receivedChecksum
+}
+
+// API: Get Course Fee (Configurable)
+app.get('/api/payment/course-fee', (c) => {
+  return c.json({
+    success: true,
+    courseFee: 2999, // INR - can be made dynamic based on course type
+    currency: 'INR',
+    courseName: 'PassionBots IoT & Robotics Course'
+  })
+})
+
+// API: Initiate Payment
+app.post('/api/payment/initiate', async (c) => {
+  try {
+    const { env } = c
+    const body = await c.req.json()
+    
+    const { registration_id, amount, student_email, student_name } = body
+
+    if (!registration_id || !amount) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: registration_id, amount' 
+      }, 400)
+    }
+
+    // Generate unique order ID
+    const orderId = `ORDER_${registration_id}_${Date.now()}`
+    
+    // Get Paytm credentials
+    const mid = env.PAYTM_MID
+    const merchantKey = env.PAYTM_MERCHANT_KEY
+    const salt = env.PAYTM_MERCHANT_SALT
+    const website = env.PAYTM_WEBSITE || 'WEBSTAGING'
+    const channelId = env.PAYTM_CHANNEL_ID || 'WEB'
+    const industryType = env.PAYTM_INDUSTRY_TYPE || 'Retail'
+    const callbackUrl = env.PAYTM_CALLBACK_URL || `https://passionbots-lms.pages.dev/api/payment/callback`
+
+    if (!mid || !merchantKey || !salt) {
+      return c.json({ 
+        success: false, 
+        error: 'Paytm credentials not configured' 
+      }, 500)
+    }
+
+    // Create payment record in database
+    await env.DB.prepare(`
+      INSERT INTO payments (
+        registration_id, order_id, amount, currency, payment_status
+      ) VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      registration_id,
+      orderId,
+      amount,
+      'INR',
+      'PENDING'
+    ).run()
+
+    // Prepare Paytm parameters
+    const paytmParams: Record<string, string> = {
+      MID: mid,
+      ORDER_ID: orderId,
+      CUST_ID: `CUST_${registration_id}`,
+      TXN_AMOUNT: amount.toString(),
+      CHANNEL_ID: channelId,
+      WEBSITE: website,
+      INDUSTRY_TYPE_ID: industryType,
+      CALLBACK_URL: callbackUrl
+    }
+
+    // Add optional parameters
+    if (student_email) {
+      paytmParams.EMAIL = student_email
+    }
+    if (student_name) {
+      paytmParams.CUST_NAME = student_name
+    }
+
+    // Generate checksum
+    const checksum = await generatePaytmChecksum(paytmParams, salt)
+
+    return c.json({
+      success: true,
+      orderId,
+      paytmParams: {
+        ...paytmParams,
+        CHECKSUMHASH: checksum
+      },
+      paymentUrl: 'https://securegw-stage.paytm.in/order/process', // Staging URL
+      // For production: https://securegw.paytm.in/order/process
+      message: 'Payment initiated successfully'
+    })
+
+  } catch (error: any) {
+    console.error('Error initiating payment:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to initiate payment' 
+    }, 500)
+  }
+})
+
+// API: Payment Callback (Paytm will POST here after payment)
+app.post('/api/payment/callback', async (c) => {
+  try {
+    const { env } = c
+    const body = await c.req.json()
+    
+    const {
+      ORDERID,
+      TXNID,
+      TXNAMOUNT,
+      STATUS,
+      RESPCODE,
+      RESPMSG,
+      TXNDATE,
+      GATEWAYNAME,
+      BANKNAME,
+      PAYMENTMODE,
+      BANKTXNID,
+      CHECKSUMHASH
+    } = body
+
+    const salt = env.PAYTM_MERCHANT_SALT
+
+    // Verify checksum
+    const paramsForChecksum: Record<string, string> = { ...body }
+    delete paramsForChecksum.CHECKSUMHASH
+    
+    const isValidChecksum = await verifyPaytmChecksum(paramsForChecksum, CHECKSUMHASH, salt)
+    
+    if (!isValidChecksum) {
+      console.error('Invalid checksum received from Paytm')
+      return c.json({ 
+        success: false, 
+        error: 'Invalid checksum' 
+      }, 400)
+    }
+
+    // Update payment record in database
+    const paymentStatus = STATUS === 'TXN_SUCCESS' ? 'SUCCESS' : 'FAILED'
+    
+    await env.DB.prepare(`
+      UPDATE payments 
+      SET 
+        txn_id = ?,
+        payment_status = ?,
+        paytm_status = ?,
+        bank_txn_id = ?,
+        payment_method = ?,
+        gateway_name = ?,
+        response_code = ?,
+        response_msg = ?,
+        txn_date = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE order_id = ?
+    `).bind(
+      TXNID,
+      paymentStatus,
+      STATUS,
+      BANKTXNID,
+      PAYMENTMODE,
+      GATEWAYNAME,
+      RESPCODE,
+      RESPMSG,
+      TXNDATE,
+      ORDERID
+    ).run()
+
+    // If payment successful, update student's payment status
+    if (STATUS === 'TXN_SUCCESS') {
+      const payment = await env.DB.prepare(`
+        SELECT registration_id FROM payments WHERE order_id = ?
+      `).bind(ORDERID).first()
+
+      if (payment) {
+        await env.DB.prepare(`
+          UPDATE course_registrations 
+          SET payment_status = 'paid'
+          WHERE registration_id = ?
+        `).bind(payment.registration_id).run()
+      }
+    }
+
+    return c.json({
+      success: true,
+      orderId: ORDERID,
+      txnId: TXNID,
+      status: paymentStatus,
+      message: RESPMSG
+    })
+
+  } catch (error: any) {
+    console.error('Error processing payment callback:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to process payment callback' 
+    }, 500)
+  }
+})
+
+// API: Check Payment Status
+app.get('/api/payment/status/:orderId', async (c) => {
+  try {
+    const { env } = c
+    const orderId = c.req.param('orderId')
+
+    const payment = await env.DB.prepare(`
+      SELECT 
+        p.*,
+        cr.full_name,
+        cr.email
+      FROM payments p
+      LEFT JOIN course_registrations cr ON p.registration_id = cr.registration_id
+      WHERE p.order_id = ?
+    `).bind(orderId).first()
+
+    if (!payment) {
+      return c.json({ 
+        success: false, 
+        error: 'Payment not found' 
+      }, 404)
+    }
+
+    return c.json({
+      success: true,
+      payment: {
+        orderId: payment.order_id,
+        txnId: payment.txn_id,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: payment.payment_status,
+        paytmStatus: payment.paytm_status,
+        paymentMethod: payment.payment_method,
+        gatewayName: payment.gateway_name,
+        txnDate: payment.txn_date,
+        studentName: payment.full_name,
+        studentEmail: payment.email,
+        createdAt: payment.created_at,
+        updatedAt: payment.updated_at
+      }
+    })
+
+  } catch (error: any) {
+    console.error('Error checking payment status:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to check payment status' 
+    }, 500)
+  }
+})
+
+// API: Get Student Payment History
+app.get('/api/payment/student/:registrationId', async (c) => {
+  try {
+    const { env } = c
+    const registrationId = c.req.param('registrationId')
+
+    const payments = await env.DB.prepare(`
+      SELECT * FROM payments 
+      WHERE registration_id = ?
+      ORDER BY created_at DESC
+    `).bind(registrationId).all()
+
+    return c.json({
+      success: true,
+      payments: payments.results || []
+    })
+
+  } catch (error: any) {
+    console.error('Error fetching payment history:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to fetch payment history' 
+    }, 500)
+  }
+})
+
+// API: Admin - Get All Payments
+app.get('/api/admin/payments', async (c) => {
+  try {
+    const { env } = c
+
+    const payments = await env.DB.prepare(`
+      SELECT 
+        p.*,
+        cr.full_name,
+        cr.email,
+        cr.mobile,
+        cr.college_name
+      FROM payments p
+      LEFT JOIN course_registrations cr ON p.registration_id = cr.registration_id
+      ORDER BY p.created_at DESC
+    `).all()
+
+    return c.json({
+      success: true,
+      payments: payments.results || []
+    })
+
+  } catch (error: any) {
+    console.error('Error fetching all payments:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to fetch payments' 
+    }, 500)
+  }
+})
+
+// API: Admin - Payment Statistics
+app.get('/api/admin/payment-stats', async (c) => {
+  try {
+    const { env } = c
+
+    const stats = await env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total_transactions,
+        SUM(CASE WHEN payment_status = 'SUCCESS' THEN 1 ELSE 0 END) as successful_payments,
+        SUM(CASE WHEN payment_status = 'FAILED' THEN 1 ELSE 0 END) as failed_payments,
+        SUM(CASE WHEN payment_status = 'PENDING' THEN 1 ELSE 0 END) as pending_payments,
+        SUM(CASE WHEN payment_status = 'SUCCESS' THEN amount ELSE 0 END) as total_revenue,
+        AVG(CASE WHEN payment_status = 'SUCCESS' THEN amount ELSE NULL END) as avg_transaction_amount
+      FROM payments
+    `).first()
+
+    return c.json({
+      success: true,
+      stats
+    })
+
+  } catch (error: any) {
+    console.error('Error fetching payment stats:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to fetch payment statistics' 
+    }, 500)
+  }
+})
+
 export default app
