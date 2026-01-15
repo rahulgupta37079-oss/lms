@@ -2379,9 +2379,9 @@ app.get('/admin', (c) => {
 })
 
 app.get('/', async (c) => {
-  // Serve marketing landing page
-  // Since we're using serveStatic for marketing-landing.html, redirect to it
-  return c.redirect('/marketing-landing.html', 301)
+  // Redirect to student portal for now
+  // Marketing landing page is available at /public/marketing-landing.html
+  return c.redirect('/student-portal', 302)
 })
 
 // ============================================
