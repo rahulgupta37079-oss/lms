@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PassionBots LMS - Transform Your Future with IoT & Robotics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4);
+        }
+        
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .testimonial-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(10px);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .price-tag {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .price-tag::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -50%; }
+            100% { left: 150%; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-robot text-4xl gradient-text"></i>
+                    <span class="text-2xl font-bold gradient-text">PassionBots LMS</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-700 hover:text-purple-600 transition">Features</a>
+                    <a href="#curriculum" class="text-gray-700 hover:text-purple-600 transition">Curriculum</a>
+                    <a href="#testimonials" class="text-gray-700 hover:text-purple-600 transition">Testimonials</a>
+                    <a href="#pricing" class="text-gray-700 hover:text-purple-600 transition">Pricing</a>
+                    <a href="/student-portal" class="text-purple-600 hover:text-purple-700 font-semibold">Login</a>
+                    <a href="/register" class="btn-primary text-white px-6 py-3 rounded-full font-semibold">
+                        <i class="fas fa-rocket mr-2"></i>Enroll Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg text-white pt-32 pb-20 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h1 class="text-5xl md:text-6xl font-black mb-6 leading-tight">
+                        Master IoT & Robotics in <span class="text-yellow-300">2026</span>
+                    </h1>
+                    <p class="text-xl mb-8 text-purple-100 leading-relaxed">
+                        Transform your future with hands-on training, live mentorship, and industry-standard projects. 
+                        Join 500+ students already building the future!
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="/register" class="bg-white text-purple-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-yellow-300 hover:text-purple-900 transition inline-flex items-center justify-center">
+                            <i class="fas fa-graduation-cap mr-2"></i>Start Learning Today
+                        </a>
+                        <a href="#curriculum" class="border-2 border-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-purple-600 transition inline-flex items-center justify-center">
+                            <i class="fas fa-play-circle mr-2"></i>View Curriculum
+                        </a>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-6 mt-12">
+                        <div>
+                            <div class="text-4xl font-bold text-yellow-300">500+</div>
+                            <div class="text-purple-200">Students</div>
+                        </div>
+                        <div>
+                            <div class="text-4xl font-bold text-yellow-300">50+</div>
+                            <div class="text-purple-200">Projects</div>
+                        </div>
+                        <div>
+                            <div class="text-4xl font-bold text-yellow-300">95%</div>
+                            <div class="text-purple-200">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative floating">
+                    <div class="bg-white bg-opacity-10 p-8 rounded-3xl backdrop-filter backdrop-blur-lg border border-white border-opacity-20 shadow-2xl">
+                        <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=600" alt="Robotics" class="rounded-2xl shadow-lg">
+                        <div class="absolute -top-6 -right-6 bg-yellow-400 text-purple-900 px-6 py-3 rounded-full font-bold text-lg shadow-xl">
+                            🎓 Certified Course
+                        </div>
+                        <div class="absolute -bottom-6 -left-6 bg-green-400 text-purple-900 px-6 py-3 rounded-full font-bold text-lg shadow-xl">
+                            ✅ 100% Practical
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black gradient-text mb-4">Why Choose PassionBots?</h2>
+                <p class="text-xl text-gray-600">Everything you need to become an IoT & Robotics expert</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="feature-card bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-2xl shadow-lg">
+                    <div class="bg-purple-600 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-video text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Live Interactive Classes</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Join live sessions with expert mentors. Ask questions in real-time and get instant doubt clearing.
+                    </p>
+                </div>
+                
+                <div class="feature-card bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl shadow-lg">
+                    <div class="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-laptop-code text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Hands-On Projects</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Build 10+ real-world projects including smart home systems, robots, and IoT applications.
+                    </p>
+                </div>
+                
+                <div class="feature-card bg-gradient-to-br from-green-50 to-green-100 p-8 rounded-2xl shadow-lg">
+                    <div class="bg-green-600 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-certificate text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Industry Certificate</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Get a verified certificate with QR code verification. Share on LinkedIn and boost your profile!
+                    </p>
+                </div>
+                
+                <div class="feature-card bg-gradient-to-br from-yellow-50 to-yellow-100 p-8 rounded-2xl shadow-lg">
+                    <div class="bg-yellow-600 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-users text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">1:1 Mentorship</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Personal guidance from industry experts. Get career advice and technical support.
+                    </p>
+                </div>
+                
+                <div class="feature-card bg-gradient-to-br from-pink-50 to-pink-100 p-8 rounded-2xl shadow-lg">
+                    <div class="bg-pink-600 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-infinity text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Lifetime Access</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Access all course materials forever. Watch recorded sessions anytime, anywhere.
+                    </p>
+                </div>
+                
+                <div class="feature-card bg-gradient-to-br from-indigo-50 to-indigo-100 p-8 rounded-2xl shadow-lg">
+                    <div class="bg-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-briefcase text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Job Assistance</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Resume building, interview prep, and job referrals to top companies in IoT industry.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Curriculum Section -->
+    <section id="curriculum" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black gradient-text mb-4">Complete Curriculum</h2>
+                <p class="text-xl text-gray-600">Everything from basics to advanced in 12 weeks</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-purple-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">IoT Fundamentals</h3>
+                            <p class="text-gray-600">Sensors, actuators, microcontrollers, Arduino basics</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Robotics Basics</h3>
+                            <p class="text-gray-600">Motors, wheels, chassis, basic robot assembly</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-green-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Wireless Communication</h3>
+                            <p class="text-gray-600">Wi-Fi, Bluetooth, MQTT, cloud connectivity</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-yellow-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">4</div>
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Smart Home Projects</h3>
+                            <p class="text-gray-600">Home automation, voice control, mobile apps</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-pink-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">5</div>
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Advanced Robotics</h3>
+                            <p class="text-gray-600">Line following, obstacle avoidance, autonomous robots</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-indigo-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">6</div>
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Final Capstone Project</h3>
+                            <p class="text-gray-600">Build your own IoT+Robotics solution from scratch</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-20 gradient-bg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black text-white mb-4">Success Stories</h2>
+                <p class="text-xl text-purple-100">Hear from our amazing students</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="testimonial-card text-white p-8 rounded-2xl">
+                    <div class="flex items-center mb-4">
+                        <img src="https://ui-avatars.com/api/?name=Rahul+Sharma&size=64&background=random" alt="Student" class="w-16 h-16 rounded-full mr-4">
+                        <div>
+                            <div class="font-bold text-lg">Rahul Sharma</div>
+                            <div class="text-purple-200">B.Tech Student</div>
+                        </div>
+                    </div>
+                    <div class="text-yellow-300 mb-3">⭐⭐⭐⭐⭐</div>
+                    <p class="text-purple-100 leading-relaxed">
+                        "Best IoT course I've taken! The hands-on projects and live mentorship helped me land an internship at a robotics startup."
+                    </p>
+                </div>
+                
+                <div class="testimonial-card text-white p-8 rounded-2xl">
+                    <div class="flex items-center mb-4">
+                        <img src="https://ui-avatars.com/api/?name=Priya+Patel&size=64&background=random" alt="Student" class="w-16 h-16 rounded-full mr-4">
+                        <div>
+                            <div class="font-bold text-lg">Priya Patel</div>
+                            <div class="text-purple-200">Engineering Student</div>
+                        </div>
+                    </div>
+                    <div class="text-yellow-300 mb-3">⭐⭐⭐⭐⭐</div>
+                    <p class="text-purple-100 leading-relaxed">
+                        "The certificate helped me stand out in job interviews. The mentors are super supportive and always available to help!"
+                    </p>
+                </div>
+                
+                <div class="testimonial-card text-white p-8 rounded-2xl">
+                    <div class="flex items-center mb-4">
+                        <img src="https://ui-avatars.com/api/?name=Arjun+Kumar&size=64&background=random" alt="Student" class="w-16 h-16 rounded-full mr-4">
+                        <div>
+                            <div class="font-bold text-lg">Arjun Kumar</div>
+                            <div class="text-purple-200">Working Professional</div>
+                        </div>
+                    </div>
+                    <div class="text-yellow-300 mb-3">⭐⭐⭐⭐⭐</div>
+                    <p class="text-purple-100 leading-relaxed">
+                        "Switched my career to IoT after this course. The practical approach and real projects gave me the confidence to make the leap!"
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black gradient-text mb-4">Simple, Transparent Pricing</h2>
+                <p class="text-xl text-gray-600">One-time payment. Lifetime access. No hidden fees.</p>
+            </div>
+            
+            <div class="max-w-2xl mx-auto">
+                <div class="price-tag bg-gradient-to-br from-purple-600 to-indigo-600 text-white p-12 rounded-3xl shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-yellow-400 text-purple-900 px-6 py-2 rounded-bl-3xl font-bold">
+                        🔥 LIMITED TIME OFFER
+                    </div>
+                    
+                    <div class="text-center mt-8">
+                        <h3 class="text-3xl font-bold mb-4">Complete IoT & Robotics Course</h3>
+                        <div class="mb-6">
+                            <span class="text-2xl line-through text-purple-200">₹5,999</span>
+                            <div class="text-6xl font-black text-yellow-300 my-4">₹2,999</div>
+                            <div class="text-xl text-purple-200">One-time payment • Lifetime access</div>
+                        </div>
+                        
+                        <div class="bg-white bg-opacity-10 p-6 rounded-2xl backdrop-blur-lg mb-8">
+                            <div class="text-left space-y-3">
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-300 mr-3"></i>
+                                    <span>50+ hours of live classes</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-300 mr-3"></i>
+                                    <span>10+ hands-on projects</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-300 mr-3"></i>
+                                    <span>Industry-recognized certificate</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-300 mr-3"></i>
+                                    <span>1:1 mentorship sessions</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-300 mr-3"></i>
+                                    <span>Job assistance & referrals</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-300 mr-3"></i>
+                                    <span>Lifetime course access</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <a href="/register" class="bg-yellow-400 text-purple-900 px-12 py-5 rounded-full font-black text-xl hover:bg-yellow-300 transition inline-flex items-center justify-center shadow-2xl">
+                            <i class="fas fa-rocket mr-3"></i>Enroll Now for ₹2,999
+                        </a>
+                        
+                        <div class="mt-6 text-sm text-purple-200">
+                            🔒 Secure payment via PayU • 💳 All payment methods accepted
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-8 text-gray-600">
+                    <p class="mb-2">💰 <strong>50% OFF</strong> - Save ₹3,000 Today!</p>
+                    <p>⏰ Offer ends soon. Limited seats available!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black gradient-text mb-4">Frequently Asked Questions</h2>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="font-bold text-lg mb-2">❓ Do I need prior programming experience?</h3>
+                    <p class="text-gray-600">No! We start from basics and teach everything step-by-step. Perfect for beginners!</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="font-bold text-lg mb-2">❓ Is the certificate recognized?</h3>
+                    <p class="text-gray-600">Yes! Our certificate is industry-recognized with QR code verification. Share it on LinkedIn!</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="font-bold text-lg mb-2">❓ What if I miss a live class?</h3>
+                    <p class="text-gray-600">All sessions are recorded and available for lifetime access. Watch anytime!</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="font-bold text-lg mb-2">❓ Will I get job assistance?</h3>
+                    <p class="text-gray-600">Yes! We provide resume building, interview prep, and referrals to IoT companies.</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="font-bold text-lg mb-2">❓ What payment methods do you accept?</h3>
+                    <p class="text-gray-600">We accept all major payment methods: Credit/Debit Cards, UPI, Net Banking, and Wallets via secure PayU gateway.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="gradient-bg text-white py-20">
+        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl md:text-5xl font-black mb-6">Ready to Transform Your Career?</h2>
+            <p class="text-xl text-purple-100 mb-8">
+                Join 500+ students already building their future in IoT & Robotics
+            </p>
+            <a href="/register" class="bg-yellow-400 text-purple-900 px-12 py-5 rounded-full font-black text-xl hover:bg-yellow-300 transition inline-flex items-center justify-center shadow-2xl">
+                <i class="fas fa-graduation-cap mr-3"></i>Enroll Now for ₹2,999
+            </a>
+            <div class="mt-6 text-purple-200">
+                💳 Secure payment • 🎓 Instant access • 💯 Lifetime support
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fas fa-robot text-2xl text-purple-400"></i>
+                        <span class="text-xl font-bold">PassionBots LMS</span>
+                    </div>
+                    <p class="text-gray-400">Empowering Innovation Through IoT & Robotics</p>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#features" class="hover:text-white transition">Features</a></li>
+                        <li><a href="#curriculum" class="hover:text-white transition">Curriculum</a></li>
+                        <li><a href="#pricing" class="hover:text-white transition">Pricing</a></li>
+                        <li><a href="/student-portal" class="hover:text-white transition">Student Login</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Support</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition">Contact Us</a></li>
+                        <li><a href="/verify-certificate" class="hover:text-white transition">Verify Certificate</a></li>
+                        <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Connect With Us</h4>
+                    <div class="flex space-x-4 text-2xl">
+                        <a href="#" class="text-gray-400 hover:text-blue-400 transition"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-blue-300 transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-pink-400 transition"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-blue-600 transition"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                    <div class="mt-4 text-gray-400">
+                        <p>📧 support@passionbots.com</p>
+                        <p>📱 +91-XXXXXXXXXX</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>© 2026 PassionBots LMS. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

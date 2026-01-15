@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
+import EmailService from './services/email'
+import CertificateService from './services/certificate'
 
 type Bindings = {
   DB: D1Database;
@@ -2376,62 +2378,8 @@ app.get('/admin', (c) => {
 })
 
 app.get('/', (c) => {
-  const v = Date.now(); // Cache busting version
-  return c.html(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PassionBots LMS v7.0 - IoT & Robotics Excellence</title>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#667eea">
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Chart.js for Analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
-    <!-- Razorpay Checkout -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    
-    <!-- REDESIGNED UI v7.0 - Modern & Clean -->
-    <link href="/static/styles-redesign.css?v=${v}" rel="stylesheet">
-</head>
-<body>
-    <!-- Animated Background -->
-    <div class="animated-bg"></div>
-    
-    <!-- Main App -->
-    <div id="app">
-      <div style="text-align:center;padding:50px;color:#fff;">
-        <div class="spinner"></div>
-        <p>Loading PassionBots LMS...</p>
-      </div>
-    </div>
-    
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/static/app-redesign-combined.js?v=${v}"></script>
-    <script src="/static/app-subscriptions.js?v=${v}"></script>
-    <script src="/static/app-zoom-integration.js?v=${v}"></script>
-    <script src="/static/app-lesson-interface-enhanced.js?v=${v}"></script>
-    <script src="/static/app-certificates.js?v=${v}"></script>
-    <script src="/static/app-admin-certificates.js?v=${v}"></script>
-    <script>
-      window.onerror = function(msg, url, line, col, error) {
-        console.error('ERROR:', msg, 'at', url, 'line', line, 'col', col);
-        console.error('Error object:', error);
-        document.getElementById('app').innerHTML = '<div style="padding:50px;color:#fff;background:rgba(255,0,0,0.2);border:2px solid #ff6b6b;border-radius:12px;max-width:800px;margin:50px auto;"><h2>🚨 Error Loading App</h2><p style="font-size:18px;margin:20px 0;"><strong>Message:</strong> ' + msg + '</p><p><strong>Location:</strong> ' + url + ':' + line + '</p><p><strong>Stack:</strong> ' + (error ? error.stack : 'N/A') + '</p><button onclick="location.reload()" style="background:#667eea;color:white;padding:12px 30px;border:none;border-radius:8px;font-size:16px;cursor:pointer;margin-top:20px;">Reload Page</button></div>';
-      };
-    </script>
-</body>
-</html>
-  `)
+  // Redirect to marketing landing page
+  return c.redirect('/marketing-landing.html')
 })
 
 // ============================================
@@ -5902,14 +5850,52 @@ app.post('/api/register', async (c) => {
     // Insert registration
     const result = await env.DB.prepare(`
       INSERT INTO course_registrations 
-      (full_name, email, mobile, college_name, year_of_study, course_type, payment_status, status)
-      VALUES (?, ?, ?, ?, ?, 'iot_robotics', 'free', 'active')
+      (full_name, email, mobile, college_name, year_of_study, course_type, payment_status, status, registration_email_sent)
+      VALUES (?, ?, ?, ?, ?, 'iot_robotics', 'free', 'active', 0)
     `).bind(full_name, email, mobile, college_name || null, year_of_study || null).run()
+
+    const registrationId = result.meta.last_row_id
+
+    // Send registration confirmation email (async, don't wait)
+    if (env.RESEND_API_KEY) {
+      try {
+        const emailService = new EmailService({
+          resendApiKey: env.RESEND_API_KEY,
+          fromEmail: 'noreply@passionbots.com',
+          fromName: 'PassionBots LMS'
+        })
+
+        const emailResult = await emailService.sendRegistrationConfirmation(
+          email,
+          full_name,
+          registrationId as number,
+          'PassionBots IoT & Robotics Course'
+        )
+
+        if (emailResult.success) {
+          // Update registration_email_sent flag
+          await env.DB.prepare(`
+            UPDATE course_registrations 
+            SET registration_email_sent = 1 
+            WHERE registration_id = ?
+          `).bind(registrationId).run()
+
+          // Log email
+          await env.DB.prepare(`
+            INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status, message_id)
+            VALUES (?, 'registration', ?, 'Welcome to PassionBots - Registration Confirmed!', 'sent', ?)
+          `).bind(registrationId, email, emailResult.messageId || '').run()
+        }
+      } catch (emailError) {
+        console.error('Registration email error:', emailError)
+        // Don't fail registration if email fails
+      }
+    }
 
     return c.json({
       success: true,
       message: 'Registration successful! Welcome to PassionBots IoT & Robotics Course.',
-      registration_id: result.meta.last_row_id
+      registration_id: registrationId
     })
   } catch (error) {
     console.error('Registration error:', error)
@@ -9147,11 +9133,72 @@ app.post('/api/payment/callback/success', async (c) => {
       `).bind(txnid).first()
 
       if (payment) {
+        // Update payment status
         await env.DB.prepare(`
           UPDATE course_registrations 
-          SET paid = 1
+          SET payment_status = 'paid'
           WHERE registration_id = ?
         `).bind(payment.registration_id).run()
+
+        // Get student details
+        const student = await env.DB.prepare(`
+          SELECT full_name, email, payment_email_sent 
+          FROM course_registrations 
+          WHERE registration_id = ?
+        `).bind(payment.registration_id).first()
+
+        // Send payment success email (async)
+        if (env.RESEND_API_KEY && student && !student.payment_email_sent) {
+          try {
+            const emailService = new EmailService({
+              resendApiKey: env.RESEND_API_KEY
+            })
+
+            const emailResult = await emailService.sendPaymentSuccess(
+              student.email as string,
+              student.full_name as string,
+              txnid,
+              parseFloat(amount),
+              mihpayid,
+              'PassionBots IoT & Robotics Course'
+            )
+
+            if (emailResult.success) {
+              await env.DB.prepare(`
+                UPDATE course_registrations 
+                SET payment_email_sent = 1 
+                WHERE registration_id = ?
+              `).bind(payment.registration_id).run()
+
+              await env.DB.prepare(`
+                INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status, message_id)
+                VALUES (?, 'payment_success', ?, ?, 'sent', ?)
+              `).bind(
+                payment.registration_id, 
+                student.email, 
+                `Payment Successful - ₹${amount} | PassionBots IoT & Robotics Course`,
+                emailResult.messageId || ''
+              ).run()
+            }
+
+            // Send course access email
+            await emailService.sendCourseAccess(
+              student.email as string,
+              student.full_name as string,
+              'PassionBots IoT & Robotics Course',
+              'https://passionbots-lms.pages.dev/dashboard'
+            )
+
+            await env.DB.prepare(`
+              UPDATE course_registrations 
+              SET course_access_email_sent = 1 
+              WHERE registration_id = ?
+            `).bind(payment.registration_id).run()
+
+          } catch (emailError) {
+            console.error('Payment success email error:', emailError)
+          }
+        }
       }
     }
 
@@ -9203,6 +9250,46 @@ app.post('/api/payment/callback/failure', async (c) => {
       error_Message || error || 'Payment failed',
       txnid
     ).run()
+
+    // Get student details and send failure email
+    const payment = await env.DB.prepare(`
+      SELECT registration_id FROM payments WHERE order_id = ?
+    `).bind(txnid).first()
+
+    if (payment && env.RESEND_API_KEY) {
+      const student = await env.DB.prepare(`
+        SELECT full_name, email 
+        FROM course_registrations 
+        WHERE registration_id = ?
+      `).bind(payment.registration_id).first()
+
+      if (student) {
+        try {
+          const emailService = new EmailService({
+            resendApiKey: env.RESEND_API_KEY
+          })
+
+          await emailService.sendPaymentFailure(
+            student.email as string,
+            student.full_name as string,
+            txnid,
+            parseFloat(amount),
+            error_Message || error || 'Payment declined'
+          )
+
+          await env.DB.prepare(`
+            INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status)
+            VALUES (?, 'payment_failure', ?, ?, 'sent')
+          `).bind(
+            payment.registration_id,
+            student.email,
+            `Payment Failed - Please Try Again | Order ${txnid}`
+          ).run()
+        } catch (emailError) {
+          console.error('Payment failure email error:', emailError)
+        }
+      }
+    }
 
     return c.json({
       success: true,
@@ -9354,6 +9441,336 @@ app.get('/api/admin/payment-stats', async (c) => {
     return c.json({ 
       success: false, 
       error: error.message || 'Failed to fetch payment statistics' 
+    }, 500)
+  }
+})
+
+// ============================================
+// CERTIFICATE GENERATION ENDPOINTS
+// ============================================
+
+// API: Generate Certificate for Student
+app.post('/api/certificate/generate/:registrationId', async (c) => {
+  try {
+    const { env } = c
+    const registrationId = parseInt(c.req.param('registrationId'))
+
+    // Get student details
+    const student = await env.DB.prepare(`
+      SELECT full_name, email, payment_status, course_type, certificate_generated, certificate_id
+      FROM course_registrations 
+      WHERE registration_id = ? AND payment_status = 'paid'
+    `).bind(registrationId).first()
+
+    if (!student) {
+      return c.json({ error: 'Student not found or payment pending' }, 404)
+    }
+
+    // Check if certificate already exists
+    if (student.certificate_generated) {
+      return c.json({
+        success: true,
+        message: 'Certificate already exists',
+        certificateId: student.certificate_id,
+        certificateUrl: `/certificate/${student.certificate_id}`
+      })
+    }
+
+    // Generate certificate data
+    const certificateData = CertificateService.generateCertificateData({
+      studentName: student.full_name as string,
+      courseName: 'PassionBots IoT & Robotics Course',
+      registrationId: registrationId
+    })
+
+    // Save certificate to database
+    await env.DB.prepare(`
+      INSERT INTO certificates (student_id, certificate_code, student_name, course_name, issue_date, completion_date, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'active')
+    `).bind(
+      registrationId,
+      certificateData.certificateId,
+      certificateData.studentName,
+      certificateData.courseName,
+      new Date().toISOString().split('T')[0],
+      certificateData.completionDate
+    ).run()
+
+    // Update course_registrations
+    await env.DB.prepare(`
+      UPDATE course_registrations 
+      SET 
+        certificate_id = ?,
+        certificate_generated = 1,
+        course_completed = 1,
+        completion_date = CURRENT_TIMESTAMP
+      WHERE registration_id = ?
+    `).bind(certificateData.certificateId, registrationId).run()
+
+    // Send certificate email (async)
+    if (env.RESEND_API_KEY) {
+      try {
+        const emailService = new EmailService({
+          resendApiKey: env.RESEND_API_KEY
+        })
+
+        await emailService.sendCertificate(
+          student.email as string,
+          student.full_name as string,
+          'PassionBots IoT & Robotics Course',
+          `https://passionbots-lms.pages.dev/certificate/${certificateData.certificateId}`,
+          certificateData.certificateId
+        )
+
+        await env.DB.prepare(`
+          UPDATE course_registrations 
+          SET certificate_email_sent = 1 
+          WHERE registration_id = ?
+        `).bind(registrationId).run()
+
+        await env.DB.prepare(`
+          INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status)
+          VALUES (?, 'certificate', ?, ?, 'sent')
+        `).bind(
+          registrationId,
+          student.email,
+          'Your PassionBots IoT & Robotics Course Certificate is Ready!'
+        ).run()
+      } catch (emailError) {
+        console.error('Certificate email error:', emailError)
+      }
+    }
+
+    return c.json({
+      success: true,
+      message: 'Certificate generated successfully',
+      certificateId: certificateData.certificateId,
+      certificateUrl: `/certificate/${certificateData.certificateId}`
+    })
+
+  } catch (error: any) {
+    console.error('Certificate generation error:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Failed to generate certificate' 
+    }, 500)
+  }
+})
+
+// API: View Certificate (HTML)
+app.get('/certificate/:certificateId', async (c) => {
+  try {
+    const { env } = c
+    const certificateId = c.req.param('certificateId')
+
+    // Get certificate details
+    const certificate = await env.DB.prepare(`
+      SELECT * FROM certificates WHERE certificate_code = ? AND status = 'active'
+    `).bind(certificateId).first()
+
+    if (!certificate) {
+      return c.html(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Certificate Not Found</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+          <h1>Certificate Not Found</h1>
+          <p>The certificate you're looking for doesn't exist or has been revoked.</p>
+        </body>
+        </html>
+      `)
+    }
+
+    // Generate certificate HTML
+    const certificateHTML = await CertificateService.generateCertificateHTML({
+      studentName: certificate.student_name as string,
+      courseName: certificate.course_name as string,
+      completionDate: certificate.completion_date as string,
+      registrationId: certificate.student_id as number
+    })
+
+    return c.html(certificateHTML)
+
+  } catch (error: any) {
+    console.error('Certificate view error:', error)
+    return c.html(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>Error</title></head>
+      <body style="font-family: Arial; text-align: center; padding: 50px;">
+        <h1>Error Loading Certificate</h1>
+        <p>${error.message}</p>
+      </body>
+      </html>
+    `)
+  }
+})
+
+// API: Verify Certificate
+app.get('/verify-certificate', async (c) => {
+  const certificateId = c.req.query('id')
+
+  if (!certificateId) {
+    return c.html(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Verify Certificate - PassionBots</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+      </head>
+      <body class="bg-gray-100 p-8">
+        <div class="max-w-2xl mx-auto">
+          <h1 class="text-3xl font-bold mb-6">Verify Certificate</h1>
+          <form action="/verify-certificate" class="bg-white p-6 rounded shadow">
+            <label class="block mb-4">
+              <span class="text-gray-700">Certificate ID:</span>
+              <input type="text" name="id" class="mt-1 block w-full rounded border-gray-300" placeholder="PBCERT-XXX-XXX-XXX" required>
+            </label>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+              Verify Certificate
+            </button>
+          </form>
+        </div>
+      </body>
+      </html>
+    `)
+  }
+
+  try {
+    const { env } = c
+
+    const certificate = await env.DB.prepare(`
+      SELECT * FROM certificates WHERE certificate_code = ?
+    `).bind(certificateId).first()
+
+    if (!certificate) {
+      return c.html(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Verification Failed</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-gray-100 p-8">
+          <div class="max-w-2xl mx-auto bg-white p-8 rounded shadow">
+            <div class="text-red-600 text-center">
+              <h1 class="text-2xl font-bold mb-4">❌ Invalid Certificate</h1>
+              <p>Certificate ID: <strong>${certificateId}</strong></p>
+              <p class="mt-4">This certificate could not be verified. It may be invalid or revoked.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `)
+    }
+
+    const statusColor = certificate.status === 'active' ? 'green' : 'red'
+    const statusIcon = certificate.status === 'active' ? '✓' : '✗'
+
+    return c.html(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Certificate Verified</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+      </head>
+      <body class="bg-gray-100 p-8">
+        <div class="max-w-2xl mx-auto bg-white p-8 rounded shadow">
+          <div class="text-${statusColor}-600 text-center mb-6">
+            <h1 class="text-3xl font-bold">${statusIcon} Certificate Verified</h1>
+          </div>
+          
+          <div class="border-t border-b py-4 my-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-gray-600">Student Name:</p>
+                <p class="font-bold">${certificate.student_name}</p>
+              </div>
+              <div>
+                <p class="text-gray-600">Course:</p>
+                <p class="font-bold">${certificate.course_name}</p>
+              </div>
+              <div>
+                <p class="text-gray-600">Issue Date:</p>
+                <p class="font-bold">${certificate.issue_date}</p>
+              </div>
+              <div>
+                <p class="text-gray-600">Certificate ID:</p>
+                <p class="font-bold font-mono text-sm">${certificate.certificate_code}</p>
+              </div>
+              <div>
+                <p class="text-gray-600">Status:</p>
+                <p class="font-bold uppercase">${certificate.status}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="text-center mt-6">
+            <a href="/certificate/${certificate.certificate_code}" 
+               class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 inline-block">
+              View Certificate
+            </a>
+          </div>
+          
+          <p class="text-xs text-gray-500 text-center mt-6">
+            This certificate was issued by PassionBots LMS and is authentic.
+          </p>
+        </div>
+      </body>
+      </html>
+    `)
+
+  } catch (error: any) {
+    return c.html(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>Error</title></head>
+      <body style="font-family: Arial; text-align: center; padding: 50px;">
+        <h1>Verification Error</h1>
+        <p>${error.message}</p>
+      </body>
+      </html>
+    `)
+  }
+})
+
+// API: Get Student's Certificate
+app.get('/api/certificate/student/:registrationId', async (c) => {
+  try {
+    const { env } = c
+    const registrationId = parseInt(c.req.param('registrationId'))
+
+    const student = await env.DB.prepare(`
+      SELECT certificate_id, certificate_generated, full_name 
+      FROM course_registrations 
+      WHERE registration_id = ?
+    `).bind(registrationId).first()
+
+    if (!student) {
+      return c.json({ error: 'Student not found' }, 404)
+    }
+
+    if (!student.certificate_generated) {
+      return c.json({
+        success: false,
+        message: 'Certificate not yet generated',
+        certificateGenerated: false
+      })
+    }
+
+    return c.json({
+      success: true,
+      certificateGenerated: true,
+      certificateId: student.certificate_id,
+      certificateUrl: `/certificate/${student.certificate_id}`,
+      downloadUrl: `/certificate/${student.certificate_id}`
+    })
+
+  } catch (error: any) {
+    console.error('Get certificate error:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message 
     }, 500)
   }
 })
