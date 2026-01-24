@@ -2358,6 +2358,7 @@ app.get('/admin', (c) => {
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app-redesign-combined.js?v=${v}"></script>
     <script src="/static/app-admin-certificates.js?v=${v}"></script>
+    <script src="/static/app-admin-students.js?v=${v}"></script>
     <script>
       // Auto-navigate to admin view
       document.addEventListener('DOMContentLoaded', () => {

@@ -170,11 +170,18 @@ const AdminCertificateTool = {
             <!-- Tab Headers -->
             <div style="display: flex; border-bottom: 1px solid #333; background: #0a0a0a;">
               <button 
-                onclick="AdminCertificateTool.switchTab('generate')"
-                id="tab-generate"
+                onclick="AdminCertificateTool.switchTab('students')"
+                id="tab-students"
                 style="flex: 1; padding: 18px; background: transparent; border: none; color: #ffd700; font-size: 16px; font-weight: 600; cursor: pointer; border-bottom: 3px solid #ffd700; transition: all 0.3s;"
               >
-                <i class="fas fa-plus-circle" style="margin-right: 8px;"></i>Generate New
+                <i class="fas fa-users" style="margin-right: 8px;"></i>Manage Students
+              </button>
+              <button 
+                onclick="AdminCertificateTool.switchTab('generate')"
+                id="tab-generate"
+                style="flex: 1; padding: 18px; background: transparent; border: none; color: #666; font-size: 16px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s;"
+              >
+                <i class="fas fa-plus-circle" style="margin-right: 8px;"></i>Generate Certificate
               </button>
               <button 
                 onclick="AdminCertificateTool.switchTab('manage')"
@@ -201,7 +208,7 @@ const AdminCertificateTool = {
             
             <!-- Tab Content -->
             <div id="admin-tab-content" style="padding: 30px;">
-              ${this.renderGenerateTab()}
+              ${typeof AdminStudentManager !== 'undefined' ? AdminStudentManager.renderStudentManagementTab() : this.renderGenerateTab()}
             </div>
             
           </div>
@@ -622,20 +629,30 @@ const AdminCertificateTool = {
   
   switchTab(tabName) {
     // Update tab styles
-    ['generate', 'manage', 'bulk', 'verify'].forEach(tab => {
+    ['students', 'generate', 'manage', 'bulk', 'verify'].forEach(tab => {
       const btn = document.getElementById(`tab-${tab}`);
-      if (tab === tabName) {
-        btn.style.color = '#ffd700';
-        btn.style.borderBottomColor = '#ffd700';
-      } else {
-        btn.style.color = '#666';
-        btn.style.borderBottomColor = 'transparent';
+      if (btn) {
+        if (tab === tabName) {
+          btn.style.color = '#ffd700';
+          btn.style.borderBottomColor = '#ffd700';
+        } else {
+          btn.style.color = '#666';
+          btn.style.borderBottomColor = 'transparent';
+        }
       }
     });
     
     // Update content
     const content = document.getElementById('admin-tab-content');
     switch(tabName) {
+      case 'students':
+        if (typeof AdminStudentManager !== 'undefined') {
+          content.innerHTML = AdminStudentManager.renderStudentManagementTab();
+          AdminStudentManager.init();
+        } else {
+          content.innerHTML = '<div style="color:#dc3545;padding:40px;text-align:center;">Student Management module not loaded</div>';
+        }
+        break;
       case 'generate':
         content.innerHTML = this.renderGenerateTab();
         break;
@@ -1178,6 +1195,10 @@ const AdminCertificateTool = {
       this.currentAdmin = JSON.parse(adminUser);
       document.getElementById('app').innerHTML = this.renderAdminDashboard();
       this.loadDashboardStats();
+      // Initialize student manager if available
+      if (typeof AdminStudentManager !== 'undefined') {
+        AdminStudentManager.init();
+      }
     } else {
       document.getElementById('app').innerHTML = this.renderAdminLogin();
     }
