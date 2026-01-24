@@ -5902,6 +5902,187 @@ app.post('/api/register', async (c) => {
   }
 })
 
+// API: Admin Add Student
+app.post('/api/admin/add-student', async (c) => {
+  try {
+    const { env } = c
+    const { full_name, email, mobile, college_name, year_of_study, payment_status } = await c.req.json()
+
+    // Validate required fields
+    if (!full_name || !email || !mobile) {
+      return c.json({ error: 'Full name, email, and mobile are required' }, 400)
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return c.json({ error: 'Invalid email format' }, 400)
+    }
+
+    // Check if email already exists
+    const existing = await env.DB.prepare(`
+      SELECT registration_id FROM course_registrations WHERE email = ?
+    `).bind(email).first()
+
+    if (existing) {
+      return c.json({ error: 'This email is already registered' }, 400)
+    }
+
+    // Set payment status (default to 'free' if not provided)
+    const payStatus = payment_status || 'free'
+
+    // Insert registration
+    const result = await env.DB.prepare(`
+      INSERT INTO course_registrations 
+      (full_name, email, mobile, college_name, year_of_study, course_type, payment_status, status)
+      VALUES (?, ?, ?, ?, ?, 'iot_robotics', ?, 'active')
+    `).bind(full_name, email, mobile, college_name || null, year_of_study || null, payStatus).run()
+
+    const registrationId = result.meta.last_row_id
+
+    // Send registration confirmation email if API key is configured
+    if (env.RESEND_API_KEY) {
+      try {
+        const emailService = new EmailService({
+          resendApiKey: env.RESEND_API_KEY,
+          fromEmail: 'noreply@passionbots.com',
+          fromName: 'PassionBots LMS'
+        })
+
+        await emailService.sendRegistrationConfirmation(
+          email,
+          full_name,
+          registrationId as number,
+          'PassionBots IoT & Robotics Course'
+        )
+
+        // Log email if successful (ignore if table doesn't exist)
+        try {
+          await env.DB.prepare(`
+            INSERT INTO email_logs (registration_id, email_type, recipient_email, subject, status, message_id)
+            VALUES (?, 'registration', ?, 'Welcome to PassionBots - Registration Confirmed!', 'sent', '')
+          `).bind(registrationId, email).run()
+        } catch (dbError) {
+          console.log('Email log insert skipped')
+        }
+      } catch (emailError) {
+        console.error('Registration email error:', emailError)
+        // Don't fail registration if email fails
+      }
+    }
+
+    return c.json({
+      success: true,
+      message: 'Student added successfully!',
+      registration_id: registrationId,
+      student: {
+        registration_id: registrationId,
+        full_name,
+        email,
+        mobile,
+        college_name,
+        year_of_study,
+        payment_status: payStatus,
+        status: 'active'
+      }
+    })
+  } catch (error) {
+    console.error('Admin add student error:', error)
+    return c.json({ error: 'Failed to add student. Please try again.' }, 500)
+  }
+})
+
+// API: Get All Students (Admin)
+app.get('/api/admin/students', async (c) => {
+  try {
+    const { env } = c
+    const { results } = await env.DB.prepare(`
+      SELECT 
+        registration_id,
+        full_name,
+        email,
+        mobile,
+        college_name,
+        year_of_study,
+        course_type,
+        payment_status,
+        status,
+        registration_date
+      FROM course_registrations
+      ORDER BY registration_date DESC
+    `).all()
+
+    return c.json({
+      success: true,
+      students: results,
+      total: results.length
+    })
+  } catch (error) {
+    console.error('Get students error:', error)
+    return c.json({ error: 'Failed to fetch students' }, 500)
+  }
+})
+
+// API: Update Student (Admin)
+app.put('/api/admin/students/:id', async (c) => {
+  try {
+    const { env } = c
+    const registrationId = c.req.param('id')
+    const { full_name, email, mobile, college_name, year_of_study, payment_status, status } = await c.req.json()
+
+    // Validate required fields
+    if (!full_name || !email || !mobile) {
+      return c.json({ error: 'Full name, email, and mobile are required' }, 400)
+    }
+
+    // Update student
+    await env.DB.prepare(`
+      UPDATE course_registrations 
+      SET 
+        full_name = ?,
+        email = ?,
+        mobile = ?,
+        college_name = ?,
+        year_of_study = ?,
+        payment_status = ?,
+        status = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE registration_id = ?
+    `).bind(full_name, email, mobile, college_name, year_of_study, payment_status, status, registrationId).run()
+
+    return c.json({
+      success: true,
+      message: 'Student updated successfully'
+    })
+  } catch (error) {
+    console.error('Update student error:', error)
+    return c.json({ error: 'Failed to update student' }, 500)
+  }
+})
+
+// API: Delete Student (Admin)
+app.delete('/api/admin/students/:id', async (c) => {
+  try {
+    const { env } = c
+    const registrationId = c.req.param('id')
+
+    // Soft delete by setting status to 'deleted'
+    await env.DB.prepare(`
+      UPDATE course_registrations 
+      SET status = 'deleted', updated_at = CURRENT_TIMESTAMP
+      WHERE registration_id = ?
+    `).bind(registrationId).run()
+
+    return c.json({
+      success: true,
+      message: 'Student deleted successfully'
+    })
+  } catch (error) {
+    console.error('Delete student error:', error)
+    return c.json({ error: 'Failed to delete student' }, 500)
+  }
+})
+
 // Student Portal Login Page
 app.get('/student-portal', (c) => {
   const registered = c.req.query('registered')
