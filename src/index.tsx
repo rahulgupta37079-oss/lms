@@ -5907,7 +5907,7 @@ app.post('/api/register', async (c) => {
 app.post('/api/admin/add-student', async (c) => {
   try {
     const { env } = c
-    const { full_name, email, mobile, college_name, year_of_study, payment_status } = await c.req.json()
+    const { full_name, email, mobile, college_name, year_of_study, payment_status, payment_amount } = await c.req.json()
 
     // Validate required fields
     if (!full_name || !email || !mobile) {
@@ -5931,13 +5931,14 @@ app.post('/api/admin/add-student', async (c) => {
 
     // Set payment status (default to 'free' if not provided)
     const payStatus = payment_status || 'free'
+    const payAmount = payment_amount || null
 
     // Insert registration
     const result = await env.DB.prepare(`
       INSERT INTO course_registrations 
-      (full_name, email, mobile, college_name, year_of_study, course_type, payment_status, status)
-      VALUES (?, ?, ?, ?, ?, 'iot_robotics', ?, 'active')
-    `).bind(full_name, email, mobile, college_name || null, year_of_study || null, payStatus).run()
+      (full_name, email, mobile, college_name, year_of_study, course_type, payment_status, payment_amount, status)
+      VALUES (?, ?, ?, ?, ?, 'iot_robotics', ?, ?, 'active')
+    `).bind(full_name, email, mobile, college_name || null, year_of_study || null, payStatus, payAmount).run()
 
     const registrationId = result.meta.last_row_id
 
@@ -6007,6 +6008,7 @@ app.get('/api/admin/students', async (c) => {
         year_of_study,
         course_type,
         payment_status,
+        payment_amount,
         status,
         registration_date
       FROM course_registrations
@@ -6029,7 +6031,7 @@ app.put('/api/admin/students/:id', async (c) => {
   try {
     const { env } = c
     const registrationId = c.req.param('id')
-    const { full_name, email, mobile, college_name, year_of_study, payment_status, status } = await c.req.json()
+    const { full_name, email, mobile, college_name, year_of_study, payment_status, payment_amount, status } = await c.req.json()
 
     // Validate required fields
     if (!full_name || !email || !mobile) {
@@ -6046,10 +6048,11 @@ app.put('/api/admin/students/:id', async (c) => {
         college_name = ?,
         year_of_study = ?,
         payment_status = ?,
+        payment_amount = ?,
         status = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE registration_id = ?
-    `).bind(full_name, email, mobile, college_name, year_of_study, payment_status, status, registrationId).run()
+    `).bind(full_name, email, mobile, college_name, year_of_study, payment_status, payment_amount, status, registrationId).run()
 
     return c.json({
       success: true,

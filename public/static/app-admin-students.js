@@ -200,18 +200,38 @@ const AdminStudentManager = {
             </div>
             
             <!-- Payment Status -->
-            <div style="margin-bottom: 25px;">
+            <div style="margin-bottom: 20px;">
               <label style="display: block; color: #ffd700; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
                 <i class="fas fa-rupee-sign" style="margin-right: 8px;"></i>Payment Status
               </label>
               <select 
                 id="student-payment-status"
+                onchange="AdminStudentManager.togglePaymentAmount(this.value)"
                 style="width: 100%; padding: 12px 16px; background: #0a0a0a; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 15px; cursor: pointer;"
               >
                 <option value="free">Free Access</option>
-                <option value="paid">Paid (₹2,999)</option>
+                <option value="paid">Paid</option>
                 <option value="pending">Payment Pending</option>
               </select>
+            </div>
+            
+            <!-- Payment Amount (shown when paid) -->
+            <div id="payment-amount-field" style="margin-bottom: 25px; display: none;">
+              <label style="display: block; color: #ffd700; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+                <i class="fas fa-money-bill-wave" style="margin-right: 8px;"></i>Payment Amount (₹)
+              </label>
+              <input 
+                type="number" 
+                id="student-payment-amount"
+                placeholder="Enter amount (e.g., 2999, 14999)"
+                min="0"
+                step="0.01"
+                style="width: 100%; padding: 12px 16px; background: #0a0a0a; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 15px;"
+              />
+              <div style="margin-top: 6px; font-size: 12px; color: #999;">
+                <i class="fas fa-info-circle" style="margin-right: 4px;"></i>
+                Common amounts: ₹2,999 (standard) or ₹14,999 (premium)
+              </div>
             </div>
             
             <!-- Error Message -->
@@ -365,7 +385,7 @@ const AdminStudentManager = {
           
           <!-- Payment Status -->
           <div>
-            ${this.getPaymentBadge(student.payment_status)}
+            ${this.getPaymentBadge(student.payment_status, student.payment_amount)}
           </div>
           
           <!-- Actions -->
@@ -430,9 +450,9 @@ const AdminStudentManager = {
   // ============================================
   // HELPER: GET PAYMENT BADGE
   // ============================================
-  getPaymentBadge(status) {
+  getPaymentBadge(status, amount) {
     const badges = {
-      'paid': '<span style="padding: 4px 12px; background: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; border-radius: 6px; color: #4ade80; font-size: 12px; font-weight: 600;"><i class="fas fa-check-circle" style="margin-right: 4px;"></i>Paid</span>',
+      'paid': `<span style="padding: 4px 12px; background: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; border-radius: 6px; color: #4ade80; font-size: 12px; font-weight: 600;"><i class="fas fa-check-circle" style="margin-right: 4px;"></i>Paid${amount ? ' ₹' + parseFloat(amount).toLocaleString('en-IN') : ''}</span>`,
       'free': '<span style="padding: 4px 12px; background: rgba(96, 165, 250, 0.1); border: 1px solid #60a5fa; border-radius: 6px; color: #60a5fa; font-size: 12px; font-weight: 600;"><i class="fas fa-gift" style="margin-right: 4px;"></i>Free</span>',
       'pending': '<span style="padding: 4px 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 6px; color: #f59e0b; font-size: 12px; font-weight: 600;"><i class="fas fa-clock" style="margin-right: 4px;"></i>Pending</span>'
     };
@@ -447,6 +467,7 @@ const AdminStudentManager = {
     document.getElementById('submit-btn-text').textContent = 'Add Student';
     document.getElementById('student-form').reset();
     document.getElementById('student-id').value = '';
+    document.getElementById('payment-amount-field').style.display = 'none';
     document.getElementById('student-modal').style.display = 'flex';
   },
   
@@ -466,7 +487,19 @@ const AdminStudentManager = {
     document.getElementById('student-college').value = student.college_name || '';
     document.getElementById('student-year').value = student.year_of_study || '';
     document.getElementById('student-payment-status').value = student.payment_status || 'free';
+    document.getElementById('student-payment-amount').value = student.payment_amount || '';
+    this.togglePaymentAmount(student.payment_status || 'free');
     document.getElementById('student-modal').style.display = 'flex';
+  },
+  
+  // ============================================
+  // TOGGLE PAYMENT AMOUNT FIELD
+  // ============================================
+  togglePaymentAmount(paymentStatus) {
+    const amountField = document.getElementById('payment-amount-field');
+    if (amountField) {
+      amountField.style.display = paymentStatus === 'paid' ? 'block' : 'none';
+    }
   },
   
   // ============================================
@@ -486,13 +519,17 @@ const AdminStudentManager = {
     const studentId = document.getElementById('student-id').value;
     const isEdit = !!studentId;
     
+    const paymentStatus = document.getElementById('student-payment-status').value;
+    const paymentAmount = document.getElementById('student-payment-amount').value;
+    
     const studentData = {
       full_name: document.getElementById('student-full-name').value,
       email: document.getElementById('student-email').value,
       mobile: document.getElementById('student-mobile').value,
       college_name: document.getElementById('student-college').value || null,
       year_of_study: document.getElementById('student-year').value || null,
-      payment_status: document.getElementById('student-payment-status').value
+      payment_status: paymentStatus,
+      payment_amount: paymentStatus === 'paid' && paymentAmount ? parseFloat(paymentAmount) : null
     };
     
     try {
