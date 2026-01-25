@@ -6399,7 +6399,7 @@ app.get('/dashboard', (c) => {
                     </h2>
                     <p class="text-gray-400 mb-4">Complete your payment to access all course features</p>
                     <div class="flex items-center space-x-4">
-                        <div class="text-3xl font-bold text-yellow-400">
+                        <div id="courseFeeDisplay" class="text-3xl font-bold text-yellow-400">
                             ₹2,999
                         </div>
                         <div id="paymentStatusBadge" class="hidden">
@@ -6531,6 +6531,9 @@ app.get('/dashboard', (c) => {
             document.getElementById('welcomeMessage').textContent = 
                 \`Registered on \${new Date(studentData.registration_date).toLocaleDateString()}\`;
 
+            // Load course fee
+            await loadCourseFee();
+            
             // Load classes
             await loadClasses();
             
@@ -6539,6 +6542,22 @@ app.get('/dashboard', (c) => {
             
             // Load progress
             await loadProgress();
+        }
+        
+        async function loadCourseFee() {
+            try {
+                const response = await fetch(\`/api/payment/course-fee?registration_id=\${studentData.registration_id}\`);
+                const data = await response.json();
+                
+                if (data.success && data.courseFee) {
+                    // Format the fee with Indian number formatting
+                    const formattedFee = new Intl.NumberFormat('en-IN').format(data.courseFee);
+                    document.getElementById('courseFeeDisplay').textContent = \`₹\${formattedFee}\`;
+                }
+            } catch (error) {
+                console.error('Failed to load course fee:', error);
+                // Keep default display if error
+            }
         }
 
         async function loadClasses() {
@@ -9133,14 +9152,46 @@ async function verifyPayUHash(params: string[], receivedHash: string, salt: stri
   return calculatedHash.toLowerCase() === receivedHash.toLowerCase()
 }
 
-// API: Get Course Fee (Configurable)
-app.get('/api/payment/course-fee', (c) => {
-  return c.json({
-    success: true,
-    courseFee: 2999, // INR - can be made dynamic based on course type
-    currency: 'INR',
-    courseName: 'PassionBots IoT & Robotics Course'
-  })
+// API: Get Course Fee (Dynamic based on student)
+app.get('/api/payment/course-fee', async (c) => {
+  try {
+    const { env } = c
+    const registrationId = c.req.query('registration_id')
+    
+    // If registration_id provided, get student-specific fee
+    if (registrationId) {
+      const student = await env.DB.prepare(`
+        SELECT payment_amount 
+        FROM course_registrations 
+        WHERE registration_id = ?
+      `).bind(registrationId).first()
+      
+      if (student && student.payment_amount) {
+        return c.json({
+          success: true,
+          courseFee: student.payment_amount,
+          currency: 'INR',
+          courseName: 'PassionBots IoT & Robotics Course'
+        })
+      }
+    }
+    
+    // Default fee if no registration_id or no custom amount
+    return c.json({
+      success: true,
+      courseFee: 2999, // Default INR
+      currency: 'INR',
+      courseName: 'PassionBots IoT & Robotics Course'
+    })
+  } catch (error) {
+    console.error('Get course fee error:', error)
+    return c.json({
+      success: true,
+      courseFee: 2999, // Fallback to default
+      currency: 'INR',
+      courseName: 'PassionBots IoT & Robotics Course'
+    })
+  }
 })
 
 // API: Initiate Payment
