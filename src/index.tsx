@@ -6459,6 +6459,13 @@ app.get('/dashboard', (c) => {
                 <div id="pastClassesList" class="space-y-4">
                     <!-- Past classes will be loaded here -->
                 </div>
+                <div class="mt-4 p-3 bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-lg">
+                    <p class="text-sm text-blue-300">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Recording Passcode:</strong> <code class="bg-blue-900 bg-opacity-50 px-2 py-1 rounded">0X?+b%kB</code>
+                        <span class="text-gray-400 ml-2">(Use this passcode to access the recording)</span>
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -6617,12 +6624,23 @@ app.get('/dashboard', (c) => {
                                 <h4 class="font-bold text-gray-300">\${cls.class_title}</h4>
                                 <p class="text-sm text-gray-500">\${new Date(cls.class_date).toLocaleDateString()} - \${cls.instructor_name}</p>
                             </div>
-                            \${cls.recording_url ? \`
-                            <a href="\${cls.recording_url}" target="_blank" 
-                               class="text-yellow-400 hover:text-yellow-300">
-                                <i class="fas fa-play-circle mr-2"></i>Recording
-                            </a>
-                            \` : '<span class="text-gray-500 text-sm">No recording</span>'}
+                            <div class="flex items-center gap-3">
+                                \${cls.recording_url ? \`
+                                <a href="\${cls.recording_url}" target="_blank" 
+                                   class="text-yellow-400 hover:text-yellow-300 flex items-center"
+                                   title="Watch recording (Passcode: 0X?+b%kB)">
+                                    <i class="fas fa-play-circle mr-2"></i>Recording
+                                </a>
+                                \` : ''}
+                                \${cls.materials_url ? \`
+                                <a href="\${cls.materials_url}" target="_blank" 
+                                   class="text-blue-400 hover:text-blue-300 flex items-center"
+                                   title="View session summary and materials">
+                                    <i class="fas fa-file-alt mr-2"></i>Summary
+                                </a>
+                                \` : ''}
+                                \${!cls.recording_url && !cls.materials_url ? '<span class="text-gray-500 text-sm">No recording</span>' : ''}
+                            </div>
                         </div>
                     </div>
                 \`).join('') : '<p class="text-gray-400 text-center py-8">No past classes yet</p>';
