@@ -6314,6 +6314,125 @@ app.delete('/api/admin/students/:id', async (c) => {
   }
 })
 
+// Direct Login for Girdhari (Demo Student)
+app.get('/demo-login', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Login - Girdhari Lal Saini</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .loader {
+            border: 3px solid rgba(255, 215, 0, 0.2);
+            border-top: 3px solid #FFD700;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-white flex items-center justify-center">
+    <div class="max-w-md w-full px-4">
+        <div class="card rounded-2xl p-8 text-center">
+            <div class="inline-block p-4 bg-yellow-400 bg-opacity-10 rounded-full mb-6">
+                <i class="fas fa-user-graduate text-yellow-400 text-6xl"></i>
+            </div>
+            
+            <h1 class="text-3xl font-bold gradient-text mb-2">Girdhari Lal Saini</h1>
+            <p class="text-gray-400 mb-6">Arduino Course - Demo Student</p>
+            
+            <div id="status" class="mb-6">
+                <div class="loader mx-auto mb-4"></div>
+                <p class="text-yellow-400">Logging you in automatically...</p>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-4 text-left space-y-2 text-sm">
+                <p><i class="fas fa-envelope text-yellow-400 mr-2"></i>Email: <span class="text-gray-300">girdhari8562@gmail.com</span></p>
+                <p><i class="fas fa-id-badge text-yellow-400 mr-2"></i>ID: <span class="text-gray-300">24</span></p>
+                <p><i class="fas fa-book text-yellow-400 mr-2"></i>Course: <span class="text-gray-300">IoT & Robotics</span></p>
+                <p><i class="fas fa-check-circle text-green-400 mr-2"></i>Status: <span class="text-green-400">Active</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-login function
+        async function autoLogin() {
+            try {
+                const email = 'girdhari8562@gmail.com';
+                
+                // Call login API
+                const response = await fetch('/api/student-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Store student data
+                    localStorage.setItem('student_data', JSON.stringify(result.student));
+                    
+                    // Update status
+                    document.getElementById('status').innerHTML = \`
+                        <i class="fas fa-check-circle text-green-400 text-5xl mb-4"></i>
+                        <p class="text-green-400 text-xl font-bold">Login Successful!</p>
+                        <p class="text-gray-400 mt-2">Redirecting to dashboard...</p>
+                    \`;
+                    
+                    // Redirect to dashboard after 1 second
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || 'Login failed');
+                }
+            } catch (error) {
+                // Show error
+                document.getElementById('status').innerHTML = \`
+                    <i class="fas fa-exclamation-triangle text-red-400 text-5xl mb-4"></i>
+                    <p class="text-red-400 text-xl font-bold mb-2">Login Failed</p>
+                    <p class="text-gray-400 mb-4">\${error.message}</p>
+                    <a href="/student-portal" 
+                       class="inline-block bg-yellow-400 text-black font-bold py-2 px-6 rounded-lg hover:bg-yellow-500 transition">
+                        Manual Login
+                    </a>
+                \`;
+            }
+        }
+        
+        // Auto-login on page load
+        setTimeout(autoLogin, 1000);
+    </script>
+</body>
+</html>
+  `)
+})
+
 // Student Portal Login Page
 app.get('/student-portal', (c) => {
   const registered = c.req.query('registered')
