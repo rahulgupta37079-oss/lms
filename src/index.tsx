@@ -2601,10 +2601,16 @@ app.get('/api/arduino/lessons', async (c) => {
       ORDER BY l.order_index ASC, l.lesson_number ASC
     `).bind(moduleId).all()
     
+    // Add has_pdf flag to each lesson
+    const lessonsWithPdfFlag = lessons.results.map(lesson => ({
+      ...lesson,
+      has_pdf: lesson.resources ? true : false
+    }))
+    
     return c.json({
       success: true,
-      lessons: lessons.results,
-      total: lessons.results.length
+      lessons: lessonsWithPdfFlag,
+      total: lessonsWithPdfFlag.length
     })
   } catch (error) {
     console.error('Get Arduino lessons error:', error)
