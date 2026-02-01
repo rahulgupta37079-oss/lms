@@ -2575,6 +2575,225 @@ app.post('/api/lessons/:lessonId/progress', async (c) => {
   }
 })
 
+// ==================== ARDUINO LESSONS API ====================
+
+// Get Arduino Module Lessons (from lessons table)
+app.get('/api/arduino/lessons', async (c) => {
+  try {
+    const moduleId = c.req.query('module_id') || '3' // Default to Arduino Programming module
+    
+    const lessons = await c.env.DB.prepare(`
+      SELECT 
+        l.id,
+        l.module_id,
+        l.lesson_number,
+        l.title,
+        l.description,
+        l.duration_minutes,
+        l.order_index,
+        l.is_published,
+        cm.module_title,
+        cm.course_type
+      FROM lessons l
+      JOIN course_modules cm ON l.module_id = cm.module_id
+      WHERE l.module_id = ? AND l.is_published = 1
+      ORDER BY l.order_index ASC, l.lesson_number ASC
+    `).bind(moduleId).all()
+    
+    return c.json({
+      success: true,
+      lessons: lessons.results,
+      total: lessons.results.length
+    })
+  } catch (error) {
+    console.error('Get Arduino lessons error:', error)
+    return c.json({ success: false, error: 'Failed to load lessons' }, 500)
+  }
+})
+
+// Get Single Arduino Lesson with Access Control
+app.get('/api/arduino/lessons/:lessonId', async (c) => {
+  try {
+    const lessonId = c.req.param('lessonId')
+    const registrationId = c.req.query('registration_id')
+    
+    if (!registrationId) {
+      return c.json({ success: false, error: 'Registration ID required' }, 401)
+    }
+    
+    // Check student registration and payment status
+    const registration = await c.env.DB.prepare(`
+      SELECT registration_id, full_name, email, payment_status, status
+      FROM course_registrations
+      WHERE registration_id = ? AND status = 'active'
+    `).bind(registrationId).first()
+    
+    if (!registration) {
+      return c.json({ success: false, error: 'Invalid registration or inactive account' }, 403)
+    }
+    
+    // Get lesson details
+    const lesson = await c.env.DB.prepare(`
+      SELECT 
+        l.*,
+        cm.module_title,
+        cm.course_type
+      FROM lessons l
+      JOIN course_modules cm ON l.module_id = cm.module_id
+      WHERE l.id = ? AND l.is_published = 1
+    `).bind(lessonId).first()
+    
+    if (!lesson) {
+      return c.json({ success: false, error: 'Lesson not found' }, 404)
+    }
+    
+    // Return lesson with PDF URL (resources field contains the PDF link)
+    return c.json({
+      success: true,
+      lesson: {
+        id: lesson.id,
+        module_id: lesson.module_id,
+        lesson_number: lesson.lesson_number,
+        title: lesson.title,
+        description: lesson.description,
+        content: lesson.content,
+        duration_minutes: lesson.duration_minutes,
+        pdf_url: lesson.resources, // PDF file URL
+        module_title: lesson.module_title,
+        course_type: lesson.course_type,
+        payment_status: registration.payment_status
+      },
+      access: {
+        can_view: true,
+        can_download: false, // Disable download
+        payment_required: registration.payment_status === 'free', // Show payment prompt for free users
+        student_name: registration.full_name
+      }
+    })
+  } catch (error) {
+    console.error('Get Arduino lesson error:', error)
+    return c.json({ success: false, error: 'Failed to load lesson' }, 500)
+  }
+})
+
+// PDF Proxy Endpoint - Redirect to file wrapper with access control
+app.get('/api/arduino/pdf/:lessonId', async (c) => {
+  try {
+    const lessonId = c.req.param('lessonId')
+    const registrationId = c.req.query('registration_id')
+    
+    if (!registrationId) {
+      return c.html('<html><body><h1>Unauthorized</h1><p>Please login to access this content.</p></body></html>', 401)
+    }
+    
+    // Verify student access
+    const registration = await c.env.DB.prepare(`
+      SELECT status, full_name FROM course_registrations
+      WHERE registration_id = ? AND status = 'active'
+    `).bind(registrationId).first()
+    
+    if (!registration) {
+      return c.html('<html><body><h1>Access Denied</h1><p>Your account is not active or does not exist.</p></body></html>', 403)
+    }
+    
+    // Get PDF URL
+    const lesson = await c.env.DB.prepare(`
+      SELECT resources, title FROM lessons WHERE id = ?
+    `).bind(lessonId).first()
+    
+    if (!lesson || !lesson.resources) {
+      return c.html('<html><body><h1>PDF Not Found</h1><p>The requested lesson PDF is not available.</p></body></html>', 404)
+    }
+    
+    // Return an HTML page that embeds the PDF with protection
+    return c.html(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${lesson.title}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            background: #1a1a2e; 
+            color: #fff; 
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+          }
+          #pdf-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+          }
+          iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+          }
+          #watermark {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #ffd700;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1000;
+            pointer-events: none;
+          }
+          #protection-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.8);
+            color: #999;
+            padding: 8px;
+            text-align: center;
+            font-size: 11px;
+            z-index: 1000;
+            pointer-events: none;
+          }
+        </style>
+        <script>
+          // Disable right-click
+          document.addEventListener('contextmenu', e => e.preventDefault());
+          
+          // Disable common keyboard shortcuts
+          document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p')) {
+              e.preventDefault();
+              alert('Download and print are disabled for this content.');
+            }
+          });
+          
+          // Prevent selection
+          document.addEventListener('selectstart', e => e.preventDefault());
+        </script>
+      </head>
+      <body>
+        <div id="watermark">
+          <i>🔒</i> ${registration.full_name} • View Only
+        </div>
+        <div id="pdf-container">
+          <iframe src="${lesson.resources}#toolbar=0&navpanes=0&scrollbar=1" 
+                  frameborder="0" 
+                  allow="fullscreen"></iframe>
+        </div>
+        <div id="protection-overlay">
+          🔒 Protected Content • Downloads Disabled • For Educational Use Only
+        </div>
+      </body>
+      </html>
+    `)
+  } catch (error) {
+    console.error('PDF proxy error:', error)
+    return c.html('<html><body><h1>Error</h1><p>Failed to load PDF. Please try again later.</p></body></html>', 500)
+  }
+})
+
+// ==================== END ARDUINO LESSONS API ====================
+
 // Get Live Session Participants
 app.get('/api/live-sessions/:sessionId/participants', async (c) => {
   try {
@@ -6654,37 +6873,201 @@ app.get('/dashboard', (c) => {
 
         async function loadModules() {
             try {
-                const response = await fetch('/api/course-modules');
+                // Load Arduino lessons for module 3 (Arduino Programming)
+                const response = await fetch('/api/arduino/lessons?module_id=3');
                 const data = await response.json();
                 
-                const modulesHTML = data.modules.map((mod, index) => \`
-                    <div class="card p-6 rounded-xl">
+                if (!data.success || !data.lessons || data.lessons.length === 0) {
+                    document.getElementById('modulesList').innerHTML = \`
+                        <div class="col-span-2 text-center py-12">
+                            <i class="fas fa-folder-open text-6xl text-gray-600 mb-4"></i>
+                            <p class="text-gray-400 text-lg">No lessons available yet</p>
+                        </div>
+                    \`;
+                    return;
+                }
+                
+                const lessonsHTML = data.lessons.map((lesson) => \`
+                    <div class="card p-6 rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer"
+                         onclick="viewLesson(\${lesson.id})">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="flex items-center">
-                                <div class="w-12 h-12 bg-yellow-400 bg-opacity-20 rounded-full flex items-center justify-center mr-4">
-                                    <span class="text-xl font-bold text-yellow-400">\${mod.module_number}</span>
+                            <div class="flex items-center flex-1">
+                                <div class="w-12 h-12 bg-yellow-400 bg-opacity-20 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                                    <i class="fas fa-book text-yellow-400 text-xl"></i>
                                 </div>
-                                <div>
-                                    <h3 class="text-xl font-bold text-yellow-400">\${mod.module_title}</h3>
-                                    <p class="text-sm text-gray-400">\${mod.duration_weeks} week\${mod.duration_weeks > 1 ? 's' : ''}</p>
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-bold text-yellow-400 mb-1">\${lesson.title}</h3>
+                                    <p class="text-sm text-gray-400">
+                                        <i class="fas fa-clock mr-1"></i>\${lesson.duration_minutes} minutes
+                                    </p>
                                 </div>
                             </div>
+                            <span class="bg-yellow-400 bg-opacity-20 text-yellow-400 px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0">
+                                Lesson \${lesson.lesson_number}
+                            </span>
                         </div>
-                        <p class="text-gray-400 mb-4">\${mod.module_description}</p>
-                        <div class="space-y-2">
-                            \${JSON.parse(mod.topics).map(topic => \`
-                                <div class="flex items-center text-sm text-gray-300">
-                                    <i class="fas fa-check-circle text-yellow-400 mr-2"></i>
-                                    \${topic}
-                                </div>
-                            \`).join('')}
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">\${lesson.description}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center text-sm text-gray-400">
+                                <i class="fas fa-file-pdf text-red-400 mr-2"></i>
+                                <span>PDF Guide Available</span>
+                            </div>
+                            <button class="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-lg font-semibold text-sm hover:shadow-lg transition-all duration-300">
+                                <i class="fas fa-play mr-2"></i>Start Learning
+                            </button>
                         </div>
                     </div>
                 \`).join('');
                 
-                document.getElementById('modulesList').innerHTML = modulesHTML;
+                document.getElementById('modulesList').innerHTML = \`
+                    <div class="col-span-2 mb-6">
+                        <h2 class="text-2xl font-bold gradient-text mb-2">
+                            <i class="fas fa-microchip mr-3"></i>Arduino Programming Projects
+                        </h2>
+                        <p class="text-gray-400">Hands-on projects to master Arduino and IoT</p>
+                    </div>
+                    \${lessonsHTML}
+                \`;
             } catch (error) {
                 console.error('Error loading modules:', error);
+                document.getElementById('modulesList').innerHTML = \`
+                    <div class="col-span-2 text-center py-12">
+                        <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+                        <p class="text-gray-400 text-lg">Failed to load lessons</p>
+                    </div>
+                \`;
+            }
+        }
+        
+        // View Lesson Function
+        async function viewLesson(lessonId) {
+            if (!studentData) {
+                alert('Please login first');
+                return;
+            }
+            
+            // Create modal overlay
+            const modal = document.createElement('div');
+            modal.id = 'lessonModal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4';
+            modal.innerHTML = \`
+                <div class="bg-gray-900 rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                    <div class="p-6 border-b border-gray-800 flex items-center justify-between">
+                        <h2 class="text-2xl font-bold gradient-text">
+                            <i class="fas fa-book-open mr-3"></i>Loading Lesson...
+                        </h2>
+                        <button onclick="closeLessonModal()" class="text-gray-400 hover:text-white text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="lessonContent" class="flex-1 overflow-auto p-6">
+                        <div class="text-center py-12">
+                            <i class="fas fa-spinner fa-spin text-6xl text-yellow-400 mb-4"></i>
+                            <p class="text-gray-400">Loading lesson content...</p>
+                        </div>
+                    </div>
+                </div>
+            \`;
+            document.body.appendChild(modal);
+            
+            try {
+                // Fetch lesson details with access control
+                const response = await fetch(\`/api/arduino/lessons/\${lessonId}?registration_id=\${studentData.registration_id}\`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    document.getElementById('lessonContent').innerHTML = \`
+                        <div class="text-center py-12">
+                            <i class="fas fa-lock text-6xl text-red-500 mb-4"></i>
+                            <p class="text-red-400 text-xl">\${data.error}</p>
+                        </div>
+                    \`;
+                    return;
+                }
+                
+                const lesson = data.lesson;
+                const access = data.access;
+                
+                // Update modal title
+                modal.querySelector('h2').innerHTML = \`
+                    <i class="fas fa-book-open mr-3"></i>\${lesson.title}
+                \`;
+                
+                // Show payment prompt if needed
+                const paymentPrompt = access.payment_required ? \`
+                    <div class="bg-yellow-400 bg-opacity-10 border border-yellow-400 rounded-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-yellow-400 text-2xl mr-3 mt-1"></i>
+                            <div>
+                                <h3 class="text-yellow-400 font-bold mb-2">Unlock Full Access</h3>
+                                <p class="text-gray-300 mb-3">You're viewing this lesson as a demo. Subscribe to unlock all features and downloadable resources.</p>
+                                <button onclick="window.location.href='#payment'" class="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all duration-300">
+                                    <i class="fas fa-crown mr-2"></i>Subscribe Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                \` : '';
+                
+                // Render lesson content
+                document.getElementById('lessonContent').innerHTML = \`
+                    \${paymentPrompt}
+                    
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center text-gray-400">
+                                <i class="fas fa-clock mr-2"></i>
+                                <span>\${lesson.duration_minutes} minutes</span>
+                                <span class="mx-3">•</span>
+                                <i class="fas fa-layer-group mr-2"></i>
+                                <span>\${lesson.module_title}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="prose prose-invert max-w-none mb-6">
+                            \${lesson.content}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-yellow-400 mb-4">
+                            <i class="fas fa-file-pdf text-red-400 mr-2"></i>Student Guide PDF
+                        </h3>
+                        <p class="text-gray-400 mb-4">View the complete project guide with circuit diagrams, code examples, and step-by-step instructions.</p>
+                        
+                        <div class="bg-gray-900 rounded-lg overflow-hidden" style="height: 600px;">
+                            <iframe
+                                src="/api/arduino/pdf/\${lesson.id}?registration_id=\${studentData.registration_id}"
+                                class="w-full h-full"
+                                frameborder="0"
+                                oncontextmenu="return false;"
+                                style="pointer-events: auto;"
+                            ></iframe>
+                        </div>
+                        
+                        <div class="mt-4 text-center text-gray-500 text-sm">
+                            <i class="fas fa-lock mr-2"></i>
+                            <span>Downloads are disabled. View only mode for security.</span>
+                        </div>
+                    </div>
+                \`;
+                
+            } catch (error) {
+                console.error('Error loading lesson:', error);
+                document.getElementById('lessonContent').innerHTML = \`
+                    <div class="text-center py-12">
+                        <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+                        <p class="text-red-400 text-xl">Failed to load lesson</p>
+                        <p class="text-gray-400 mt-2">\${error.message}</p>
+                    </div>
+                \`;
+            }
+        }
+        
+        function closeLessonModal() {
+            const modal = document.getElementById('lessonModal');
+            if (modal) {
+                modal.remove();
             }
         }
 
