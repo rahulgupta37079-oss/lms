@@ -2590,6 +2590,7 @@ app.get('/api/arduino/lessons', async (c) => {
         l.title,
         l.description,
         l.duration_minutes,
+        l.resources,
         l.order_index,
         l.is_published,
         cm.module_title,
@@ -6887,7 +6888,9 @@ app.get('/dashboard', (c) => {
                     return;
                 }
                 
-                const lessonsHTML = data.lessons.map((lesson) => \`
+                const lessonsHTML = data.lessons.map((lesson) => {
+                    const hasPDF = lesson.resources && lesson.resources.trim() !== '';
+                    return \`
                     <div class="card p-6 rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer"
                          onclick="viewLesson(\${lesson.id})">
                         <div class="flex items-start justify-between mb-4">
@@ -6906,18 +6909,24 @@ app.get('/dashboard', (c) => {
                                 Lesson \${lesson.lesson_number}
                             </span>
                         </div>
-                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">\${lesson.description}</p>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">\${lesson.description || 'No description available'}</p>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center text-sm text-gray-400">
-                                <i class="fas fa-file-pdf text-red-400 mr-2"></i>
-                                <span>PDF Guide Available</span>
+                                \${hasPDF ? \`
+                                    <i class="fas fa-file-pdf text-red-400 mr-2"></i>
+                                    <span>PDF Guide Available</span>
+                                \` : \`
+                                    <i class="fas fa-info-circle text-gray-500 mr-2"></i>
+                                    <span class="text-gray-500">Text Content Only</span>
+                                \`}
                             </div>
                             <button class="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-lg font-semibold text-sm hover:shadow-lg transition-all duration-300">
                                 <i class="fas fa-play mr-2"></i>Start Learning
                             </button>
                         </div>
                     </div>
-                \`).join('');
+                \`;
+                }).join('');
                 
                 document.getElementById('modulesList').innerHTML = \`
                     <div class="col-span-2 mb-6">
@@ -7009,27 +7018,12 @@ app.get('/dashboard', (c) => {
                     </div>
                 \` : '';
                 
-                // Render lesson content
-                document.getElementById('lessonContent').innerHTML = \`
-                    \${paymentPrompt}
-                    
-                    <div class="mb-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center text-gray-400">
-                                <i class="fas fa-clock mr-2"></i>
-                                <span>\${lesson.duration_minutes} minutes</span>
-                                <span class="mx-3">•</span>
-                                <i class="fas fa-layer-group mr-2"></i>
-                                <span>\${lesson.module_title}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="prose prose-invert max-w-none mb-6">
-                            \${lesson.content}
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-800 rounded-lg p-6">
+                // Check if PDF is available
+                const hasPDF = lesson.pdf_url && lesson.pdf_url.trim() !== '';
+                
+                // PDF section (only if PDF exists)
+                const pdfSection = hasPDF ? \`
+                    <div class="bg-gray-800 rounded-lg p-6 mt-6">
                         <h3 class="text-xl font-bold text-yellow-400 mb-4">
                             <i class="fas fa-file-pdf text-red-400 mr-2"></i>Student Guide PDF
                         </h3>
@@ -7050,6 +7044,35 @@ app.get('/dashboard', (c) => {
                             <span>Downloads are disabled. View only mode for security.</span>
                         </div>
                     </div>
+                \` : \`
+                    <div class="bg-gray-800 rounded-lg p-6 mt-6 text-center">
+                        <i class="fas fa-info-circle text-4xl text-gray-600 mb-3"></i>
+                        <p class="text-gray-400">No PDF guide available for this lesson yet.</p>
+                        <p class="text-gray-500 text-sm mt-2">Check back later or contact support.</p>
+                    </div>
+                \`;
+                
+                // Render lesson content
+                document.getElementById('lessonContent').innerHTML = \`
+                    \${paymentPrompt}
+                    
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center text-gray-400">
+                                <i class="fas fa-clock mr-2"></i>
+                                <span>\${lesson.duration_minutes} minutes</span>
+                                <span class="mx-3">•</span>
+                                <i class="fas fa-layer-group mr-2"></i>
+                                <span>\${lesson.module_title}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="prose prose-invert max-w-none mb-6">
+                            \${lesson.content}
+                        </div>
+                    </div>
+                    
+                    \${pdfSection}
                 \`;
                 
             } catch (error) {
