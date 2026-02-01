@@ -2684,6 +2684,45 @@ app.get('/api/arduino/lessons/:lessonId', async (c) => {
 })
 
 // PDF Proxy Endpoint - Redirect to file wrapper with access control
+// Stream PDF from static files
+app.get('/api/arduino/pdf/:lessonId/stream', async (c) => {
+  try {
+    const lessonId = c.req.param('lessonId')
+    const registrationId = c.req.query('registration_id')
+    
+    if (!registrationId) {
+      return c.text('Unauthorized', 401)
+    }
+    
+    // Verify student access
+    const registration = await c.env.DB.prepare(`
+      SELECT status FROM course_registrations
+      WHERE registration_id = ? AND status = 'active'
+    `).bind(registrationId).first()
+    
+    if (!registration) {
+      return c.text('Access Denied', 403)
+    }
+    
+    // Get PDF path (now stored as /pdfs/filename.pdf)
+    const lesson = await c.env.DB.prepare(`
+      SELECT resources FROM lessons WHERE id = ?
+    `).bind(lessonId).first()
+    
+    if (!lesson || !lesson.resources) {
+      return c.text('PDF Not Found', 404)
+    }
+    
+    // Redirect to static PDF file
+    // Since resources now contains /pdfs/filename.pdf, just redirect
+    return c.redirect(lesson.resources, 302)
+  } catch (error) {
+    console.error('PDF stream error:', error)
+    return c.text('Error loading PDF', 500)
+  }
+})
+
+// PDF viewer page with protection
 app.get('/api/arduino/pdf/:lessonId', async (c) => {
   try {
     const lessonId = c.req.param('lessonId')
@@ -2703,7 +2742,7 @@ app.get('/api/arduino/pdf/:lessonId', async (c) => {
       return c.html('<html><body><h1>Access Denied</h1><p>Your account is not active or does not exist.</p></body></html>', 403)
     }
     
-    // Get PDF URL
+    // Get PDF info
     const lesson = await c.env.DB.prepare(`
       SELECT resources, title FROM lessons WHERE id = ?
     `).bind(lessonId).first()
