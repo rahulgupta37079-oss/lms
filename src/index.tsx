@@ -4171,14 +4171,15 @@ app.post('/api/admin/certificates/bulk-generate', async (c) => {
         
         const result = await c.env.DB.prepare(`
           INSERT INTO certificates (
-            student_id, certificate_code, student_name, course_name, 
+            student_id, certificate_code, student_name, student_email, course_name, 
             issue_date, completion_date, certificate_data, verification_url, status
           )
-          VALUES (?, ?, ?, ?, date('now'), ?, ?, ?, 'active')
+          VALUES (?, ?, ?, ?, ?, date('now'), ?, ?, ?, 'active')
         `).bind(
           student.student_id || null,
           certificateCode,
           student.name,
+          student.email || null,
           course_name,
           completion_date || new Date().toISOString().split('T')[0],
           certificateData,
