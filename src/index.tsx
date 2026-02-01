@@ -6,6 +6,7 @@ import CertificateService from './services/certificate'
 
 type Bindings = {
   DB: D1Database;
+  PDF_BUCKET: R2Bucket;  // R2 bucket for PDF storage
   OPENAI_API_KEY?: string;  // Optional: OpenAI API key
   OPENAI_BASE_URL?: string;  // Optional: Custom API base URL
   RESEND_API_KEY?: string;  // Resend API key for email sending
@@ -2704,7 +2705,7 @@ app.get('/api/arduino/pdf/:lessonId/stream', async (c) => {
       return c.text('Access Denied', 403)
     }
     
-    // Get PDF path (now stored as /pdfs/filename.pdf)
+    // Get PDF filename from database (now stored as r2://filename.pdf)
     const lesson = await c.env.DB.prepare(`
       SELECT resources FROM lessons WHERE id = ?
     `).bind(lessonId).first()
@@ -2713,9 +2714,26 @@ app.get('/api/arduino/pdf/:lessonId/stream', async (c) => {
       return c.text('PDF Not Found', 404)
     }
     
-    // Redirect to static PDF file
-    // Since resources now contains /pdfs/filename.pdf, just redirect
-    return c.redirect(lesson.resources, 302)
+    // Extract filename from r2:// URL
+    const filename = lesson.resources.replace('r2://', '')
+    
+    // Get PDF from R2 bucket
+    const object = await c.env.PDF_BUCKET.get(filename)
+    
+    if (!object) {
+      console.error(`PDF not found in R2: ${filename}`)
+      return c.text('PDF file not found in storage', 404)
+    }
+    
+    // Stream the PDF with proper headers
+    return new Response(object.body, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'inline',
+        'Cache-Control': 'public, max-age=31536000',
+        'Content-Length': object.size.toString()
+      }
+    })
   } catch (error) {
     console.error('PDF stream error:', error)
     return c.text('Error loading PDF', 500)

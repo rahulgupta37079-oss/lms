@@ -12,12 +12,11 @@
       "database_name": "passionbots-lms-production",
       "database_id": "425fe9a7-d2d4-4cb5-bc46-090b1981ed8b"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PDF_BUCKET",
+      "bucket_name": "passionbots-lms-pdfs"
+    }
   ]
-  // R2 bucket configuration (uncomment after enabling R2 in Cloudflare Dashboard)
-  // "r2_buckets": [
-  //   {
-  //     "binding": "R2",
-  //     "bucket_name": "passionbots-recordings"
-  //   }
-  // ]
 }
